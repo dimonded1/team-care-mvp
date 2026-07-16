@@ -1,4 +1,5 @@
 import type { Animal } from "../types/app";
+import { assetUrl } from "./assets";
 
 const CARD_WIDTH = 1080;
 const CARD_HEIGHT = 1350;
@@ -75,7 +76,7 @@ export async function createResultCard(animal: Animal): Promise<Blob> {
   const layout = getResultCardLayout();
   const [photo, logo] = await Promise.all([
     loadImage(animal.photo),
-    loadImage("/assets/brand/logo-nika-white.png"),
+    loadImage(assetUrl("assets/brand/logo-nika-white.png")),
   ]);
   await document.fonts.ready;
 

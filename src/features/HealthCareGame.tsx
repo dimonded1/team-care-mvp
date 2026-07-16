@@ -21,6 +21,7 @@ import {
   type HealthZoneId,
 } from "../data/healthSituations";
 import type { Animal } from "../types/app";
+import { assetUrl } from "../lib/assets";
 
 interface HealthCareGameProps {
   animal: Animal;
@@ -55,8 +56,8 @@ function HealthPetSilhouette({
 }) {
   const reduceMotion = useReducedMotion();
   const petImage = species === "cat"
-    ? "/assets/health/health-cat.webp"
-    : "/assets/health/health-dog.webp";
+    ? assetUrl("assets/health/health-cat.webp")
+    : assetUrl("assets/health/health-dog.webp");
   const petLabel = species === "cat" ? "кот" : "собака";
 
   return (

@@ -23,6 +23,7 @@ import { RevealScreen } from "./features/RevealScreen";
 import { WelcomeScreen } from "./features/WelcomeScreen";
 import { clearSession, loadSession, saveSession } from "./lib/storage";
 import { findMatch } from "./lib/matching";
+import { assetUrl } from "./lib/assets";
 import type { Mission, Stage, StoredSession } from "./types/app";
 
 function preload(src: string): Promise<void> {
@@ -84,7 +85,7 @@ export default function App() {
     const saved = loadSession();
     const minimumBoot = new Promise((resolve) => window.setTimeout(resolve, 650));
     const assets = Promise.allSettled([
-      preload("/assets/brand/logo-nika-green.jpg"),
+      preload(assetUrl("assets/brand/logo-nika-green.jpg")),
       preload(animals[0]?.photo ?? ""),
       preload(animals[1]?.photo ?? ""),
     ]);

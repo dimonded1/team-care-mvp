@@ -34,7 +34,7 @@ export const dayScenes: DaySceneDefinition[] = [
     time: "07:30",
     title: "Двор просыпается",
     prompt: "С чего начать утро?",
-    image: "/assets/day-game/courtyard-morning.webp",
+    image: assetUrl("assets/day-game/courtyard-morning.webp"),
     irisOrigin: "82% 18%",
     choices: [
       {
@@ -66,7 +66,7 @@ export const dayScenes: DaySceneDefinition[] = [
     time: "13:10",
     title: "Во дворе много жизни",
     prompt: "Что будет бережным выбором?",
-    image: "/assets/day-game/courtyard-day.webp",
+    image: assetUrl("assets/day-game/courtyard-day.webp"),
     irisOrigin: "64% 14%",
     choices: [
       {
@@ -98,7 +98,7 @@ export const dayScenes: DaySceneDefinition[] = [
     time: "19:20",
     title: "В окнах зажигается свет",
     prompt: "Как мягко завершить активную часть дня?",
-    image: "/assets/day-game/courtyard-evening.webp",
+    image: assetUrl("assets/day-game/courtyard-evening.webp"),
     irisOrigin: "34% 22%",
     choices: [
       {
@@ -130,7 +130,7 @@ export const dayScenes: DaySceneDefinition[] = [
     time: "22:40",
     title: "Двор становится тихим",
     prompt: "Что поможет почувствовать себя в безопасности?",
-    image: "/assets/day-game/courtyard-night.webp",
+    image: assetUrl("assets/day-game/courtyard-night.webp"),
     irisOrigin: "82% 10%",
     choices: [
       {
@@ -166,3 +166,4 @@ export const dayActivityIds: DayActivityId[] = [
   "care",
   "sleep",
 ];
+import { assetUrl } from "../lib/assets";

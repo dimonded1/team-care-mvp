@@ -1,4 +1,5 @@
 import type { Animal } from "../types/app";
+import { assetUrl } from "../lib/assets";
 
 export const animals: Animal[] = [
   {
@@ -7,7 +8,7 @@ export const animals: Animal[] = [
     species: "dog",
     sex: "девочка",
     age: "3 года",
-    photo: "/assets/animals/pita.jpg",
+    photo: assetUrl("assets/animals/pita.jpg"),
     shortDescription: "Активная, ласковая и очень любознательная",
     story:
       "Пита любит движение, игры и понятные занятия. Она быстро включается в общение и охотно учится новому. Сейчас команда помогает ей сохранять здоровье и направлять энергию в полезные активности.",
@@ -30,7 +31,7 @@ export const animals: Animal[] = [
     species: "dog",
     sex: "мальчик",
     age: "15 лет",
-    photo: "/assets/animals/dzhek.jpg",
+    photo: assetUrl("assets/animals/dzhek.jpg"),
     shortDescription: "Спокойный и умный пёс, которому важно постоянство",
     story:
       "Джеку особенно нужны предсказуемый ритм, мягкий контакт и возможность самому выбирать дистанцию. Он пожилой, поэтому регулярное внимание к самочувствию для него особенно важно.",
@@ -53,7 +54,7 @@ export const animals: Animal[] = [
     species: "dog",
     sex: "мальчик",
     age: "1 год",
-    photo: "/assets/animals/lis.jpg",
+    photo: assetUrl("assets/animals/lis.jpg"),
     shortDescription: "Ласковый и игривый пёс на пути к восстановлению",
     story:
       "Лис проходит лечение и постепенно возвращает доверие к людям. Он остаётся ласковым, любит игры и внимательно присматривается к новым знакомым. Ему нужны движение, забота и бережный темп.",
@@ -76,7 +77,7 @@ export const animals: Animal[] = [
     species: "cat",
     sex: "девочка",
     age: "2 года",
-    photo: "/assets/animals/makfluri.jpg",
+    photo: assetUrl("assets/animals/makfluri.jpg"),
     shortDescription: "Ласковая любительница спокойных вечеров",
     story:
       "Макфлури тянется к людям и ценит мягкое внимание. Ей подходит спокойный, понятный ритм без давления: немного времени, знакомый голос и возможность самой сделать следующий шаг.",
@@ -99,7 +100,7 @@ export const animals: Animal[] = [
     species: "cat",
     sex: "девочка",
     age: "1 год",
-    photo: "/assets/animals/cunami.jpg",
+    photo: assetUrl("assets/animals/cunami.jpg"),
     shortDescription: "Яркая и осторожная кошка, которая учится доверять",
     story:
       "Когда Цунами тревожно, она старается защитить своё пространство. Спокойная дистанция, понятный ритм и постепенное знакомство помогают ей расслабляться и замечать, что рядом безопасно.",
@@ -122,7 +123,7 @@ export const animals: Animal[] = [
     species: "cat",
     sex: "мальчик",
     age: "10 месяцев",
-    photo: "/assets/animals/paskal.jpg",
+    photo: assetUrl("assets/animals/paskal.jpg"),
     shortDescription: "Молодой исследователь, который любит играть и быть рядом",
     story:
       "Паскаль уже понял, что рядом с человеком может быть спокойно. Он любит игры, принимает ласку и продолжает учиться доверять. Ему подходят мягкое внимание, движение и понятные ежедневные ритуалы.",

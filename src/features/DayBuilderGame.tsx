@@ -21,6 +21,7 @@ import {
   type DaySceneDefinition,
 } from "../data/dayScenes";
 import type { Animal } from "../types/app";
+import { assetUrl } from "../lib/assets";
 
 interface DayBuilderGameProps {
   animal: Animal;
@@ -121,7 +122,7 @@ function DayCharacter({
         }}
     >
       <img
-        src={`/assets/day-game/${animal.species}-character.webp`}
+        src={assetUrl(`assets/day-game/${animal.species}-character.webp`)}
         alt=""
         draggable={false}
       />
@@ -249,7 +250,7 @@ function DayMontage({
         transition={{ delay: complete ? 0 : 0.36, duration: 0.42 }}
         aria-hidden="true"
       >
-        <img src={`/assets/day-game/${animal.species}-character.webp`} alt="" />
+        <img src={assetUrl(`assets/day-game/${animal.species}-character.webp`)} alt="" />
       </motion.div>
     </motion.section>
   );
@@ -285,7 +286,10 @@ export function DayBuilderGame({ animal, onReadyChange }: DayBuilderGameProps) {
       const image = new Image();
       image.src = scene.image;
     });
-    ["/assets/day-game/dog-character.webp", "/assets/day-game/cat-character.webp"]
+    [
+      assetUrl("assets/day-game/dog-character.webp"),
+      assetUrl("assets/day-game/cat-character.webp"),
+    ]
       .forEach((src) => {
         const image = new Image();
         image.src = src;
