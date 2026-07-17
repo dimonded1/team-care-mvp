@@ -289,7 +289,7 @@ function HealthSummary({ round }: { round: HealthSituation[] }) {
 
 export function HealthCareGame({ animal, onReadyChange }: HealthCareGameProps) {
   const reduceMotion = useReducedMotion();
-  const [round] = useState(() => buildHealthGameRound());
+  const [round] = useState(() => buildHealthGameRound(animal.species));
   const [activeZoneId, setActiveZoneId] = useState<HealthZoneId | null>(null);
   const [selectedChoiceId, setSelectedChoiceId] = useState<string | null>(null);
   const [completedZoneIds, setCompletedZoneIds] = useState<HealthZoneId[]>([]);

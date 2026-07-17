@@ -382,6 +382,42 @@ async function main() {
           ) {
             throw new Error(`Day scene regression: ${sceneId} -> ${JSON.stringify(sceneMetrics)}`);
           }
+          if (sceneId === "evening") {
+            const eveningMetrics = await evaluate(`(() => {
+              const scene = document.querySelector('[data-testid="day-scene"][data-day-scene="evening"]');
+              const copy = scene?.querySelector('.day-scene__copy');
+              const character = scene?.querySelector('.day-character');
+              const copyRect = copy?.getBoundingClientRect();
+              const characterRect = character?.getBoundingClientRect();
+              const correct = scene?.querySelector('[data-testid="day-choice"][data-choice-correct="true"]');
+              const faceRect = characterRect ? {
+                left: characterRect.left + characterRect.width * 0.16,
+                right: characterRect.right - characterRect.width * 0.16,
+                top: characterRect.top + characterRect.height * 0.04,
+                bottom: characterRect.top + characterRect.height * 0.46,
+              } : null;
+              return {
+                correctLabel: correct?.querySelector('strong')?.textContent?.trim() ?? "",
+                hasOldPhrase: scene?.textContent?.toLocaleLowerCase('ru').includes('по плану команды') ?? true,
+                copyOverlapsFace: Boolean(
+                  copyRect
+                  && faceRect
+                  && copyRect.left < faceRect.right
+                  && copyRect.right > faceRect.left
+                  && copyRect.top < faceRect.bottom
+                  && copyRect.bottom > faceRect.top
+                ),
+              };
+            })()`);
+            if (
+              eveningMetrics.correctLabel !== "Тихий ритуал перед сном"
+              || eveningMetrics.hasOldPhrase
+              || eveningMetrics.copyOverlapsFace
+            ) {
+              throw new Error(`Evening care regression: ${JSON.stringify(eveningMetrics)}`);
+            }
+            await capture("smoke-day-game-evening-mobile.png");
+          }
           if (index === 0) {
             await evaluate(
               `document.querySelector('[data-testid="day-scene"][data-day-scene="${sceneId}"] [data-testid="day-choice"][data-choice-correct="false"]')?.click()`,
@@ -421,11 +457,14 @@ async function main() {
             const approachMetrics = await evaluate(`(() => {
               const stage = document.querySelector('.trust-stage');
               const pet = document.querySelector('[data-testid="trust-pet"] img');
+              const room = document.querySelector('.trust-stage__room');
               const stageRect = stage?.getBoundingClientRect();
               const petRect = pet?.getBoundingClientRect();
               return {
                 petLoaded: pet instanceof HTMLImageElement && pet.complete && pet.naturalWidth > 0,
                 petSource: pet instanceof HTMLImageElement ? pet.currentSrc : "",
+                roomLoaded: room instanceof HTMLImageElement && room.complete && room.naturalWidth > 0,
+                roomSource: room instanceof HTMLImageElement ? room.currentSrc : "",
                 progressNodes: document.querySelectorAll('.trust-distance > span').length,
                 realAnimalPhotos: document.querySelectorAll('.journey-screen img[src*="/assets/animals/"]').length,
                 petInsideStage: Boolean(
@@ -442,6 +481,8 @@ async function main() {
             if (
               !approachMetrics.petLoaded
               || !approachMetrics.petSource.endsWith('.webp')
+              || !approachMetrics.roomLoaded
+              || !approachMetrics.roomSource.endsWith('trust-living-room.webp')
               || approachMetrics.progressNodes !== 4
               || approachMetrics.realAnimalPhotos !== 0
               || !approachMetrics.petInsideStage
@@ -521,6 +562,18 @@ async function main() {
         await waitForSelector('[data-testid="trust-game"][data-trust-phase="final"][data-trust-progress="4"]', true, 5_000);
         await waitForSelector('[data-testid="trust-final"]');
         await sleep(420);
+        const finalLayout = await evaluate(`(() => {
+          const stage = document.querySelector('.trust-stage--final');
+          const copy = stage?.querySelector('.trust-stage__copy');
+          const distance = stage?.querySelector('.trust-distance');
+          return {
+            copyDisplay: copy ? getComputedStyle(copy).display : null,
+            distanceDisplay: distance ? getComputedStyle(distance).display : null,
+          };
+        })()`);
+        if (finalLayout.copyDisplay !== "none" || finalLayout.distanceDisplay !== "none") {
+          throw new Error(`Trust final overlay regression: ${JSON.stringify(finalLayout)}`);
+        }
         await capture("smoke-trust-game-final-mobile.png");
         return;
       }

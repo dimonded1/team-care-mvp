@@ -8340,7 +8340,7 @@ p {
 
   .day-character {
     right: 1%;
-    bottom: 158px;
+    bottom: 116px;
     width: clamp(140px, 45vw, 205px);
   }
 
@@ -8449,7 +8449,7 @@ p {
   }
 
   .day-character {
-    bottom: 154px;
+    bottom: 112px;
     width: 150px;
   }
 
@@ -9634,14 +9634,28 @@ p {
   isolation: isolate;
 }
 
+.trust-stage__room {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.84) brightness(0.78);
+  user-select: none;
+}
+
 .trust-stage::before {
   content: "";
   position: absolute;
   z-index: 0;
   inset: 0;
   background:
-    linear-gradient(180deg, transparent 56%, rgba(2, 21, 14, 0.4)),
-    radial-gradient(ellipse at 50% 95%, rgba(115, 155, 91, 0.24), transparent 43%);
+    linear-gradient(180deg, rgba(3, 24, 15, 0.08) 32%, rgba(2, 21, 14, 0.52) 100%),
+    linear-gradient(90deg, rgba(4, 31, 18, 0.3), transparent 42%, rgba(4, 31, 18, 0.2)),
+    radial-gradient(ellipse at 50% 95%, rgba(115, 155, 91, 0.16), transparent 43%);
   pointer-events: none;
 }
 
@@ -9674,7 +9688,7 @@ p {
 
 .trust-stage__stars {
   position: absolute;
-  z-index: 0;
+  z-index: 1;
   inset: 0;
   opacity: 0.58;
   background-image:
@@ -9687,7 +9701,7 @@ p {
 
 .trust-stage__orbit {
   position: absolute;
-  z-index: 0;
+  z-index: 1;
   border: 1px solid rgba(255, 255, 255, 0.095);
   border-radius: 50%;
   pointer-events: none;
@@ -10096,6 +10110,15 @@ p {
   line-height: 1.4;
 }
 
+.trust-stage--final .trust-stage__copy,
+.trust-stage--final .trust-distance {
+  display: none;
+}
+
+.trust-stage--final .trust-pet {
+  bottom: 12px;
+}
+
 .journey-screen--trust-game .impact-row {
   width: min(100%, 780px);
   margin: 22px auto 0;
@@ -10215,6 +10238,13 @@ p {
   .trust-game__board--question .trust-pet {
     height: 350px;
     bottom: 37px;
+  }
+
+  .trust-stage--final .trust-pet {
+    width: 320px;
+    height: 390px;
+    right: calc(50% - 160px);
+    bottom: 0;
   }
 
   .trust-stage__tap {

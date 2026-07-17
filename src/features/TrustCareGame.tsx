@@ -164,6 +164,13 @@ export function TrustCareGame({ animal, onReadyChange }: TrustCareGameProps) {
 
       <div className={`trust-game__board${phase === "situation" ? " trust-game__board--question" : ""}`}>
         <div ref={stageRef} className={`trust-stage trust-stage--${reaction ?? phase}`}>
+          <img
+            className="trust-stage__room"
+            src={assetUrl("assets/trust/trust-living-room.webp")}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+          />
           <span className="trust-stage__stars" aria-hidden="true" />
           <span className="trust-stage__orbit trust-stage__orbit--one" aria-hidden="true" />
           <span className="trust-stage__orbit trust-stage__orbit--two" aria-hidden="true" />

@@ -31,4 +31,10 @@ describe("day scenes", () => {
 
     expect([...usedActivities].sort()).toEqual([...dayActivityIds].sort());
   });
+
+  it("uses clear bedtime language without the old team-plan phrasing", () => {
+    const evening = dayScenes.find((scene) => scene.id === "evening");
+    expect(evening?.choices.find((choice) => choice.correct)?.label).toBe("Тихий ритуал перед сном");
+    expect(JSON.stringify(evening)).not.toContain("по плану команды");
+  });
 });

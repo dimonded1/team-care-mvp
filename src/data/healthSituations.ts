@@ -6,6 +6,8 @@ export type HealthZoneId =
   | "back"
   | "tail";
 
+export type HealthSpecies = "cat" | "dog";
+
 export type HealthActionIconId =
   | "bandage"
   | "brush"
@@ -35,6 +37,7 @@ export interface HealthActionChoice {
 
 export interface HealthSituation {
   id: string;
+  species: HealthSpecies | "all";
   zoneId: HealthZoneId;
   situation: string;
   prompt: string;
@@ -53,41 +56,43 @@ export const healthZones: HealthZoneDefinition[] = [
 
 export const healthSituationPool: HealthSituation[] = [
   {
-    id: "paws-mud",
+    id: "dog-paws-hot-pavement",
+    species: "dog",
     zoneId: "paws",
-    situation: "После прогулки лапы испачкались в уличной грязи.",
-    prompt: "Какая первая забота подойдёт лучше всего?",
+    situation: "В жаркий день собака останавливается перед нагретой дорожкой.",
+    prompt: "Как продолжить прогулку бережно?",
     learningFact:
-      "Лапы после улицы полезно очистить и высушить, чтобы питомец не слизывал грязь и реагенты.",
+      "Горячее покрытие может обжечь подушечки лап: безопаснее перейти в тень или выбрать прохладный маршрут.",
     options: [
       {
-        id: "wipe-and-dry",
-        label: "Протереть и высушить",
-        description: "Чистой влажной салфеткой или водой",
-        icon: "wipe",
-        correct: true,
-        feedback: "Да. Мягко очистить лапу и убрать лишнюю влагу — простая и безопасная первая забота.",
-      },
-      {
-        id: "brush-paw",
-        label: "Пройтись щёткой",
-        description: "Как по обычной шерсти",
-        icon: "brush",
-        correct: false,
-        feedback: "Щётка не уберёт грязь между подушечками. Сначала лапу лучше мягко очистить и высушить.",
-      },
-      {
-        id: "let-rest",
-        label: "Просто дать отдохнуть",
-        description: "Грязь высохнет сама",
+        id: "choose-cool-route",
+        label: "Перейти в тень",
+        description: "Выбрать траву или прохладную дорожку",
         icon: "rest",
+        correct: true,
+        feedback: "Да. Прохладная поверхность и более короткий маршрут защитят лапы от перегрева.",
+      },
+      {
+        id: "cross-quickly",
+        label: "Быстро перебежать",
+        description: "Горячий участок ведь короткий",
+        icon: "play",
         correct: false,
-        feedback: "Отдых полезен, но грязь останется на лапе. Тут важнее сначала аккуратно её убрать.",
+        feedback: "Даже короткий контакт с горячим покрытием может быть неприятным. Лучше совсем его обойти.",
+      },
+      {
+        id: "cool-with-ice",
+        label: "Приложить лёд",
+        description: "Сразу сильно охладить подушечки",
+        icon: "care",
+        correct: false,
+        feedback: "Резкий холод не нужен. Сначала достаточно уйти с горячей поверхности в тень.",
       },
     ],
   },
   {
     id: "paws-graze",
+    species: "all",
     zoneId: "paws",
     situation: "На лапе заметили небольшую свежую ссадину.",
     prompt: "Что сделать до осмотра специалистом?",
@@ -122,6 +127,7 @@ export const healthSituationPool: HealthSituation[] = [
   },
   {
     id: "ears-dust",
+    species: "all",
     zoneId: "ears",
     situation: "На внешней стороне ушной раковины видна обычная пыль.",
     prompt: "Как аккуратно помочь?",
@@ -155,41 +161,43 @@ export const healthSituationPool: HealthSituation[] = [
     ],
   },
   {
-    id: "ears-irritated",
+    id: "dog-ears-after-rain",
+    species: "dog",
     zoneId: "ears",
-    situation: "Питомец часто трясёт головой, а ухо выглядит красным.",
-    prompt: "Какая реакция будет безопасной?",
+    situation: "После дождливой прогулки длинные уши собаки остались влажными.",
+    prompt: "Что сделать дома?",
     learningFact:
-      "Покраснение, болезненность, запах или частое трясение головой требуют ветеринарной оценки, а не глубокой домашней чистки.",
+      "После прогулки достаточно промокнуть внешнюю часть ушей мягким полотенцем, ничего не вводя внутрь.",
     options: [
       {
-        id: "vet-ear-check",
-        label: "Показать ветеринару",
-        description: "Не пытаться чистить глубоко самостоятельно",
-        icon: "vet",
-        correct: true,
-        feedback: "Верно. Это уже не обычная пыль, поэтому причину должен оценить ветеринар.",
-      },
-      {
-        id: "clean-deeper",
-        label: "Почистить глубже",
-        description: "Попробовать убрать причину самостоятельно",
+        id: "blot-earflaps",
+        label: "Мягко промокнуть снаружи",
+        description: "Сухим полотенцем без трения",
         icon: "wipe",
-        correct: false,
-        feedback: "При покраснении глубокая чистка может причинить боль. Безопаснее остановиться и обратиться к ветеринару.",
+        correct: true,
+        feedback: "Верно. Убрать влагу с ушной раковины — простая забота после дождя.",
       },
       {
-        id: "wait-ear",
-        label: "Подождать несколько дней",
-        description: "Возможно, пройдёт само",
-        icon: "rest",
+        id: "dry-inside-ear",
+        label: "Просушить глубоко ватой",
+        description: "Ввести её внутрь слухового прохода",
+        icon: "inspect",
         correct: false,
-        feedback: "Повторяющийся дискомфорт лучше не откладывать. Ветеринар поможет понять причину раньше.",
+        feedback: "Внутрь уха ничего вводить не нужно. Достаточно промокнуть только видимую внешнюю часть.",
+      },
+      {
+        id: "warm-hairdryer",
+        label: "Посушить феном",
+        description: "Направить тёплый воздух на уши",
+        icon: "care",
+        correct: false,
+        feedback: "Шум и горячий воздух могут напугать или перегреть кожу. Полотенце действует мягче.",
       },
     ],
   },
   {
     id: "eyes-small-speck",
+    species: "all",
     zoneId: "eyes",
     situation: "В уголке глаза осталась маленькая засохшая соринка, сам глаз выглядит спокойно.",
     prompt: "Как поступить бережно?",
@@ -223,41 +231,43 @@ export const healthSituationPool: HealthSituation[] = [
     ],
   },
   {
-    id: "eyes-red",
+    id: "dog-eyes-windy-walk",
+    species: "dog",
     zoneId: "eyes",
-    situation: "Глаз покраснел, питомец щурится или избегает света.",
-    prompt: "Что будет правильной первой реакцией?",
+    situation: "На ветреной прогулке песок попал в шерсть рядом с глазами, сами глаза выглядят спокойно.",
+    prompt: "Как помочь после прогулки?",
     learningFact:
-      "Покраснение, прищуривание, боль или заметные выделения из глаза — повод быстро связаться с ветеринаром.",
+      "Песок вокруг глаз убирают только с шерсти и внешних уголков, не растирая поверхность глаза.",
     options: [
       {
-        id: "vet-eye-check",
-        label: "Показать ветеринару",
-        description: "Не использовать случайные средства",
-        icon: "vet",
-        correct: true,
-        feedback: "Верно. Глаз чувствителен, поэтому причину и безопасную помощь должен определить ветеринар.",
-      },
-      {
-        id: "wipe-repeatedly",
-        label: "Протирать снова и снова",
-        description: "Пока краснота не уменьшится",
+        id: "wipe-fur-around-eyes",
+        label: "Убрать песок с шерсти",
+        description: "Мягким чистым влажным диском",
         icon: "wipe",
-        correct: false,
-        feedback: "Частое трение не устраняет причину и может раздражать глаз сильнее. Тут нужен ветеринар.",
+        correct: true,
+        feedback: "Да. Одного аккуратного движения по шерсти снаружи будет достаточно.",
       },
       {
-        id: "distract-with-play",
-        label: "Отвлечь активной игрой",
-        description: "Чтобы питомец перестал щуриться",
-        icon: "play",
+        id: "rub-eyelids",
+        label: "Потереть веки",
+        description: "Чтобы песок быстрее осыпался",
+        icon: "inspect",
         correct: false,
-        feedback: "Игра не решает дискомфорт и может утомить питомца. Лучше обеспечить покой и показать глаз ветеринару.",
+        feedback: "Трение может занести песчинки ближе к глазу. Лучше убрать их только с окружающей шерсти.",
+      },
+      {
+        id: "blow-sand-away",
+        label: "Сдуть песок",
+        description: "Подуть прямо в морду",
+        icon: "care",
+        correct: false,
+        feedback: "Поток воздуха неприятен и может направить песок к глазу. Влажный диск безопаснее.",
       },
     ],
   },
   {
     id: "belly-hot-day",
+    species: "all",
     zoneId: "belly",
     situation: "Жаркий день, питомец ищет прохладное место и хочет пить.",
     prompt: "Что сделать в первую очередь?",
@@ -291,75 +301,78 @@ export const healthSituationPool: HealthSituation[] = [
     ],
   },
   {
-    id: "belly-dirty",
+    id: "dog-belly-after-play",
+    species: "dog",
     zoneId: "belly",
-    situation: "После прогулки на шерсти живота остались грязь и мелкий песок.",
-    prompt: "Какая первая реакция подойдёт?",
+    situation: "После весёлой игры собака часто дышит и сама ложится отдохнуть.",
+    prompt: "Как помочь спокойно восстановиться?",
     learningFact:
-      "Загрязнённую шерсть можно мягко протереть чистой водой и затем высушить, не растирая кожу.",
+      "После активности питомцу полезны пауза, прохладное место и свободный доступ к воде.",
     options: [
       {
-        id: "wipe-belly",
-        label: "Протереть и высушить",
-        description: "Убрать грязь мягкой влажной тканью",
-        icon: "wipe",
+        id: "cool-rest-and-water",
+        label: "Дать паузу и воду",
+        description: "Перейти в прохладное тихое место",
+        icon: "water",
         correct: true,
-        feedback: "Верно. Мягкое очищение и сухая шерсть помогут избежать раздражения и слизывания грязи.",
+        feedback: "Верно. Спокойная пауза и вода помогают естественно восстановиться после игры.",
       },
       {
-        id: "leave-wet",
-        label: "Оставить как есть",
-        description: "Питомец сам приведёт шерсть в порядок",
-        icon: "rest",
+        id: "keep-playing",
+        label: "Продолжить игру",
+        description: "Пока интерес к игрушке не пропал",
+        icon: "play",
         correct: false,
-        feedback: "Так питомец может слизать уличную грязь. Лучше аккуратно очистить шерсть и высушить её.",
+        feedback: "Частое дыхание — сигнал сделать паузу, а не добавлять нагрузку.",
       },
       {
-        id: "brush-sand",
-        label: "Сразу сильно вычесать",
-        description: "Убрать песок сухой щёткой",
-        icon: "brush",
+        id: "offer-extra-food",
+        label: "Сразу предложить еду",
+        description: "Пусть подкрепится после нагрузки",
+        icon: "food",
         correct: false,
-        feedback: "Сильное вычёсывание по грязной коже может раздражать её. Сначала загрязнение лучше мягко смыть.",
+        feedback: "Сначала лучше дать спокойно отдышаться и попить. Еда не заменяет восстановительную паузу.",
       },
     ],
   },
   {
-    id: "back-burr",
+    id: "dog-back-wet-harness",
+    species: "dog",
     zoneId: "back",
-    situation: "После прогулки в шерсти зацепился репей или сухая колючка.",
-    prompt: "Как убрать находку бережно?",
+    situation: "После дождя под шлейкой шерсть осталась влажной и примялась.",
+    prompt: "Как вернуть собаке комфорт?",
     learningFact:
-      "Репьи и небольшие колтуны разбирают постепенно щёткой или пальцами, не дёргая шерсть у самой кожи.",
+      "Влажную амуницию снимают, а шерсть под ней аккуратно промокают и дают коже высохнуть.",
     options: [
       {
-        id: "brush-burr",
-        label: "Аккуратно вычесать",
-        description: "Придерживать шерсть у кожи и не тянуть",
-        icon: "brush",
+        id: "remove-harness-and-dry",
+        label: "Снять шлейку и промокнуть",
+        description: "Дать шерсти полностью высохнуть",
+        icon: "wipe",
         correct: true,
-        feedback: "Да. Медленное вычёсывание без рывков помогает убрать репей и не причинить боль.",
+        feedback: "Да. Сухая шерсть и свободная кожа помогут избежать натирания.",
       },
       {
-        id: "pull-burr",
-        label: "Резко вытянуть",
-        description: "Снять одним быстрым движением",
-        icon: "inspect",
+        id: "leave-harness-on",
+        label: "Оставить шлейку до вечера",
+        description: "Под ней шерсть высохнет сама",
+        icon: "rest",
         correct: false,
-        feedback: "Рывок тянет шерсть и кожу. Тут лучше действовать медленно, придерживая шерсть у основания.",
+        feedback: "Под влажной шлейкой кожа сохнет медленнее и может натираться. Её лучше снять.",
       },
       {
-        id: "wet-whole-coat",
-        label: "Намочить всю шерсть",
-        description: "Надеяться, что репей отстанет",
-        icon: "water",
+        id: "brush-wet-coat",
+        label: "Сразу активно вычесать",
+        description: "Распушить мокрую шерсть щёткой",
+        icon: "brush",
         correct: false,
-        feedback: "Вода может только сильнее спутать шерсть вокруг репья. Безопаснее аккуратно вычесать его.",
+        feedback: "По влажной примятой шерсти щётка может тянуть кожу. Сначала участок лучше высушить.",
       },
     ],
   },
   {
     id: "back-tick",
+    species: "all",
     zoneId: "back",
     situation: "На коже под шерстью заметили присосавшегося клеща.",
     prompt: "Какой выбор здесь самый безопасный?",
@@ -394,6 +407,7 @@ export const healthSituationPool: HealthSituation[] = [
   },
   {
     id: "tail-burr",
+    species: "all",
     zoneId: "tail",
     situation: "У основания хвоста спуталась шерсть и застряла сухая травинка.",
     prompt: "Что сделать без спешки?",
@@ -427,36 +441,247 @@ export const healthSituationPool: HealthSituation[] = [
     ],
   },
   {
-    id: "tail-sensitive",
+    id: "dog-tail-under-blanket",
+    species: "dog",
     zoneId: "tail",
-    situation: "Питомец необычно держит хвост и не даёт к нему прикасаться.",
-    prompt: "Какая реакция будет бережной?",
+    situation: "Собака устроилась на диване, а хвост оказался прижат тяжёлым пледом.",
+    prompt: "Как освободить хвост?",
     learningFact:
-      "Если питомец избегает прикосновения или изменил обычное положение хвоста, не нужно разминать или выпрямлять его самостоятельно.",
+      "Если хвост случайно прижат, сначала освобождают пространство вокруг него, не тянут и не выпрямляют сам хвост.",
     options: [
       {
-        id: "vet-tail-check",
-        label: "Не трогать и показать ветеринару",
-        description: "Обеспечить покой до осмотра",
-        icon: "vet",
-        correct: true,
-        feedback: "Верно. Изменение поведения может говорить о боли, поэтому хвост лучше не трогать до осмотра.",
-      },
-      {
-        id: "straighten-tail",
-        label: "Осторожно выпрямить хвост",
-        description: "Проверить, свободно ли он двигается",
+        id: "lift-blanket",
+        label: "Приподнять плед",
+        description: "Дать собаке самой сменить положение",
         icon: "care",
-        correct: false,
-        feedback: "Самостоятельная проверка движением может усилить боль. Безопаснее обеспечить покой и обратиться к ветеринару.",
+        correct: true,
+        feedback: "Да. Освободить плед безопаснее, чем тянуть собаку или её хвост.",
       },
       {
-        id: "play-with-tail",
-        label: "Отвлечь игрой",
-        description: "Посмотреть, забудет ли питомец о хвосте",
+        id: "pull-tail-out",
+        label: "Потянуть хвост наружу",
+        description: "Освободить одним движением",
+        icon: "inspect",
+        correct: false,
+        feedback: "Тянуть хвост нельзя. Лучше убрать давление пледа и позволить собаке подвигаться самой.",
+      },
+      {
+        id: "call-off-sofa",
+        label: "Резко позвать с дивана",
+        description: "Пусть быстро выпрыгнет из-под пледа",
         icon: "play",
         correct: false,
-        feedback: "Активность не исключает травму и может добавить нагрузку. Лучше не проверять хвост игрой.",
+        feedback: "Резкий прыжок может сильнее натянуть прижатый хвост. Сначала нужно поднять плед.",
+      },
+    ],
+  },
+  {
+    id: "cat-paws-claw-in-blanket",
+    species: "cat",
+    zoneId: "paws",
+    situation: "Коготок кошки зацепился за петлю на пледе, и она замерла.",
+    prompt: "Как спокойно освободить лапу?",
+    learningFact:
+      "Если коготь зацепился за ткань, сначала ослабляют саму петлю и не тянут лапу на себя.",
+    options: [
+      {
+        id: "loosen-fabric-loop",
+        label: "Ослабить петлю ткани",
+        description: "Поддержать лапу и не тянуть её",
+        icon: "care",
+        correct: true,
+        feedback: "Верно. Когда натяжение ткани исчезнет, кошка сможет спокойно убрать лапу сама.",
+      },
+      {
+        id: "pull-cat-paw",
+        label: "Потянуть лапу на себя",
+        description: "Освободить одним движением",
+        icon: "inspect",
+        correct: false,
+        feedback: "Натянутая петля будет держать коготь ещё сильнее. Сначала нужно ослабить ткань.",
+      },
+      {
+        id: "shake-blanket",
+        label: "Встряхнуть плед",
+        description: "Чтобы коготь выпал из петли",
+        icon: "play",
+        correct: false,
+        feedback: "Резкое движение напугает кошку и может сильнее натянуть коготь. Лучше действовать руками и медленно.",
+      },
+    ],
+  },
+  {
+    id: "cat-ears-new-scent",
+    species: "cat",
+    zoneId: "ears",
+    situation: "После появления ароматического диффузора кошка прижимает уши и уходит из комнаты.",
+    prompt: "Что будет самой простой первой заботой?",
+    learningFact:
+      "Новый резкий запах может быть неприятен питомцу: безопаснее убрать источник и проветрить комнату.",
+    options: [
+      {
+        id: "remove-scent-and-air",
+        label: "Убрать аромат и проветрить",
+        description: "Оставить кошке тихую комнату без запаха",
+        icon: "rest",
+        correct: true,
+        feedback: "Да. Убрать новый раздражитель — понятный и бережный первый шаг.",
+      },
+      {
+        id: "bring-cat-to-scent",
+        label: "Поднести кошку поближе",
+        description: "Пусть быстрее привыкнет к запаху",
+        icon: "inspect",
+        correct: false,
+        feedback: "Принуждение усилит дискомфорт. Лучше вернуть привычный воздух и дать кошке выбрать дистанцию.",
+      },
+      {
+        id: "mask-with-another-scent",
+        label: "Добавить другой аромат",
+        description: "Перебить первый запах",
+        icon: "care",
+        correct: false,
+        feedback: "Смешение запахов сделает воздух ещё насыщеннее. Источник лучше убрать совсем.",
+      },
+    ],
+  },
+  {
+    id: "cat-eyes-sunbeam",
+    species: "cat",
+    zoneId: "eyes",
+    situation: "Яркий луч солнца падает прямо на любимое место кошки, и она щурится.",
+    prompt: "Как сохранить уютное место?",
+    learningFact:
+      "Если дискомфорт вызывает яркий свет, достаточно создать тень и позволить питомцу выбрать удобное положение.",
+    options: [
+      {
+        id: "soften-sunlight",
+        label: "Прикрыть штору",
+        description: "Оставить мягкий рассеянный свет",
+        icon: "rest",
+        correct: true,
+        feedback: "Верно. Мягкая тень вернёт комфорт без лишних прикосновений.",
+      },
+      {
+        id: "move-cat-by-hand",
+        label: "Переложить кошку руками",
+        description: "Сразу перенести в другое место",
+        icon: "care",
+        correct: false,
+        feedback: "Кошка может сама выбрать новое место. Сначала проще убрать яркий свет.",
+      },
+      {
+        id: "offer-eye-drops-for-sun",
+        label: "Закапать глаза",
+        description: "Помочь им привыкнуть к свету",
+        icon: "inspect",
+        correct: false,
+        feedback: "При обычном ярком свете средства не нужны. Достаточно создать тень.",
+      },
+    ],
+  },
+  {
+    id: "cat-belly-after-chase",
+    species: "cat",
+    zoneId: "belly",
+    situation: "После погони за игрушкой кошка легла на бок и решила отдохнуть.",
+    prompt: "Как завершить игру бережно?",
+    learningFact:
+      "После активной игры полезно убрать стимулы, оставить свежую воду и дать кошке восстановиться в своём темпе.",
+    options: [
+      {
+        id: "end-play-quietly",
+        label: "Убрать игрушку и дать отдых",
+        description: "Оставить рядом свежую воду",
+        icon: "water",
+        correct: true,
+        feedback: "Да. Спокойное завершение помогает переключиться с охоты на отдых.",
+      },
+      {
+        id: "restart-chase",
+        label: "Снова пошевелить игрушкой",
+        description: "Проверить, остались ли силы",
+        icon: "play",
+        correct: false,
+        feedback: "Если кошка сама легла, лучше уважить паузу и не запускать новый раунд игры.",
+      },
+      {
+        id: "offer-large-meal",
+        label: "Сразу дать большую порцию",
+        description: "Наградить за активность",
+        icon: "food",
+        correct: false,
+        feedback: "Сначала кошке стоит спокойно восстановиться. Большая порция не заменяет паузу и воду.",
+      },
+    ],
+  },
+  {
+    id: "cat-back-small-mat",
+    species: "cat",
+    zoneId: "back",
+    situation: "После сна на спине кошки заметили небольшой мягкий колтун.",
+    prompt: "Как распутать шерсть без рывка?",
+    learningFact:
+      "Небольшой колтун разбирают с кончиков, придерживая шерсть у кожи и делая короткие паузы.",
+    options: [
+      {
+        id: "tease-mat-gently",
+        label: "Разобрать с кончиков",
+        description: "Придерживать шерсть у кожи",
+        icon: "brush",
+        correct: true,
+        feedback: "Верно. Так натяжение почти не передаётся коже, а кошке проще оставаться спокойной.",
+      },
+      {
+        id: "pull-mat-once",
+        label: "Вытянуть колтун целиком",
+        description: "Сделать один быстрый рывок",
+        icon: "inspect",
+        correct: false,
+        feedback: "Рывок потянет кожу и причинит боль. Лучше разделить участок на маленькие пряди.",
+      },
+      {
+        id: "soak-cat-mat",
+        label: "Сильно намочить шерсть",
+        description: "Пусть колтун размокнет",
+        icon: "water",
+        correct: false,
+        feedback: "Вода может сделать спутанный участок плотнее. Сухое медленное распутывание безопаснее.",
+      },
+    ],
+  },
+  {
+    id: "cat-tail-ribbon",
+    species: "cat",
+    zoneId: "tail",
+    situation: "Во время игры лёгкая лента свободно обернулась вокруг хвоста кошки.",
+    prompt: "Как убрать её без испуга?",
+    learningFact:
+      "Ленту с хвоста спокойно разматывают в обратную сторону и не тянут за свободный конец.",
+    options: [
+      {
+        id: "unwind-ribbon",
+        label: "Спокойно размотать ленту",
+        description: "Остановить игру и освободить виток",
+        icon: "care",
+        correct: true,
+        feedback: "Да. Без натяжения лента снимется легко, а хвост останется свободным.",
+      },
+      {
+        id: "pull-ribbon-end",
+        label: "Потянуть за конец",
+        description: "Стянуть ленту одним движением",
+        icon: "inspect",
+        correct: false,
+        feedback: "Так виток может затянуться. Ленту нужно разматывать, а не стягивать.",
+      },
+      {
+        id: "continue-ribbon-play",
+        label: "Продолжить игру",
+        description: "Она сама соскользнёт с хвоста",
+        icon: "play",
+        correct: false,
+        feedback: "При движении лента может затянуться сильнее. Игру лучше остановить и снять её сразу.",
       },
     ],
   },
@@ -472,15 +697,24 @@ function shuffle<T>(items: readonly T[], random: () => number): T[] {
 }
 
 export function buildHealthGameRound(
+  species: HealthSpecies,
   random: () => number = Math.random,
 ): HealthSituation[] {
-  return healthZones.map((zone) => {
-    const pool = healthSituationPool.filter((situation) => situation.zoneId === zone.id);
-    const index = Math.min(pool.length - 1, Math.floor(random() * pool.length));
-    const situation = pool[index];
+  const universalOffset = Math.floor(random() * 3);
+
+  return healthZones.map((zone, zoneIndex) => {
+    const speciesPool = healthSituationPool.filter(
+      (situation) => situation.zoneId === zone.id && situation.species === species,
+    );
+    const universalPool = healthSituationPool.filter(
+      (situation) => situation.zoneId === zone.id && situation.species === "all",
+    );
+    const useUniversal = zoneIndex % 3 === universalOffset;
+    const pool = useUniversal ? universalPool : speciesPool;
+    const situation = pool[0];
 
     if (!situation) {
-      throw new Error(`Для зоны ${zone.id} не настроены ситуации`);
+      throw new Error(`Для зоны ${zone.id} и вида ${species} не настроена ситуация`);
     }
 
     return {
