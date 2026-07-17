@@ -201,6 +201,13 @@ async function main() {
       return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
     })()`);
 
+    const getSwipeCardRect = () => evaluate(`(() => {
+      const card = document.querySelector('[data-testid="swipe-card"]');
+      if (!card) return null;
+      const rect = card.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, y: rect.top + rect.height / 2 };
+    })()`);
+
     const touchPoint = (x, y) => ({ x, y, radiusX: 4, radiusY: 4, force: 1, id: 1 });
     const dragCard = async (distance, stepDelay = 70, release = true) => {
       const center = await getSwipeCardCenter();
@@ -219,6 +226,39 @@ async function main() {
       if (release) {
         await cdp.call("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
       }
+    };
+
+    const rapidEdgeSwipe = async (edge, distance) => {
+      const rect = await getSwipeCardRect();
+      if (!rect) throw new Error("Swipe card was not rendered for edge swipe");
+      const startX = edge === "left" ? rect.left + 2 : rect.right - 2;
+      const startUrl = await evaluate("location.href");
+      await evaluate(`(() => {
+        window.__edgeSwipeGuard = { touchStartPrevented: false, touchMovePrevented: false };
+        window.addEventListener('touchstart', (event) => {
+          window.__edgeSwipeGuard.touchStartPrevented = event.defaultPrevented;
+        }, { once: true });
+        window.addEventListener('touchmove', (event) => {
+          window.__edgeSwipeGuard.touchMovePrevented = event.defaultPrevented;
+        }, { once: true });
+      })()`);
+      await cdp.call("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [touchPoint(startX, rect.y)],
+      });
+      await sleep(18);
+      await cdp.call("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [touchPoint(startX + distance, rect.y)],
+      });
+      await sleep(18);
+      await cdp.call("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await sleep(160);
+      return evaluate(`(() => ({
+        ...window.__edgeSwipeGuard,
+        startUrl: ${JSON.stringify(startUrl)},
+        currentUrl: location.href,
+      }))()`);
     };
 
     const dragCardWithMouse = async (distance, release = true) => {
@@ -634,8 +674,15 @@ async function main() {
       throw new Error(`Swipe card did not spring back: ${JSON.stringify(returnedState)}`);
     }
 
-    await dragCard(150, 32);
+    const rightEdgeSwipe = await rapidEdgeSwipe("left", 150);
     await waitForText("2 из 11");
+    if (
+      !rightEdgeSwipe.touchStartPrevented
+      || !rightEdgeSwipe.touchMovePrevented
+      || rightEdgeSwipe.currentUrl !== rightEdgeSwipe.startUrl
+    ) {
+      throw new Error(`Right edge swipe escaped the quiz: ${JSON.stringify(rightEdgeSwipe)}`);
+    }
     const postTutorialControls = await evaluate(
       "document.querySelectorAll('.swipe-controls').length",
     );
@@ -644,7 +691,17 @@ async function main() {
     }
     await capture("smoke-quiz-clean-mobile.png");
 
-    for (let question = 2; question <= 11; question += 1) {
+    const leftEdgeSwipe = await rapidEdgeSwipe("right", -150);
+    await waitForText("3 из 11");
+    if (
+      !leftEdgeSwipe.touchStartPrevented
+      || !leftEdgeSwipe.touchMovePrevented
+      || leftEdgeSwipe.currentUrl !== leftEdgeSwipe.startUrl
+    ) {
+      throw new Error(`Left edge swipe escaped the quiz: ${JSON.stringify(leftEdgeSwipe)}`);
+    }
+
+    for (let question = 3; question <= 11; question += 1) {
       await pressArrow(question % 2 !== 0);
       if (question < 11) await waitForText(`${question + 1} из 11`);
     }

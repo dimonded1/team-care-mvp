@@ -11,6 +11,7 @@ interface SwipeQuestionProps {
 }
 
 type Direction = "yes" | "no" | null;
+type TouchAxis = "horizontal" | "vertical" | null;
 
 export function SwipeQuestion({
   question,
@@ -22,6 +23,12 @@ export function SwipeQuestion({
   const reduceMotion = useReducedMotion();
   const lockedRef = useRef(false);
   const reducedMotionTimerRef = useRef<number | null>(null);
+  const swipeAreaRef = useRef<HTMLDivElement>(null);
+  const touchGestureRef = useRef<{
+    startX: number;
+    startY: number;
+    axis: TouchAxis;
+  } | null>(null);
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-180, 0, 180], reduceMotion ? [0, 0, 0] : [-8, 0, 8]);
   const scale = useTransform(x, [-180, 0, 180], reduceMotion ? [1, 1, 1] : [0.985, 1, 0.985]);
@@ -69,10 +76,70 @@ export function SwipeQuestion({
     }
   }, []);
 
+  useEffect(() => {
+    const surface = swipeAreaRef.current;
+    if (!surface) return;
+
+    const resetTouchGesture = () => {
+      touchGestureRef.current = null;
+    };
+
+    const onTouchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1) {
+        resetTouchGesture();
+        return;
+      }
+
+      const touch = event.touches[0];
+      touchGestureRef.current = {
+        startX: touch.clientX,
+        startY: touch.clientY,
+        axis: null,
+      };
+
+      const edgeGuard = 40;
+      const startsAtBrowserEdge = touch.clientX <= edgeGuard
+        || touch.clientX >= window.innerWidth - edgeGuard;
+      if (startsAtBrowserEdge && event.cancelable) event.preventDefault();
+    };
+
+    const onTouchMove = (event: TouchEvent) => {
+      const gesture = touchGestureRef.current;
+      if (!gesture || event.touches.length !== 1) return;
+
+      const touch = event.touches[0];
+      const deltaX = touch.clientX - gesture.startX;
+      const deltaY = touch.clientY - gesture.startY;
+
+      if (gesture.axis === null && Math.max(Math.abs(deltaX), Math.abs(deltaY)) >= 7) {
+        gesture.axis = Math.abs(deltaX) > Math.abs(deltaY) * 1.1
+          ? "horizontal"
+          : "vertical";
+      }
+
+      if (gesture.axis === "horizontal" && event.cancelable) event.preventDefault();
+    };
+
+    surface.addEventListener("touchstart", onTouchStart, { passive: false });
+    surface.addEventListener("touchmove", onTouchMove, { passive: false });
+    surface.addEventListener("touchend", resetTouchGesture);
+    surface.addEventListener("touchcancel", resetTouchGesture);
+
+    return () => {
+      surface.removeEventListener("touchstart", onTouchStart);
+      surface.removeEventListener("touchmove", onTouchMove);
+      surface.removeEventListener("touchend", resetTouchGesture);
+      surface.removeEventListener("touchcancel", resetTouchGesture);
+    };
+  }, []);
+
   const showGestureGuide = questionNumber === 1;
 
   return (
-    <div className={`swipe-area ${showGestureGuide ? "swipe-area--guided" : "swipe-area--clean"}`}>
+    <div
+      ref={swipeAreaRef}
+      className={`swipe-area ${showGestureGuide ? "swipe-area--guided" : "swipe-area--clean"}`}
+    >
       <div className="swipe-stack" aria-live="polite">
         <motion.article
           className="swipe-card swipe-card--back swipe-card--back-far"

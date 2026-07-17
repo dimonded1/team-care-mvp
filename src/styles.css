@@ -55,6 +55,8 @@
 
 html {
   min-width: 320px;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
   background: #ffffff;
 }
 
@@ -63,7 +65,9 @@ body {
   min-width: 320px;
   min-height: 100vh;
   min-height: 100dvh;
+  overflow-x: hidden;
   overflow-x: clip;
+  overscroll-behavior-x: none;
   background: var(--canvas);
 }
 
@@ -1804,6 +1808,7 @@ p {
   padding-inline: var(--page-pad);
   isolation: isolate;
   overflow: hidden;
+  overscroll-behavior-x: none;
   background:
     radial-gradient(circle at 19% 22%, rgba(247, 109, 49, 0.2), transparent 18rem),
     radial-gradient(circle at 82% 75%, rgba(255, 181, 181, 0.16), transparent 23rem),
@@ -2011,6 +2016,7 @@ p {
   justify-content: flex-start;
   gap: 0;
   perspective: 1200px;
+  overscroll-behavior-x: none;
 }
 
 .swipe-area--clean {
@@ -2027,6 +2033,7 @@ p {
   min-height: clamp(350px, 50vh, 455px);
   margin: 0 auto clamp(32px, 4vh, 48px);
   transform-style: preserve-3d;
+  overscroll-behavior-x: none;
 }
 
 .swipe-card {
@@ -2046,6 +2053,8 @@ p {
 
 .swipe-card:not(.swipe-card--back) {
   inset-inline: 12px;
+  touch-action: pan-y;
+  -webkit-user-drag: none;
 }
 
 .swipe-card--back {
