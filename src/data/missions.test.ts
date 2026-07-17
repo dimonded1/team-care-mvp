@@ -16,12 +16,9 @@ describe("care missions", () => {
     });
   });
 
-  it("adapts the trust situation for cautious animals", () => {
-    const cautious = animals.find((animal) => animal.id === "cunami-7");
-    const social = animals.find((animal) => animal.id === "pita-21");
-    expect(cautious).toBeDefined();
-    expect(social).toBeDefined();
-    expect(getMissions(cautious!)[2].options[0].id).toBe("give-space");
-    expect(getMissions(social!)[2].options[0].id).toBe("shared-activity");
+  it("keeps the trust introduction universal for every ward", () => {
+    const trustPrompts = animals.map((animal) => getMissions(animal)[2].prompt);
+    expect(new Set(trustPrompts).size).toBe(1);
+    expect(trustPrompts[0]).not.toMatch(new RegExp(animals.map((animal) => animal.name).join("|"), "i"));
   });
 });

@@ -412,6 +412,119 @@ async function main() {
         return;
       }
 
+      const isTrustGame = await evaluate("Boolean(document.querySelector('[data-testid=\"trust-game\"]'))");
+      if (isTrustGame) {
+        const situationIds = ["door-sound", "stranger-hand", "sudden-movement", "final-approach"];
+        for (let step = 0; step < 4; step += 1) {
+          await waitForSelector(`[data-testid="trust-game"][data-trust-phase="approach"][data-trust-progress="${step}"]`);
+          if (step === 0) {
+            const approachMetrics = await evaluate(`(() => {
+              const stage = document.querySelector('.trust-stage');
+              const pet = document.querySelector('[data-testid="trust-pet"] img');
+              const stageRect = stage?.getBoundingClientRect();
+              const petRect = pet?.getBoundingClientRect();
+              return {
+                petLoaded: pet instanceof HTMLImageElement && pet.complete && pet.naturalWidth > 0,
+                petSource: pet instanceof HTMLImageElement ? pet.currentSrc : "",
+                progressNodes: document.querySelectorAll('.trust-distance > span').length,
+                realAnimalPhotos: document.querySelectorAll('.journey-screen img[src*="/assets/animals/"]').length,
+                petInsideStage: Boolean(
+                  stageRect
+                  && petRect
+                  && petRect.left >= stageRect.left - 1
+                  && petRect.right <= stageRect.right + 1
+                  && petRect.top >= stageRect.top - 1
+                  && petRect.bottom <= stageRect.bottom + 1
+                ),
+                overflow: document.documentElement.scrollWidth - innerWidth,
+              };
+            })()`);
+            if (
+              !approachMetrics.petLoaded
+              || !approachMetrics.petSource.endsWith('.webp')
+              || approachMetrics.progressNodes !== 4
+              || approachMetrics.realAnimalPhotos !== 0
+              || !approachMetrics.petInsideStage
+              || approachMetrics.overflow > 1
+            ) {
+              throw new Error(`Trust approach regression: ${JSON.stringify(approachMetrics)}`);
+            }
+            await capture("smoke-trust-game-far-mobile.png");
+          }
+          await evaluate("document.querySelector('[data-testid=\"trust-pet\"]')?.click()");
+          await waitForSelector(`[data-testid="trust-game"][data-trust-phase="situation"][data-trust-progress="${step}"]`);
+          await waitForSelector(`[data-testid="trust-situation"][data-situation-id="${situationIds[step]}"]`, true, 4_000);
+
+          const situationMetrics = await evaluate(`(() => {
+            const situation = document.querySelector('[data-testid="trust-situation"]');
+            const options = [...(situation?.querySelectorAll('[data-testid="trust-option"]') ?? [])];
+            return {
+              situationId: situation?.dataset.situationId ?? null,
+              options: options.length,
+              correct: options.filter((option) => option.dataset.choiceCorrect === "true").length,
+              minWidth: options.length ? Math.min(...options.map((option) => option.getBoundingClientRect().width)) : 0,
+              minHeight: options.length ? Math.min(...options.map((option) => option.getBoundingClientRect().height)) : 0,
+            };
+          })()`);
+          if (
+            !situationMetrics.situationId
+            || situationMetrics.options !== 3
+            || situationMetrics.correct !== 1
+            || situationMetrics.minWidth < 44
+            || situationMetrics.minHeight < 44
+          ) {
+            throw new Error(`Trust situation regression: ${JSON.stringify(situationMetrics)}`);
+          }
+
+          if (step === 0) {
+            await capture("smoke-trust-game-start-mobile.png");
+            await evaluate(
+              "document.querySelector('[data-testid=\"trust-option\"][data-choice-correct=\"false\"]')?.click()",
+            );
+            await waitForSelector(".trust-feedback--incorrect");
+            await sleep(500);
+            const retry = await evaluate(`(() => ({
+              progress: document.querySelector('[data-testid="trust-game"]')?.dataset.trustProgress ?? null,
+              phase: document.querySelector('[data-testid="trust-game"]')?.dataset.trustPhase ?? null,
+              situationId: document.querySelector('[data-testid="trust-situation"]')?.dataset.situationId ?? null,
+              feedback: document.querySelector('.trust-feedback--incorrect')?.textContent?.trim() ?? "",
+              stageRetreat: Boolean(document.querySelector('.trust-stage--incorrect')),
+            }))()`);
+            if (
+              retry.progress !== "0"
+              || retry.phase !== "situation"
+              || retry.situationId !== situationMetrics.situationId
+              || !retry.feedback
+              || !retry.stageRetreat
+            ) {
+              throw new Error(`Trust retry regression: ${JSON.stringify(retry)}`);
+            }
+            await capture("smoke-trust-game-wrong-mobile.png");
+            await waitForEnabledSelector(
+              '[data-testid="trust-option"][data-choice-correct="true"]',
+              4_000,
+            );
+          }
+
+          await evaluate(
+            "document.querySelector('[data-testid=\"trust-option\"][data-choice-correct=\"true\"]')?.click()",
+          );
+          await waitForSelector(".trust-feedback--correct");
+          if (step < 3) {
+            await waitForSelector(
+              `[data-testid="trust-game"][data-trust-phase="approach"][data-trust-progress="${step + 1}"]`,
+              true,
+              5_000,
+            );
+          }
+        }
+        await waitForSelector('[data-testid="trust-game"][data-trust-phase="final"][data-trust-progress="4"]', true, 5_000);
+        await waitForSelector('[data-testid="trust-final"]');
+        await sleep(420);
+        await capture("smoke-trust-game-final-mobile.png");
+        return;
+      }
+
       const isHealthGame = await evaluate("Boolean(document.querySelector('[data-testid=\"health-game\"]'))");
       if (isHealthGame) {
         const zones = ["ears", "eyes", "paws", "belly", "back", "tail"];
