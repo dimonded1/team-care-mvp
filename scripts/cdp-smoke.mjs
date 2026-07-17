@@ -155,6 +155,19 @@ async function main() {
       throw new Error(`Expected selector ${selector} present=${present}`);
     };
 
+    const waitForEnabledSelector = async (selector, timeoutMs = 6_000) => {
+      const startedAt = Date.now();
+      while (Date.now() - startedAt < timeoutMs) {
+        const enabled = await evaluate(`(() => {
+          const element = document.querySelector(${JSON.stringify(selector)});
+          return element instanceof HTMLButtonElement && !element.disabled;
+        })()`);
+        if (enabled) return;
+        await sleep(80);
+      }
+      throw new Error(`Expected enabled selector ${selector}`);
+    };
+
     const clickButton = async (label) => {
       const clicked = await evaluate(`(() => {
         const label = ${JSON.stringify(label)};
@@ -386,6 +399,9 @@ async function main() {
             ) {
               throw new Error(`Incorrect day choice did not keep the scene open: ${JSON.stringify(retryState)}`);
             }
+            await waitForEnabledSelector(
+              `[data-testid="day-scene"][data-day-scene="${sceneId}"] [data-testid="day-choice"][data-choice-correct="true"]`,
+            );
           }
           await evaluate(
             `document.querySelector('[data-testid="day-scene"][data-day-scene="${sceneId}"] [data-testid="day-choice"][data-choice-correct="true"]')?.click()`,
@@ -868,8 +884,41 @@ async function main() {
     if (morningRetry.scene !== "morning" || !morningRetry.message) {
       throw new Error(`Mobile incorrect choice regression: ${JSON.stringify(morningRetry)}`);
     }
+    await waitForEnabledSelector(
+      '[data-testid="day-scene"][data-day-scene="morning"] [data-testid="day-choice"][data-choice-correct="true"]',
+    );
     await tapSelector('[data-testid="day-scene"][data-day-scene="morning"] [data-testid="day-choice"][data-choice-correct="true"]');
-    await waitForSelector('[data-testid="day-scene"][data-day-scene="day"]', true, 3_000);
+    await waitForSelector('.day-scene__feedback--correct');
+    const petSpeech = await evaluate(`(() => {
+      const feedback = document.querySelector('.day-scene__feedback--correct');
+      const character = document.querySelector('.day-character');
+      const selected = document.querySelector('.day-choice--correct');
+      const feedbackRect = feedback?.getBoundingClientRect();
+      const characterRect = character?.getBoundingClientRect();
+      return {
+        text: feedback?.textContent?.trim() ?? "",
+        bubbleBackground: feedback ? getComputedStyle(feedback).backgroundColor : "",
+        choiceBackground: selected ? getComputedStyle(selected).backgroundColor : "",
+        overlapsCharacter: Boolean(
+          feedbackRect
+          && characterRect
+          && feedbackRect.left < characterRect.right
+          && feedbackRect.right > characterRect.left
+          && feedbackRect.top < characterRect.bottom
+          && feedbackRect.bottom > characterRect.top
+        ),
+      };
+    })()`);
+    if (
+      !petSpeech.text.includes("Мне подходит")
+      || petSpeech.bubbleBackground !== "rgb(237, 248, 237)"
+      || petSpeech.choiceBackground !== "rgb(237, 248, 237)"
+      || petSpeech.overlapsCharacter
+    ) {
+      throw new Error(`Pet speech feedback regression: ${JSON.stringify(petSpeech)}`);
+    }
+    await capture("smoke-day-game-correct-speech-mobile.png");
+    await waitForSelector('[data-testid="day-scene"][data-day-scene="day"]', true, 4_000);
     await capture("smoke-day-game-day-mobile.png");
     await evaluate("document.querySelector('.day-scene__back')?.click()");
     await waitForSelector('[data-testid="day-scene"][data-day-scene="morning"]', true, 3_000);

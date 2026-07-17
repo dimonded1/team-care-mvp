@@ -7819,18 +7819,34 @@ p {
 }
 
 .day-scene__feedback {
-  max-width: 500px;
-  margin-top: 14px;
-  padding: 11px 14px;
+  --speech-background: #fffaf4;
+  position: absolute;
+  z-index: 8;
+  right: clamp(300px, 30vw, 470px);
+  bottom: clamp(250px, 26vw, 345px);
+  width: min(36%, 430px);
+  padding: 13px 16px;
   display: grid;
-  gap: 3px;
+  gap: 4px;
   border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 16px;
-  background: #fffaf4;
+  border-radius: 18px;
+  background: var(--speech-background);
   box-shadow: 0 12px 34px rgba(3, 18, 9, 0.22);
   backdrop-filter: blur(15px);
   color: var(--green-deep);
   text-shadow: none;
+}
+
+.day-scene__feedback::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -15px;
+  width: 17px;
+  height: 23px;
+  background: var(--speech-background);
+  clip-path: polygon(0 0, 0 100%, 100% 50%);
+  transform: translateY(-50%);
 }
 
 .day-scene__feedback strong {
@@ -7845,8 +7861,8 @@ p {
 }
 
 .day-scene__feedback--incorrect {
+  --speech-background: #fff1e7;
   border-color: rgba(247, 109, 49, 0.52);
-  background: #fff1e7;
 }
 
 .day-scene__feedback--incorrect strong {
@@ -7854,7 +7870,15 @@ p {
 }
 
 .day-scene__feedback--correct {
-  border-color: rgba(35, 113, 60, 0.4);
+  --speech-background: #edf8ed;
+  border-color: rgba(48, 132, 67, 0.52);
+  box-shadow:
+    0 14px 36px rgba(20, 83, 38, 0.24),
+    0 0 0 3px rgba(72, 153, 86, 0.12);
+}
+
+.day-scene__feedback--correct strong {
+  color: #286a38;
 }
 
 .day-scene__choices {
@@ -7899,11 +7923,16 @@ p {
 }
 
 .day-choice--correct {
-  border-color: var(--orange);
-  background: #fff5ed;
+  border-color: #4f9c5c;
+  background: #edf8ed;
   box-shadow:
-    0 14px 34px rgba(247, 109, 49, 0.22),
-    0 0 0 3px rgba(247, 109, 49, 0.12);
+    0 14px 34px rgba(34, 108, 50, 0.22),
+    0 0 0 3px rgba(72, 153, 86, 0.14);
+}
+
+.day-choice--correct .day-choice__mark {
+  background: rgba(49, 132, 66, 0.14);
+  color: #2f7d41;
 }
 
 .day-choice--incorrect {
@@ -8291,10 +8320,13 @@ p {
   }
 
   .day-scene__feedback {
-    max-width: 315px;
-    margin-top: 9px;
-    padding: 9px 11px;
-    border-radius: 14px;
+    top: 188px;
+    right: auto;
+    bottom: auto;
+    left: 14px;
+    width: min(45%, 172px);
+    padding: 10px 12px;
+    border-radius: 15px;
   }
 
   .day-scene__feedback strong {
@@ -8308,7 +8340,7 @@ p {
 
   .day-character {
     right: 1%;
-    bottom: 178px;
+    bottom: 158px;
     width: clamp(140px, 45vw, 205px);
   }
 
@@ -8417,7 +8449,7 @@ p {
   }
 
   .day-character {
-    bottom: 176px;
+    bottom: 154px;
     width: 150px;
   }
 

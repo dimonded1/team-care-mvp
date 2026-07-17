@@ -35,6 +35,9 @@ type DayReaction = {
   correct: boolean;
 };
 
+const CORRECT_FEEDBACK_DURATION_MS = 2_600;
+const INCORRECT_FEEDBACK_LOCK_MS = 1_800;
+
 const animalNameGenitiveById: Record<string, string> = {
   "pita-21": "Питы",
   "dzhek-2": "Джека",
@@ -340,7 +343,17 @@ export function DayBuilderGame({ animal, onReadyChange }: DayBuilderGameProps) {
       correct: choice.correct,
     });
 
-    if (!choice.correct) return;
+    if (!choice.correct) {
+      setTransitioning(true);
+      if (advanceTimer.current !== null) {
+        window.clearTimeout(advanceTimer.current);
+      }
+      advanceTimer.current = window.setTimeout(() => {
+        advanceTimer.current = null;
+        setTransitioning(false);
+      }, INCORRECT_FEEDBACK_LOCK_MS);
+      return;
+    }
 
     setSelections((current) => ({
       ...current,
@@ -363,7 +376,7 @@ export function DayBuilderGame({ animal, onReadyChange }: DayBuilderGameProps) {
     if (advanceTimer.current !== null) {
       window.clearTimeout(advanceTimer.current);
     }
-    advanceTimer.current = window.setTimeout(advance, reduceMotion ? 220 : 980);
+    advanceTimer.current = window.setTimeout(advance, CORRECT_FEEDBACK_DURATION_MS);
   };
 
   const goBack = () => {
@@ -463,6 +476,25 @@ export function DayBuilderGame({ animal, onReadyChange }: DayBuilderGameProps) {
                 sceneId={currentScene.id}
               />
 
+              <AnimatePresence mode="wait">
+                {reactionChoice ? (
+                  <motion.div
+                    key={`${currentScene.id}-${reactionChoice.id}`}
+                    className={`day-scene__feedback${reactionChoice.correct ? " day-scene__feedback--correct" : " day-scene__feedback--incorrect"}`}
+                    role="status"
+                    initial={{ opacity: 0, x: reduceMotion ? 0 : 8, scale: reduceMotion ? 1 : 0.96 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: 4 }}
+                    transition={{ duration: reduceMotion ? 0.1 : 0.28 }}
+                  >
+                    <strong>
+                      {animal.name}: {reactionChoice.correct ? "«Мне подходит»" : "«Лучше иначе»"}
+                    </strong>
+                    <span>{reactionChoice.feedback}</span>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+
               <div className="day-scene__topline">
                 {sceneIndex > 0 ? (
                   <motion.button
@@ -484,22 +516,6 @@ export function DayBuilderGame({ animal, onReadyChange }: DayBuilderGameProps) {
               <div className="day-scene__copy">
                 <h2>{currentScene.title}</h2>
                 <p>{currentScene.prompt}</p>
-                <AnimatePresence mode="wait">
-                  {reactionChoice ? (
-                    <motion.div
-                      key={`${currentScene.id}-${reactionChoice.id}`}
-                      className={`day-scene__feedback${reactionChoice.correct ? " day-scene__feedback--correct" : " day-scene__feedback--incorrect"}`}
-                      role="status"
-                      initial={{ opacity: 0, y: reduceMotion ? 0 : 8, scale: reduceMotion ? 1 : 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: reduceMotion ? 0.1 : 0.24 }}
-                    >
-                      <strong>{reactionChoice.correct ? "Хорошее решение" : "Не совсем"}</strong>
-                      <span>{reactionChoice.feedback}</span>
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
               </div>
 
               <div className="day-scene__choices" aria-label={`Занятия на ${currentScene.label.toLowerCase()}`}>
