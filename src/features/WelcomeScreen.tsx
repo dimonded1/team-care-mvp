@@ -47,11 +47,11 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
         </nav>
         <a
           className="welcome-nav__fund-link"
-          href="https://fond-nika.ru"
+          href="https://fond-nika.ru/donation/"
           target="_blank"
           rel="noreferrer"
         >
-          Сайт фонда <span aria-hidden="true">↗</span>
+          Пожертвовать <span aria-hidden="true">↗</span>
         </a>
 
         <button
@@ -77,9 +77,9 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
             >
               <strong>Знакомство занимает около трёх минут</strong>
               <ol>
-                <li><span>01</span>Ответьте на вопросы по вайбу</li>
-                <li><span>02</span>Получите личный мэтч</li>
-                <li><span>03</span>Пройдите маршрут заботы</li>
+                <li><span>01</span>Ответьте на 11 коротких вопросов</li>
+                <li><span>02</span>Получите мэтч с подопечным</li>
+                <li><span>03</span>Пройдите 4 мини-игры о заботе</li>
               </ol>
             </motion.aside>
           )}
@@ -118,15 +118,15 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                   >
-                    <li>Вопросы по вайбу</li>
-                    <li>Личный мэтч</li>
-                    <li>Маршрут заботы</li>
+                    <li>Ответьте на 11 коротких вопросов</li>
+                    <li>Получите мэтч с подопечным</li>
+                    <li>Пройдите 4 мини-игры о заботе</li>
                   </motion.ol>
                 )}
               </AnimatePresence>
               <a href="https://fond-nika.ru/programs/opeka/" target="_blank" rel="noreferrer" onClick={closeMenu}>Об опеке <span aria-hidden="true">↗</span></a>
               <a href="https://fond-nika.ru/ourpets/" target="_blank" rel="noreferrer" onClick={closeMenu}>Все подопечные <span aria-hidden="true">↗</span></a>
-              <a href="https://fond-nika.ru" target="_blank" rel="noreferrer" onClick={closeMenu}>Сайт фонда <span aria-hidden="true">↗</span></a>
+              <a className="welcome-menu__donate" href="https://fond-nika.ru/donation/" target="_blank" rel="noreferrer" onClick={closeMenu}>Пожертвовать <span aria-hidden="true">↗</span></a>
             </motion.nav>
           </>
         )}

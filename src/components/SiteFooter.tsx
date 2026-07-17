@@ -34,7 +34,8 @@ export function SiteFooter({ onOpenLegal }: SiteFooterProps) {
           <Logo light />
         </a>
         <p>
-          Благотворительный фонд «Ника» · 2011—2026 · пятнадцать лет делаем невидимых видимыми
+          <span>Благотворительный фонд «Ника» · 2011—2026</span>
+          <span>Пятнадцать лет делаем невидимых видимыми</span>
         </p>
         <nav className="site-footer__links" aria-label="Юридическая информация фонда">
           {legalDocuments.map((document) => (

@@ -200,6 +200,13 @@ export function PassportScreen({
     pointerY.set(0);
   };
 
+  const scrollToMissions = () => {
+    document.getElementById("care-mini-games")?.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "start",
+    });
+  };
+
   return (
     <main className="screen passport-screen passport-hub-screen">
       <OrbitField variant="passport" showPlanets />
@@ -211,6 +218,7 @@ export function PassportScreen({
         onPointerLeave={resetPointer}
       >
         <section
+          id="care-mini-games"
           className="passport-orbit-stage passport-orbit-stage--v2"
           aria-label={`Маршруты заботы для ${animal.name}`}
         >
@@ -266,7 +274,7 @@ export function PassportScreen({
             </div>
           </motion.div>
 
-          <p className="passport-routes-title">Выберите направление знакомства</p>
+          <p className="passport-routes-title">Выберите мини-игру о заботе</p>
 
           <div className="passport-mission-nodes passport-mission-nodes--v2">
             {missions.map((mission, index) => {
@@ -375,7 +383,7 @@ export function PassportScreen({
                 <div className="passport-hub__care-tags">
                   {animal.careTags.map((tag) => <span key={tag}>{tag}</span>)}
                 </div>
-                <p>Команда собирается. Здесь показаны направления, где регулярное участие особенно ценно.</p>
+                <p>Это четыре стороны повседневной заботы. Откройте каждую мини-игру, чтобы увидеть, как опекун помогает подопечному.</p>
               </div>
             </details>
 
@@ -406,9 +414,15 @@ export function PassportScreen({
               Стать опекуном
             </Button>
           ) : (
-            <strong className="passport-goal__count">
-              {completedMissionIds.length}/{missions.length}
-            </strong>
+            <button
+              type="button"
+              className="passport-goal__count passport-goal__jump"
+              onClick={scrollToMissions}
+              aria-label={`Вернуться к мини-играм. Пройдено ${completedMissionIds.length} из ${missions.length}`}
+            >
+              <strong>{completedMissionIds.length}/{missions.length}</strong>
+              <span>К мини-играм <span aria-hidden="true">↑</span></span>
+            </button>
           )}
         </section>
       </div>

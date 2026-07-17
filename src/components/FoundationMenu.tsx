@@ -95,9 +95,9 @@ export function FoundationMenu() {
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                   >
-                    <li>Вопросы по вайбу</li>
-                    <li>Личный мэтч</li>
-                    <li>Четыре орбиты заботы</li>
+                    <li>Ответьте на 11 коротких вопросов</li>
+                    <li>Получите мэтч с подопечным</li>
+                    <li>Пройдите 4 мини-игры о заботе</li>
                   </motion.ol>
                 )}
               </AnimatePresence>
@@ -107,8 +107,8 @@ export function FoundationMenu() {
               <a href="https://fond-nika.ru/ourpets/" target="_blank" rel="noreferrer" onClick={close}>
                 Все подопечные <span aria-hidden="true">↗</span>
               </a>
-              <a href="https://fond-nika.ru" target="_blank" rel="noreferrer" onClick={close}>
-                Сайт фонда <span aria-hidden="true">↗</span>
+              <a className="foundation-menu-panel__donate" href="https://fond-nika.ru/donation/" target="_blank" rel="noreferrer" onClick={close}>
+                Пожертвовать <span aria-hidden="true">↗</span>
               </a>
             </motion.nav>
           </>

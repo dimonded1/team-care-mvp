@@ -2121,7 +2121,7 @@ p {
 }
 
 .swipe-card__answer-tint--no {
-  background: linear-gradient(100deg, rgba(247, 109, 49, 0.85), transparent 68%);
+  background: linear-gradient(100deg, rgba(174, 69, 65, 0.82), transparent 68%);
 }
 
 .swipe-card__answer-tint--yes {
@@ -2205,8 +2205,25 @@ p {
 }
 
 .swipe-control--yes {
-  border-color: rgba(255, 181, 181, 0.33);
-  color: #ffe2de;
+  border-color: rgba(144, 207, 148, 0.48);
+  background: rgba(72, 137, 77, 0.2);
+  color: #e2f5e3;
+}
+
+.swipe-control--no {
+  border-color: rgba(242, 148, 141, 0.46);
+  background: rgba(165, 62, 57, 0.19);
+  color: #ffe0dc;
+}
+
+.swipe-control--yes:hover:not(:disabled) {
+  border-color: rgba(165, 226, 169, 0.7);
+  background: rgba(72, 137, 77, 0.32);
+}
+
+.swipe-control--no:hover:not(:disabled) {
+  border-color: rgba(255, 172, 165, 0.68);
+  background: rgba(165, 62, 57, 0.3);
 }
 
 .quiz-screen .swipe-control:focus-visible {
@@ -4062,19 +4079,21 @@ p {
   gap: 6px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.055);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: var(--orange);
+  box-shadow:
+    0 10px 28px rgba(247, 109, 49, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
   transition: color 180ms ease, background-color 180ms ease, transform 180ms var(--ease-out);
 }
 
 .welcome-nav__fund-link span {
-  color: var(--pink);
+  color: #fff;
   transition: transform 180ms var(--ease-out);
 }
 
 .welcome-nav__fund-link:hover,
 .welcome-nav__fund-link:focus-visible {
-  background: rgba(255, 255, 255, 0.11);
+  background: #df5b25;
   color: #fff;
   transform: translateY(-1px);
 }
@@ -4226,14 +4245,21 @@ p {
     height: 56px;
   }
 
-  .welcome-nav__links,
-  .welcome-nav__fund-link {
+  .welcome-nav__links {
     display: none;
+  }
+
+  .welcome-nav__fund-link {
+    min-height: 42px;
+    margin-left: auto;
+    padding-inline: 14px;
+    display: inline-flex;
+    font-size: 13px;
   }
 
   .welcome-nav__menu-button {
     min-height: 42px;
-    margin-left: auto;
+    margin-left: 0;
     padding: 0 17px;
     display: inline-flex;
     align-items: center;
@@ -4291,6 +4317,18 @@ p {
     border-bottom: 0;
   }
 
+  .welcome-menu > a.welcome-menu__donate {
+    margin-top: 8px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--orange);
+    color: #fff;
+  }
+
+  .welcome-menu > a.welcome-menu__donate span {
+    color: #fff;
+  }
+
   .welcome-menu > a span,
   .welcome-menu > button span:last-child {
     color: var(--orange);
@@ -4298,15 +4336,16 @@ p {
 
   .welcome-menu__steps {
     margin: 0;
-    padding: 0 14px;
+    padding: 0 14px 0 30px;
     overflow: hidden;
-    list-style-position: inside;
+    list-style-position: outside;
   }
 
   .welcome-menu__steps li {
-    padding: 5px 0 5px 14px;
+    padding: 6px 0 6px 4px;
     color: #5a665b;
     font-size: 13px;
+    line-height: 1.35;
   }
 
   .launch-scene {
@@ -4317,6 +4356,26 @@ p {
 @media (max-width: 620px) {
   .screen.welcome-screen {
     padding-inline: 0;
+  }
+
+  .welcome-screen .app-header {
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  .welcome-screen .brand-logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .welcome-nav__fund-link {
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+
+  .welcome-nav__menu-button {
+    padding-inline: 13px;
+    font-size: 13px;
   }
 
   .launch-scene {
@@ -4401,6 +4460,14 @@ p {
   text-wrap: balance;
 }
 
+.site-footer p span {
+  display: block;
+}
+
+.site-footer p span + span {
+  margin-top: 4px;
+}
+
 .site-footer__links {
   display: flex;
   align-items: center;
@@ -4455,8 +4522,9 @@ p {
   }
 
   .site-footer p {
-    margin: 18px auto 26px;
+    margin: 18px auto 34px;
     font-size: 15px;
+    line-height: 1.62;
   }
 
   .site-footer__links {
@@ -5244,11 +5312,26 @@ p {
   overflow: hidden;
   color: #5a665b;
   font-size: 13px;
-  list-style-position: inside;
+  list-style-position: outside;
 }
 
 .foundation-menu-steps li {
-  padding: 5px 0 5px 14px;
+  margin-left: 18px;
+  padding: 6px 0 6px 4px;
+  line-height: 1.35;
+}
+
+.foundation-menu-panel > a.foundation-menu-panel__donate {
+  margin: 8px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--orange);
+  color: #fff;
+}
+
+.foundation-menu-panel > a.foundation-menu-panel__donate span:last-child {
+  color: #fff;
 }
 
 .quiz-screen .progress-copy--counter {
@@ -6600,7 +6683,11 @@ p {
 }
 
 .passport-panel .passport-hub__tags {
-  margin: 0 0 13px;
+  margin: 0 0 18px;
+}
+
+.passport-panel .passport-hub__care-tags {
+  margin: 0 0 18px;
 }
 
 .passport-panel .passport-hub__tags span,
@@ -6731,6 +6818,8 @@ p {
 
   .passport-routes-title {
     margin-top: 4px;
+    color: rgba(255, 253, 248, 0.84);
+    font-size: 13px;
   }
 
   .passport-mission-nodes--v2 {
@@ -6751,17 +6840,25 @@ p {
   }
 
   .passport-mission-node--v2 .passport-mission-node__copy strong {
-    font-size: 14px;
+    font-size: 15px;
+    line-height: 1.12;
+  }
+
+  .passport-mission-node--food .passport-mission-node__copy strong {
+    font-size: 13px;
+    letter-spacing: -0.025em;
   }
 
   .passport-mission-node--v2 .passport-mission-node__copy > span {
-    font-size: 10.5px;
+    color: rgba(255, 253, 248, 0.82);
+    font-size: 11px;
     line-height: 1.38;
   }
 
   .passport-mission-node--v2 .passport-mission-node__status {
-    min-height: 27px;
-    font-size: 10px;
+    min-height: 30px;
+    font-size: 12px;
+    font-weight: 780;
   }
 
   .mission-atmosphere {
@@ -6982,6 +7079,41 @@ p {
   font-variant-numeric: tabular-nums;
 }
 
+.passport-goal__jump {
+  min-width: 168px;
+  padding: 0 18px;
+  grid-template-columns: auto auto;
+  justify-content: center;
+  gap: 12px;
+  border-radius: 22px;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform 180ms var(--ease-out),
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.passport-goal__jump strong {
+  color: #fffdf8;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.passport-goal__jump > span {
+  color: #ffae88;
+  font-size: 12px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.passport-goal__jump:hover,
+.passport-goal__jump:focus-visible {
+  border-color: rgba(247, 109, 49, 0.62);
+  background: rgba(247, 109, 49, 0.13);
+  transform: translateY(-2px);
+}
+
 .passport-goal__action {
   min-width: 190px;
 }
@@ -7181,6 +7313,10 @@ p {
   .passport-goal__count {
     height: 52px;
     border-radius: 16px;
+  }
+
+  .passport-goal__jump {
+    grid-template-columns: auto auto;
   }
 }
 
@@ -8163,7 +8299,7 @@ p {
 
   .day-character {
     right: 1%;
-    bottom: 218px;
+    bottom: 178px;
     width: clamp(140px, 45vw, 205px);
   }
 
@@ -8250,7 +8386,11 @@ p {
   }
 
   .day-montage__character {
-    width: 110px;
+    z-index: 3;
+    top: 150px;
+    right: 14px;
+    width: 88px;
+    opacity: 0.72;
   }
 
   .journey-screen--day-game .impact-row {
@@ -8268,7 +8408,7 @@ p {
   }
 
   .day-character {
-    bottom: 212px;
+    bottom: 176px;
     width: 150px;
   }
 
@@ -9076,7 +9216,7 @@ p {
 }
 
 .health-summary__note {
-  margin-top: auto;
+  margin-top: 18px;
   padding: 14px;
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr);
@@ -9246,7 +9386,7 @@ p {
 
   .health-situation,
   .health-summary {
-    padding: 18px 14px;
+    padding: 18px 14px 24px;
     border-radius: 26px;
   }
 

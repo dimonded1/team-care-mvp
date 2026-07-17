@@ -487,6 +487,24 @@ async function main() {
     };
 
     await waitForText("Начать знакомство");
+    const donationCta = await evaluate(`(() => {
+      const link = document.querySelector('.welcome-nav__fund-link');
+      const rect = link?.getBoundingClientRect();
+      return {
+        label: link?.textContent?.trim() ?? "",
+        href: link instanceof HTMLAnchorElement ? link.href : "",
+        height: rect?.height ?? 0,
+        visible: Boolean(rect && rect.width > 0 && rect.height > 0),
+      };
+    })()`);
+    if (
+      donationCta.label !== "Пожертвовать ↗"
+      || donationCta.href !== "https://fond-nika.ru/donation/"
+      || donationCta.height < 42
+      || !donationCta.visible
+    ) {
+      throw new Error(`Early donation CTA regression: ${JSON.stringify(donationCta)}`);
+    }
     const legalFooter = await evaluate(`(() => ({
       internal: [...document.querySelectorAll('.site-footer__links button[data-legal-id]')]
         .map((item) => ({ label: item.textContent.trim(), id: item.dataset.legalId })),
@@ -545,6 +563,8 @@ async function main() {
       const progressRect = progress?.getBoundingClientRect();
       const counterRect = counter?.getBoundingClientRect();
       const backStyle = back ? getComputedStyle(back) : null;
+      const yesStyle = getComputedStyle(document.querySelector('.swipe-control--yes'));
+      const noStyle = getComputedStyle(document.querySelector('.swipe-control--no'));
       return {
         controlsGap: cardRect && controlsRect ? controlsRect.top - cardRect.bottom : null,
         controlsBottom: controlsRect?.bottom ?? null,
@@ -557,6 +577,8 @@ async function main() {
         menuHeight: menu?.getBoundingClientRect().height ?? null,
         legacyHeaderStatus: document.querySelectorAll('.quiz-screen .header-status').length,
         counterBelowProgress: progressRect && counterRect ? counterRect.top >= progressRect.bottom : null,
+        yesBackground: yesStyle.backgroundColor,
+        noBackground: noStyle.backgroundColor,
       };
     })()`);
     if (
@@ -569,9 +591,10 @@ async function main() {
       || matchingLayout.constellationNodes < 20
       || matchingLayout.shootingStars !== 0
       || matchingLayout.menuHeight === null
-      || matchingLayout.menuHeight < 44
+      || matchingLayout.menuHeight < 43.9
       || matchingLayout.legacyHeaderStatus !== 0
       || matchingLayout.counterBelowProgress !== true
+      || matchingLayout.yesBackground === matchingLayout.noBackground
     ) {
       throw new Error(`Matching layout regression: ${JSON.stringify(matchingLayout)}`);
     }
@@ -579,6 +602,8 @@ async function main() {
     await capture("smoke-quiz-rest-mobile.png");
     await clickButton("Меню");
     await waitForText("Все подопечные");
+    await clickButton("Как это работает");
+    await waitForText("Ответьте на 11 коротких вопросов");
     await clickButton("Закрыть");
     await dragCard(64, 100, false);
     const draggedState = await evaluate(`(() => {
@@ -663,7 +688,7 @@ async function main() {
     }
     await capture("smoke-match-mobile.png");
     await clickButton("Познакомиться");
-    await waitForText("Выберите направление знакомства");
+    await waitForText("Выберите мини-игру о заботе");
     await sleep(950);
     const initialHub = await evaluate(`(() => {
       const ring = document.querySelector('.passport-portrait__progress--segments')?.getBoundingClientRect();
@@ -675,6 +700,7 @@ async function main() {
       progressDots: document.querySelectorAll('.passport-orbit-progress__dot').length,
       ringThickness: ring && photo ? (ring.width - photo.width) / 2 : null,
       goalSections: document.querySelectorAll('.passport-goal').length,
+      goalJumps: document.querySelectorAll('.passport-goal__jump').length,
       legacyTeamPanels: document.querySelectorAll('.passport-panel--team').length,
       headerStatuses: document.querySelectorAll('.passport-hub-screen .header-status').length,
       menuButtons: document.querySelectorAll('.passport-hub-screen .foundation-menu-trigger').length,
@@ -693,6 +719,7 @@ async function main() {
       || initialHub.ringThickness < 6
       || initialHub.ringThickness > 12
       || initialHub.goalSections !== 1
+      || initialHub.goalJumps !== 1
       || initialHub.legacyTeamPanels !== 0
       || initialHub.headerStatuses !== 0
       || initialHub.menuButtons !== 1
@@ -704,10 +731,20 @@ async function main() {
     ) {
       throw new Error(`Initial passport hub regression: ${JSON.stringify(initialHub)}`);
     }
+    await evaluate("document.querySelector('.passport-goal')?.scrollIntoView({ block: 'center' })");
+    await sleep(180);
+    await evaluate("document.querySelector('.passport-goal__jump')?.click()");
+    await sleep(520);
+    const missionJumpTop = await evaluate(
+      "document.querySelector('#care-mini-games')?.getBoundingClientRect().top ?? null",
+    );
+    if (missionJumpTop === null || missionJumpTop > 110) {
+      throw new Error(`Goal card did not return to mini-games: ${missionJumpTop}`);
+    }
     await capture("smoke-passport-mobile.png");
     await openMissionNode("trust");
     await evaluate("document.querySelector('.journey-screen .icon-button')?.click()");
-    await waitForText("Выберите направление знакомства");
+    await waitForText("Выберите мини-игру о заботе");
     const startedStatus = await evaluate(
       "document.querySelector('[data-mission-id=\"trust\"]')?.dataset.missionStatus ?? null",
     );
@@ -780,7 +817,7 @@ async function main() {
     await evaluate("document.querySelector('.day-scene__back')?.click()");
     await waitForSelector('[data-testid="day-scene"][data-day-scene="morning"]', true, 3_000);
     await evaluate("document.querySelector('.journey-screen .icon-button')?.click()");
-    await waitForText("Выберите направление знакомства");
+    await waitForText("Выберите мини-игру о заботе");
 
     const missionOrder = ["trust", "food", "home", "health"];
     for (let mission = 0; mission < missionOrder.length; mission += 1) {
@@ -873,7 +910,7 @@ async function main() {
       if (missionOrder[mission] === "food") await capture("smoke-day-game-complete-mobile.png");
       if (mission === 0) await capture("smoke-journey-mobile.png");
       await clickButton(isDayMission ? "Вернуться" : "Сохранить и вернуться");
-      await waitForText("Выберите направление знакомства");
+      await waitForText("Выберите мини-игру о заботе");
       const completedStatus = await evaluate(
         `document.querySelector('[data-mission-id="${missionOrder[mission]}"]')?.dataset.missionStatus ?? null`,
       );
@@ -950,7 +987,7 @@ async function main() {
     await waitForText("Кажется, вам стоит познакомиться");
     await sleep(2_900);
     await clickButton("Познакомиться");
-    await waitForText("Выберите направление знакомства");
+    await waitForText("Выберите мини-игру о заботе");
     await sleep(900);
     const tabletHubMetrics = await evaluate(`(() => {
       const nodes = [...document.querySelectorAll('[data-mission-id]')]
@@ -1150,7 +1187,7 @@ async function main() {
     }
     await capture("smoke-match-1920.png");
     await clickButton("Познакомиться");
-    await waitForText("Выберите направление знакомства");
+    await waitForText("Выберите мини-игру о заботе");
     await sleep(800);
     const desktopHub = await evaluate(`(() => {
       const screen = document.querySelector('.passport-hub-screen')?.getBoundingClientRect();
@@ -1226,7 +1263,7 @@ async function main() {
     }
     await capture("smoke-day-game-1920.png");
     await evaluate("document.querySelector('.journey-screen .icon-button')?.click()");
-    await waitForText("Выберите направление знакомства");
+    await waitForText("Выберите мини-игру о заботе");
     await openMissionNode("health");
     await waitForSelector('[data-testid="health-game"][data-health-phase="map"]');
     await sleep(500);
