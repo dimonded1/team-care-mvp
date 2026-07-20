@@ -75,9 +75,9 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
       <div className="final-layout">
         <section className="final-copy">
           <div className="final-check"><HeartIcon /></div>
-          <span className="screen-eyebrow">Паспорт заполнен</span>
+          <span className="screen-eyebrow">Орбита собрана</span>
           <h1>Сегодня вы были рядом с {animal.name}.</h1>
-          <p>Четыре ситуации пройдены, а паспорт заботы заполнен.</p>
+          <p>Четыре направления пройдены, а орбита заботы собрана.</p>
           <div className="final-animal-mini">
             <AnimalPhoto src={animal.photo} name={animal.name} />
             <div><strong>{animal.name}</strong><span>{animal.shortDescription}</span></div>

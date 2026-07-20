@@ -25,6 +25,7 @@
   --green-deep: #183419;
   --pink: #ffb5b5;
   --orange: #f76d31;
+  --success: #78bb78;
   --gray: #eaf0e7;
   --ink: #1f2a20;
   --muted: #667064;
@@ -5823,12 +5824,25 @@ p {
 }
 
 .passport-mission-node--completed {
-  border-color: rgba(247, 109, 49, 0.68);
-  background: rgba(35, 71, 33, 0.92);
+  border-color: rgba(120, 187, 120, 0.82);
+  background:
+    radial-gradient(circle at 82% 18%, rgba(120, 187, 120, 0.2), transparent 55%),
+    rgba(27, 73, 40, 0.94);
+  box-shadow:
+    0 18px 54px rgba(2, 20, 10, 0.24),
+    0 0 0 1px rgba(120, 187, 120, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
 .passport-mission-node--completed .passport-mission-node__status {
-  color: #ffb08d;
+  color: #bfe5bf;
+}
+
+.passport-mission-node--completed .passport-mission-node__planet {
+  border-color: rgba(213, 242, 210, 0.5);
+  background: linear-gradient(145deg, #9cd39a, #4f9559);
+  color: #ffffff;
+  box-shadow: 0 9px 24px rgba(55, 132, 70, 0.26);
 }
 
 @media (max-width: 1180px) {
@@ -6139,9 +6153,9 @@ p {
 }
 
 .passport-orbit-progress__dot--completed {
-  border-color: var(--orange);
-  background: var(--orange);
-  box-shadow: 0 0 13px rgba(247, 109, 49, 0.58);
+  border-color: var(--success);
+  background: var(--success);
+  box-shadow: 0 0 13px rgba(120, 187, 120, 0.5);
   transform: scale(1.16);
 }
 
@@ -6203,9 +6217,9 @@ p {
   bottom: 8.5%;
   left: 50%;
   margin: 0;
-  color: rgba(255, 253, 248, 0.72);
-  font-size: 12px;
-  font-weight: 720;
+  color: #fffdf8;
+  font-size: clamp(18px, 1.8vw, 23px);
+  font-weight: 800;
   letter-spacing: 0.01em;
   translate: -50% 0;
 }
@@ -7045,9 +7059,9 @@ p {
 }
 
 .passport-goal__point--completed {
-  border-color: var(--orange);
-  background: var(--orange);
-  box-shadow: 0 0 16px rgba(247, 109, 49, 0.58);
+  border-color: var(--success);
+  background: var(--success);
+  box-shadow: 0 0 16px rgba(120, 187, 120, 0.52);
 }
 
 .passport-goal__copy > p {
@@ -11138,5 +11152,257 @@ p {
   .home-placement__glow,
   .home-item {
     transition: none;
+  }
+}
+
+/* Shared mobile rhythm and orbit hub polish */
+
+.journey-screen .screen-actions.sticky-actions {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.journey-screen--day-game .journey-layout,
+.journey-screen--health-game .journey-layout,
+.journey-screen--trust-game .journey-layout,
+.journey-screen--home-game .journey-layout {
+  flex: none;
+  padding-bottom: 0;
+}
+
+.journey-screen .impact-row {
+  margin-bottom: 0;
+}
+
+.passport-mission-node--completed::after {
+  background: linear-gradient(120deg, rgba(157, 215, 157, 0.08), transparent 52%);
+}
+
+.passport-mission-node--v2.passport-mission-node--completed {
+  border-color: rgba(120, 187, 120, 0.82);
+  background:
+    radial-gradient(circle at 82% 18%, rgba(120, 187, 120, 0.24), transparent 55%),
+    rgba(27, 73, 40, 0.94);
+}
+
+.passport-goal--complete {
+  border-color: rgba(120, 187, 120, 0.58);
+  background:
+    radial-gradient(circle at 88% 12%, rgba(120, 187, 120, 0.2), transparent 17rem),
+    linear-gradient(135deg, rgba(35, 71, 33, 0.98), rgba(31, 80, 43, 0.94));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .passport-mission-node--v2:not(.passport-mission-node--completed) .passport-mission-node__planet {
+    animation: mission-icon-breathe 4.8s ease-in-out infinite;
+  }
+
+  .passport-mission-node--v2:nth-child(2) .passport-mission-node__planet {
+    animation-delay: -1.2s;
+  }
+
+  .passport-mission-node--v2:nth-child(3) .passport-mission-node__planet {
+    animation-delay: -2.4s;
+  }
+
+  .passport-mission-node--v2:nth-child(4) .passport-mission-node__planet {
+    animation-delay: -3.6s;
+  }
+
+  .mission-home-route {
+    animation: mission-route-drift 4.4s ease-in-out infinite;
+  }
+}
+
+@keyframes mission-icon-breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.035); }
+}
+
+@keyframes mission-route-drift {
+  0%, 100% { opacity: 0.42; transform: rotate(-14deg) translateX(0); }
+  50% { opacity: 0.82; transform: rotate(-14deg) translateX(5px); }
+}
+
+@media (max-width: 759px) {
+  .screen.journey-screen--day-game,
+  .screen.journey-screen--health-game,
+  .screen.journey-screen--trust-game,
+  .screen.journey-screen--home-game {
+    padding-inline: 16px;
+  }
+
+  .journey-screen .screen-actions.sticky-actions {
+    position: relative;
+    bottom: auto;
+    margin-top: 6px;
+    padding: 6px 0 max(4px, env(safe-area-inset-bottom));
+  }
+
+  .journey-screen .impact-row {
+    margin-top: 14px;
+  }
+}
+
+@media (max-width: 620px) {
+  .screen.passport-hub-screen {
+    padding-inline: 16px;
+  }
+
+  .passport-hub-screen .orbit-field--passport,
+  .passport-orbit-stage--v2 .passport-orbit-stage__rings {
+    display: none;
+  }
+
+  .passport-hub-screen:has(.passport-hub--v2) {
+    background:
+      radial-gradient(circle at 50% 8%, rgba(247, 109, 49, 0.12), transparent 17rem),
+      linear-gradient(155deg, #153922 0%, #0d2b1c 58%, #14351f 100%);
+  }
+
+  .passport-hub--v2 {
+    padding-bottom: 18px;
+  }
+
+  .passport-orbit-stage--v2 {
+    padding: 2px 0 10px;
+    gap: 10px;
+  }
+
+  .passport-portrait--v2 {
+    width: min(56vw, 214px);
+    margin: 8px auto 4px;
+  }
+
+  .passport-orbit-progress {
+    margin-top: -17px;
+    padding: 8px 12px;
+  }
+
+  .passport-identity h1 {
+    font-size: clamp(50px, 15vw, 62px);
+  }
+
+  .passport-identity > p {
+    margin-top: 5px;
+    font-size: 14px;
+  }
+
+  .passport-match-brief {
+    margin-top: 10px;
+    padding: 10px 12px;
+    gap: 2px;
+  }
+
+  .passport-match-brief span {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 10px;
+    line-height: 1.4;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .passport-routes-title {
+    margin: 6px 0 2px;
+    color: #fffdf8;
+    font-size: clamp(19px, 5.6vw, 23px);
+    line-height: 1.05;
+    text-align: center;
+  }
+
+  .passport-mission-nodes--v2 {
+    gap: 9px;
+  }
+
+  .passport-mission-node--v2 {
+    min-height: 136px;
+    padding: 12px;
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 7px 9px;
+    border-radius: 21px;
+  }
+
+  .passport-mission-node--v2 .passport-mission-node__planet {
+    width: 40px;
+    height: 40px;
+  }
+
+  .passport-mission-node--v2 .passport-mission-node__planet svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .passport-mission-node--v2 .passport-mission-node__copy {
+    gap: 4px;
+  }
+
+  .passport-mission-node--v2 .passport-mission-node__copy strong,
+  .passport-mission-node--food .passport-mission-node__copy strong {
+    font-size: 14px;
+    line-height: 1.08;
+  }
+
+  .passport-mission-node--v2 .passport-mission-node__copy > span {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 10px;
+    line-height: 1.3;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .passport-mission-node--v2 .passport-mission-node__status {
+    min-height: 27px;
+    padding-top: 8px;
+    font-size: 11px;
+  }
+
+  .mission-atmosphere {
+    opacity: 0.95;
+  }
+
+  .mission-atmosphere--health svg {
+    width: 76%;
+    stroke-width: 2.4;
+  }
+
+  .mission-trust-wave {
+    width: 92px;
+    height: 92px;
+    border-color: rgba(219, 237, 213, 0.34);
+  }
+
+  .mission-home-route {
+    border-top-color: rgba(255, 202, 178, 0.68);
+  }
+
+  .passport-scroll-cue {
+    margin-top: 0;
+  }
+
+  .passport-panels {
+    margin-top: 4px;
+    padding: 16px 0;
+  }
+
+  .passport-panels__heading {
+    margin-bottom: 14px;
+  }
+
+  .passport-goal {
+    margin-top: 8px;
+  }
+}
+
+@media (max-width: 370px) {
+  .passport-mission-node--v2 {
+    min-height: 130px;
+    padding: 10px;
+  }
+
+  .passport-mission-node--v2 .passport-mission-node__copy strong,
+  .passport-mission-node--food .passport-mission-node__copy strong {
+    font-size: 13px;
   }
 }

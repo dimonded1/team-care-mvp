@@ -66,7 +66,6 @@ function HealthPetSilhouette({
       role="group"
       aria-label={`Карта зон заботы: ${petLabel}`}
     >
-      <span className="health-silhouette__stars" aria-hidden="true" />
 
       <motion.div
         className="health-silhouette__pet-stage"

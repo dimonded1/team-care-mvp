@@ -171,9 +171,6 @@ export function TrustCareGame({ animal, onReadyChange }: TrustCareGameProps) {
             aria-hidden="true"
             draggable={false}
           />
-          <span className="trust-stage__stars" aria-hidden="true" />
-          <span className="trust-stage__orbit trust-stage__orbit--one" aria-hidden="true" />
-          <span className="trust-stage__orbit trust-stage__orbit--two" aria-hidden="true" />
           <div className="trust-stage__copy">
             <span>{phase === "final" ? "Доверие рядом" : `Шаг ${Math.min(progress + 1, 4)} из 4`}</span>
             <strong>

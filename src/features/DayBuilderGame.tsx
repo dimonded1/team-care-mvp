@@ -67,9 +67,6 @@ function SceneAtmosphere({ sceneId }: { sceneId: DaySceneDefinition["id"] }) {
       {sceneId === "evening" ? <span className="day-scene__window-glow" /> : null}
       {sceneId === "night" ? (
         <>
-          <span className="day-scene__star day-scene__star--one" />
-          <span className="day-scene__star day-scene__star--two" />
-          <span className="day-scene__star day-scene__star--three" />
         </>
       ) : null}
     </div>

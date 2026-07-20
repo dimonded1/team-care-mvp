@@ -370,6 +370,7 @@ async function main() {
               correctChoices: choices.filter((choice) => choice.dataset.choiceCorrect === "true").length,
               minHeight: rects.length ? Math.min(...rects.map((rect) => rect.height)) : 0,
               legacyDragNodes: document.querySelectorAll('.day-activity, [data-day-slot]').length,
+              decorativeStars: scene?.querySelectorAll('.day-scene__star').length ?? 0,
             };
           })()`);
           if (
@@ -379,6 +380,7 @@ async function main() {
             || sceneMetrics.correctChoices !== 1
             || sceneMetrics.minHeight < 44
             || sceneMetrics.legacyDragNodes !== 0
+            || sceneMetrics.decorativeStars !== 0
           ) {
             throw new Error(`Day scene regression: ${sceneId} -> ${JSON.stringify(sceneMetrics)}`);
           }
@@ -468,6 +470,7 @@ async function main() {
             minWidth: rects.length ? Math.min(...rects.map((rect) => rect.width)) : 0,
             minHeight: rects.length ? Math.min(...rects.map((rect) => rect.height)) : 0,
             realAnimalPhotos: document.querySelectorAll('.journey-screen img[src*="/assets/animals/"]').length,
+            photoOverlays: document.querySelectorAll('.home-scene__orbit').length,
             overflow: document.documentElement.scrollWidth - innerWidth,
           };
         })()`);
@@ -484,6 +487,7 @@ async function main() {
           || initial.minWidth < 44
           || initial.minHeight < 44
           || initial.realAnimalPhotos !== 0
+          || initial.photoOverlays !== 0
           || initial.overflow > 1
         ) {
           throw new Error(`Home game initial regression: ${JSON.stringify(initial)}`);
@@ -579,6 +583,7 @@ async function main() {
                 roomSource: room instanceof HTMLImageElement ? room.currentSrc : "",
                 progressNodes: document.querySelectorAll('.trust-distance > span').length,
                 realAnimalPhotos: document.querySelectorAll('.journey-screen img[src*="/assets/animals/"]').length,
+                photoOverlays: document.querySelectorAll('.trust-stage__stars, .trust-stage__orbit').length,
                 petInsideStage: Boolean(
                   stageRect
                   && petRect
@@ -597,6 +602,7 @@ async function main() {
               || !approachMetrics.roomSource.endsWith('trust-living-room.webp')
               || approachMetrics.progressNodes !== 4
               || approachMetrics.realAnimalPhotos !== 0
+              || approachMetrics.photoOverlays !== 0
               || !approachMetrics.petInsideStage
               || approachMetrics.overflow > 1
             ) {
@@ -1039,17 +1045,31 @@ async function main() {
     }
     await capture("smoke-match-mobile.png");
     await clickButton("Познакомиться");
-    await waitForText("Выберите мини-игру о заботе");
+    await waitForText("Выберите мини-игру");
     await sleep(950);
     const initialHub = await evaluate(`(() => {
       const ring = document.querySelector('.passport-portrait__progress--segments')?.getBoundingClientRect();
       const photo = document.querySelector('.passport-portrait__photo')?.getBoundingClientRect();
+      const routeTitle = document.querySelector('.passport-routes-title');
+      const orbitField = document.querySelector('.orbit-field--passport');
+      const stageRings = document.querySelector('.passport-orbit-stage__rings');
+      const cards = [...document.querySelectorAll('[data-mission-id]')];
+      const cardRects = cards.map((card) => card.getBoundingClientRect());
       return ({
       nodes: document.querySelectorAll('[data-mission-id]').length,
       available: document.querySelectorAll('[data-mission-status="available"]').length,
       atmospheres: document.querySelectorAll('.mission-atmosphere').length,
+      animatedIcons: cards.filter((card) => {
+        const icon = card.querySelector('.passport-mission-node__planet');
+        return icon && getComputedStyle(icon).animationName !== 'none';
+      }).length,
       progressDots: document.querySelectorAll('.passport-orbit-progress__dot').length,
       ringThickness: ring && photo ? (ring.width - photo.width) / 2 : null,
+      routeTitle: routeTitle?.textContent?.trim() ?? '',
+      routeTitleSize: routeTitle ? Number.parseFloat(getComputedStyle(routeTitle).fontSize) : 0,
+      orbitFieldDisplay: orbitField ? getComputedStyle(orbitField).display : null,
+      stageRingsDisplay: stageRings ? getComputedStyle(stageRings).display : null,
+      cardsBottom: cardRects.length ? Math.max(...cardRects.map((rect) => rect.bottom)) : null,
       goalSections: document.querySelectorAll('.passport-goal').length,
       goalJumps: document.querySelectorAll('.passport-goal__jump').length,
       legacyTeamPanels: document.querySelectorAll('.passport-panel--team').length,
@@ -1058,6 +1078,7 @@ async function main() {
       screenLeft: document.querySelector('.passport-hub-screen')?.getBoundingClientRect().left ?? null,
       screenRight: document.querySelector('.passport-hub-screen')?.getBoundingClientRect().right ?? null,
       viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
       overflow: document.documentElement.scrollWidth - window.innerWidth,
       });
     })()`);
@@ -1065,10 +1086,17 @@ async function main() {
       initialHub.nodes !== 4
       || initialHub.available !== 4
       || initialHub.atmospheres !== 4
+      || initialHub.animatedIcons !== 4
       || initialHub.progressDots !== 4
       || initialHub.ringThickness === null
       || initialHub.ringThickness < 6
       || initialHub.ringThickness > 12
+      || initialHub.routeTitle !== 'Выберите мини-игру'
+      || initialHub.routeTitleSize < 18
+      || initialHub.orbitFieldDisplay !== 'none'
+      || initialHub.stageRingsDisplay !== 'none'
+      || initialHub.cardsBottom === null
+      || initialHub.cardsBottom > initialHub.viewportHeight + 40
       || initialHub.goalSections !== 1
       || initialHub.goalJumps !== 1
       || initialHub.legacyTeamPanels !== 0
@@ -1095,7 +1123,7 @@ async function main() {
     await capture("smoke-passport-mobile.png");
     await openMissionNode("trust");
     await evaluate("document.querySelector('.journey-screen .icon-button')?.click()");
-    await waitForText("Выберите мини-игру о заботе");
+    await waitForText("Выберите мини-игру");
     const startedStatus = await evaluate(
       "document.querySelector('[data-mission-id=\"trust\"]')?.dataset.missionStatus ?? null",
     );
@@ -1201,7 +1229,7 @@ async function main() {
     await evaluate("document.querySelector('.day-scene__back')?.click()");
     await waitForSelector('[data-testid="day-scene"][data-day-scene="morning"]', true, 3_000);
     await evaluate("document.querySelector('.journey-screen .icon-button')?.click()");
-    await waitForText("Выберите мини-игру о заботе");
+    await waitForText("Выберите мини-игру");
 
     const missionOrder = ["trust", "food", "home", "health"];
     for (let mission = 0; mission < missionOrder.length; mission += 1) {
@@ -1245,6 +1273,7 @@ async function main() {
             clinicBackground: silhouette ? getComputedStyle(silhouette).backgroundImage : "",
             markers: zones.map((zone) => zone.querySelector('.health-zone__marker')?.textContent?.trim() ?? ""),
             hasZoneProgress: Boolean(document.querySelector('.health-game__progress')),
+            photoOverlays: document.querySelectorAll('.health-silhouette__stars').length,
             minWidth: rects.length ? Math.min(...rects.map((rect) => rect.width)) : 0,
             minHeight: rects.length ? Math.min(...rects.map((rect) => rect.height)) : 0,
             overflow: document.documentElement.scrollWidth - innerWidth,
@@ -1258,6 +1287,7 @@ async function main() {
           || !healthMap.clinicBackground.includes("health-clinic.webp")
           || healthMap.markers.some((marker) => marker !== "!")
           || healthMap.hasZoneProgress
+          || healthMap.photoOverlays !== 0
           || healthMap.minWidth < 44
           || healthMap.minHeight < 44
           || healthMap.overflow > 1
@@ -1291,10 +1321,59 @@ async function main() {
       ) {
         throw new Error(`Mission CTA is not clearly active: ${JSON.stringify(activeCta)}`);
       }
+      const journeyRhythm = await evaluate(`(() => {
+        const screen = document.querySelector('.journey-screen');
+        const impact = document.querySelector('.impact-row');
+        const button = document.querySelector('.sticky-actions .button');
+        const impactRect = impact?.getBoundingClientRect();
+        const buttonRect = button?.getBoundingClientRect();
+        const actions = document.querySelector('.sticky-actions');
+        const layout = document.querySelector('.journey-layout');
+        const content = document.querySelector('.journey-content');
+        const actionsStyle = actions ? getComputedStyle(actions) : null;
+        const layoutStyle = layout ? getComputedStyle(layout) : null;
+        const contentStyle = content ? getComputedStyle(content) : null;
+        const impactStyle = impact ? getComputedStyle(impact) : null;
+        return {
+          gap: impactRect && buttonRect ? buttonRect.top - impactRect.bottom : null,
+          paddingLeft: screen ? Number.parseFloat(getComputedStyle(screen).paddingLeft) : null,
+          overflow: document.documentElement.scrollWidth - innerWidth,
+          actions: actions ? {
+            top: actions.getBoundingClientRect().top,
+            height: actions.getBoundingClientRect().height,
+            marginTop: actionsStyle.marginTop,
+            paddingTop: actionsStyle.paddingTop,
+          } : null,
+          layout: layout ? {
+            bottom: layout.getBoundingClientRect().bottom,
+            height: layout.getBoundingClientRect().height,
+            flex: layoutStyle.flex,
+          } : null,
+          content: content ? {
+            bottom: content.getBoundingClientRect().bottom,
+            height: content.getBoundingClientRect().height,
+            paddingBottom: contentStyle.paddingBottom,
+          } : null,
+          impact: impact ? {
+            bottom: impactRect.bottom,
+            marginBottom: impactStyle.marginBottom,
+          } : null,
+        };
+      })()`);
+      if (
+        journeyRhythm.gap === null
+        || journeyRhythm.gap < 0
+        || journeyRhythm.gap > 36
+        || journeyRhythm.paddingLeft === null
+        || journeyRhythm.paddingLeft < 16
+        || journeyRhythm.overflow > 1
+      ) {
+        throw new Error(`Journey spacing regression: ${JSON.stringify(journeyRhythm)}`);
+      }
       if (missionOrder[mission] === "food") await capture("smoke-day-game-complete-mobile.png");
       if (mission === 0) await capture("smoke-journey-mobile.png");
       await clickButton(isDayMission ? "Вернуться" : "Сохранить и вернуться");
-      await waitForText("Выберите мини-игру о заботе");
+      await waitForText("Выберите мини-игру");
       const completedStatus = await evaluate(
         `document.querySelector('[data-mission-id="${missionOrder[mission]}"]')?.dataset.missionStatus ?? null`,
       );
@@ -1305,11 +1384,31 @@ async function main() {
 
     await waitForText("Стать частью команды");
     await sleep(1_100);
+    const completedHubVisuals = await evaluate(`(() => {
+      const cards = [...document.querySelectorAll('[data-mission-status="completed"]')];
+      const dots = [...document.querySelectorAll('.passport-orbit-progress__dot--completed')];
+      return {
+        cards: cards.length,
+        greenCardBorders: cards.filter((card) => getComputedStyle(card).borderColor.includes('120, 187, 120')).length,
+        dots: dots.length,
+        greenDots: dots.filter((dot) => getComputedStyle(dot).backgroundColor === 'rgb(120, 187, 120)').length,
+        orbitHeading: document.querySelector('.passport-panels__heading p')?.textContent?.trim() ?? '',
+      };
+    })()`);
+    if (
+      completedHubVisuals.cards !== 4
+      || completedHubVisuals.greenCardBorders !== 4
+      || completedHubVisuals.dots !== 4
+      || completedHubVisuals.greenDots !== 4
+      || completedHubVisuals.orbitHeading !== 'Орбита подопечного'
+    ) {
+      throw new Error(`Completed orbit visuals regression: ${JSON.stringify(completedHubVisuals)}`);
+    }
     await capture("smoke-passport-complete-mobile.png");
     await clickButton("Стать опекуном");
     await waitForText("Одному человеку не нужно делать всё");
     await capture("smoke-team-mobile.png");
-    await clickButton("Завершить паспорт");
+    await clickButton("Завершить орбиту");
     await waitForText("Сегодня вы были рядом");
 
     const cardStartedAt = Date.now();
@@ -1371,7 +1470,7 @@ async function main() {
     await waitForText("Кажется, вам стоит познакомиться");
     await sleep(2_900);
     await clickButton("Познакомиться");
-    await waitForText("Выберите мини-игру о заботе");
+    await waitForText("Выберите мини-игру");
     await sleep(900);
     const tabletHubMetrics = await evaluate(`(() => {
       const nodes = [...document.querySelectorAll('[data-mission-id]')]
@@ -1576,7 +1675,7 @@ async function main() {
     }
     await capture("smoke-match-1920.png");
     await clickButton("Познакомиться");
-    await waitForText("Выберите мини-игру о заботе");
+    await waitForText("Выберите мини-игру");
     await sleep(800);
     const desktopHub = await evaluate(`(() => {
       const screen = document.querySelector('.passport-hub-screen')?.getBoundingClientRect();
@@ -1652,7 +1751,7 @@ async function main() {
     }
     await capture("smoke-day-game-1920.png");
     await evaluate("document.querySelector('.journey-screen .icon-button')?.click()");
-    await waitForText("Выберите мини-игру о заботе");
+    await waitForText("Выберите мини-игру");
     await openMissionNode("health");
     await waitForSelector('[data-testid="health-game"][data-health-phase="map"]');
     await sleep(500);

@@ -46,7 +46,7 @@ export function GuardianshipScreen({ animal, onBack, onContinue }: GuardianshipS
         </section>
       </div>
       <div className="screen-actions sticky-actions">
-        <Button fullWidth onClick={onContinue}>Завершить паспорт</Button>
+        <Button fullWidth onClick={onContinue}>Завершить орбиту</Button>
       </div>
     </main>
   );

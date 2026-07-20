@@ -87,8 +87,6 @@ export function HomeBuilderGame({ animal, onReadyChange }: HomeBuilderGameProps)
         <div ref={sceneRef} className="home-scene" aria-label={`Комната, подготовленная для ${animal.name}`}>
           <img className="home-scene__room" src={assetUrl("assets/home-game/home-room.webp")} alt="" aria-hidden="true" />
           <span className="home-scene__shade" aria-hidden="true" />
-          <span className="home-scene__orbit home-scene__orbit--one" aria-hidden="true" />
-          <span className="home-scene__orbit home-scene__orbit--two" aria-hidden="true" />
 
           <div className="home-scene__progress" aria-label={`Размещено ${placedIds.length} из ${safeHomeItems.length}`}>
             <span>Дом становится своим</span>

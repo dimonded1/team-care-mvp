@@ -181,7 +181,7 @@ export function PassportScreen({
     missionStatuses.map(({ id, status }) => [
       `--segment-${id}`,
       status === "completed"
-        ? "var(--orange)"
+        ? "var(--success)"
         : status === "started"
           ? "var(--pink)"
           : "rgba(255, 255, 255, 0.18)",
@@ -274,7 +274,7 @@ export function PassportScreen({
             </div>
           </motion.div>
 
-          <p className="passport-routes-title">Выберите мини-игру о заботе</p>
+          <p className="passport-routes-title">Выберите мини-игру</p>
 
           <div className="passport-mission-nodes passport-mission-nodes--v2">
             {missions.map((mission, index) => {
@@ -335,7 +335,7 @@ export function PassportScreen({
             </button>
           ) : (
             <a className="passport-scroll-cue" href="#animal-passport">
-              Паспорт и история <span aria-hidden="true">↓</span>
+              Орбита и история <span aria-hidden="true">↓</span>
             </a>
           )}
         </section>
@@ -343,14 +343,14 @@ export function PassportScreen({
         <section id="animal-passport" className="passport-panels" aria-labelledby="animal-passport-title">
           <header className="passport-panels__heading">
             <div>
-              <p>Паспорт подопечного</p>
+              <p>Орбита подопечного</p>
               <h2 id="animal-passport-title">{animal.name}</h2>
             </div>
             <span>{animal.species === "dog" ? "Собака" : "Кошка"} · {animal.sex} · {animal.age}</span>
           </header>
 
           <div className="passport-panels__grid">
-            <details className="passport-panel" open>
+            <details className="passport-panel">
               <summary>
                 <span>Почему вы совпали</span>
                 <span aria-hidden="true">+</span>
