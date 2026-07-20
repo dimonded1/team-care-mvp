@@ -1450,7 +1450,7 @@ async function main() {
     await sleep(180);
     await capture("smoke-guardianship-team-mobile.png");
     await clickButton("Завершить орбиту");
-    await waitForText("Сегодня вы были рядом");
+    await waitForText("Расскажите друзьям про");
 
     const cardStartedAt = Date.now();
     while (Date.now() - cardStartedAt < 8_000) {

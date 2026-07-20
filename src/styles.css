@@ -12203,7 +12203,7 @@ p {
 }
 
 .result-card-preview {
-  animation: final-story-arrive 720ms var(--ease-out) both;
+  animation: final-story-arrive 480ms var(--ease-out) both;
 }
 
 .card-skeleton,
@@ -12261,10 +12261,23 @@ p {
   padding: 10px 12px;
   border-radius: 16px;
   color: #fffdf8;
+  transition:
+    color 180ms var(--ease-out),
+    background-color 180ms var(--ease-out),
+    transform 180ms var(--ease-out);
 }
 
 .final-utility-action:hover:not(:disabled) {
   background: rgba(255, 253, 248, 0.1);
+}
+
+.final-utility-action:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.final-utility-action[data-complete="true"] {
+  background: rgba(120, 187, 120, 0.2);
+  color: #e7f7e6;
 }
 
 .final-screen .text-button {
@@ -12380,5 +12393,25 @@ p {
   .result-card-preview,
   .card-skeleton {
     animation: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .final-screen .icon-button,
+  .final-screen .header-status,
+  .final-action-row {
+    background: #143820;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .final-screen .icon-button,
+  .final-screen .header-status,
+  .final-action-row,
+  .result-card-preview,
+  .card-skeleton,
+  .card-error {
+    border-color: rgba(255, 253, 248, 0.58);
   }
 }

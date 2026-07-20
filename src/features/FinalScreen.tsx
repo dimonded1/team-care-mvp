@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppHeader } from "../components/AppHeader";
 import { Button } from "../components/Button";
-import { DownloadIcon, HeartIcon, ShareIcon } from "../components/Icons";
+import { CheckIcon, DownloadIcon, HeartIcon, ShareIcon } from "../components/Icons";
 import { createResultCard } from "../lib/card";
 import type { Animal } from "../types/app";
 
@@ -16,8 +16,12 @@ type CardState =
   | { status: "ready"; blob: Blob; url: string }
   | { status: "error"; message: string };
 
+type ActionFeedback = "idle" | "saved" | "shared";
+
 export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
   const [card, setCard] = useState<CardState>({ status: "loading" });
+  const [actionFeedback, setActionFeedback] = useState<ActionFeedback>("idle");
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileName = useMemo(() => `nika-${animal.id}-care-story-9x16.png`, [animal.id]);
 
   useEffect(() => {
@@ -42,6 +46,16 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
     };
   }, [animal]);
 
+  useEffect(() => () => {
+    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+  }, []);
+
+  const showActionFeedback = (next: Exclude<ActionFeedback, "idle">) => {
+    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+    setActionFeedback(next);
+    feedbackTimer.current = setTimeout(() => setActionFeedback("idle"), 1800);
+  };
+
   const saveCard = () => {
     if (card.status !== "ready") return;
     const link = document.createElement("a");
@@ -51,6 +65,7 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
     document.body.append(link);
     link.click();
     link.remove();
+    showActionFeedback("saved");
   };
 
   const shareCard = async () => {
@@ -59,10 +74,11 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({
-          title: `День заботы с ${animal.name}`,
-          text: `Сегодня я был рядом с ${animal.name}. Познакомьтесь с подопечным фонда НИКА.`,
+          title: `Знакомьтесь: ${animal.name} | фонд НИКА`,
+          text: `Сегодня я помогаю фонду НИКА рассказывать о подопечных. Знакомьтесь: ${animal.name}.`,
           files: [file],
         });
+        showActionFeedback("shared");
         return;
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -77,9 +93,9 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
       <div className="final-layout">
         <section className="final-copy">
           <div className="final-check"><HeartIcon /></div>
-          <span className="screen-eyebrow">Орбита собрана</span>
-          <h1>Сегодня вы были рядом с {animal.name}</h1>
-          <p>Карточка уже собрана в формате сторис 9:16. Сохраните её или поделитесь прямо сейчас.</p>
+          <span className="screen-eyebrow">Помощь продолжается</span>
+          <h1>Расскажите друзьям про {animal.name}</h1>
+          <p>Готовая сторис поможет большему числу людей узнать о подопечном фонда и его поиске дома.</p>
         </section>
 
         <section className="card-preview-section" aria-live="polite">
@@ -104,13 +120,31 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
             Стать опекуном {animal.name}
           </a>
           <div className="final-action-row">
-            <Button variant="ghost" className="final-utility-action" onClick={saveCard} disabled={card.status !== "ready"}>
-              <DownloadIcon /> Сохранить
+            <Button
+              variant="ghost"
+              className="final-utility-action"
+              onClick={saveCard}
+              disabled={card.status !== "ready"}
+              data-complete={actionFeedback === "saved"}
+            >
+              {actionFeedback === "saved" ? <CheckIcon /> : <DownloadIcon />}
+              <span>{actionFeedback === "saved" ? "Сохранено" : "Сохранить"}</span>
             </Button>
-            <Button variant="ghost" className="final-utility-action" onClick={shareCard} disabled={card.status !== "ready"}>
-              <ShareIcon /> Поделиться
+            <Button
+              variant="ghost"
+              className="final-utility-action"
+              onClick={shareCard}
+              disabled={card.status !== "ready"}
+              data-complete={actionFeedback === "shared"}
+            >
+              {actionFeedback === "shared" ? <CheckIcon /> : <ShareIcon />}
+              <span>{actionFeedback === "shared" ? "Отправлено" : "Поделиться"}</span>
             </Button>
           </div>
+          <span className="visually-hidden" aria-live="polite">
+            {actionFeedback === "saved" ? "Карточка сохранена" : null}
+            {actionFeedback === "shared" ? "Карточка отправлена" : null}
+          </span>
           <button className="text-button" type="button" onClick={onRestart}>Пройти ещё раз</button>
         </div>
       </div>

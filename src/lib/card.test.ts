@@ -18,9 +18,11 @@ describe("result card geometry", () => {
     const safeBottom = layout.safeArea.top + layout.safeArea.height;
 
     expect(layout.badge.left).toBeGreaterThanOrEqual(layout.safeArea.left);
+    expect(layout.badge.left + layout.badge.width).toBeLessThanOrEqual(safeRight);
     expect(badgeBottom).toBeLessThan(layout.photo.top);
     expect(layout.photo.left + layout.photo.width).toBeLessThanOrEqual(layout.canvas.width);
     expect(layout.copy.left + layout.copy.width).toBeLessThanOrEqual(safeRight);
     expect(layout.logo.top + layout.logo.height).toBeLessThanOrEqual(safeBottom);
+    expect(layout.callout.top + layout.callout.height).toBeLessThanOrEqual(safeBottom);
   });
 });

@@ -7,11 +7,13 @@ const CARD_HEIGHT = 1920;
 export function getResultCardLayout() {
   return {
     canvas: { left: 0, top: 0, width: CARD_WIDTH, height: CARD_HEIGHT },
-    safeArea: { left: 72, top: 104, width: 936, height: 1588 },
-    badge: { left: 72, top: 150, width: 600, height: 78 },
-    photo: { left: 48, top: 284, width: 984, height: 806 },
-    copy: { left: 72, top: 1174, width: 936, height: 518 },
-    logo: { left: 72, top: 1512, width: 110, height: 164 },
+    safeArea: { left: 72, top: 128, width: 936, height: 1562 },
+    logo: { left: 72, top: 128, width: 86, height: 128 },
+    badge: { left: 574, top: 148, width: 434, height: 70 },
+    photo: { left: 48, top: 292, width: 984, height: 806 },
+    ribbon: { left: -56, top: 1010, width: 1192, height: 126 },
+    copy: { left: 72, top: 1228, width: 936, height: 268 },
+    callout: { left: 72, top: 1540, width: 936, height: 142 },
   } as const;
 }
 
@@ -46,6 +48,31 @@ function roundedRectPath(
   context.closePath();
 }
 
+function asymmetricRoundedRectPath(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  corners: { topLeft: number; topRight: number; bottomRight: number; bottomLeft: number },
+): void {
+  const topLeft = Math.min(corners.topLeft, width / 2, height / 2);
+  const topRight = Math.min(corners.topRight, width / 2, height / 2);
+  const bottomRight = Math.min(corners.bottomRight, width / 2, height / 2);
+  const bottomLeft = Math.min(corners.bottomLeft, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + topLeft, y);
+  context.lineTo(x + width - topRight, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + topRight);
+  context.lineTo(x + width, y + height - bottomRight);
+  context.quadraticCurveTo(x + width, y + height, x + width - bottomRight, y + height);
+  context.lineTo(x + bottomLeft, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - bottomLeft);
+  context.lineTo(x, y + topLeft);
+  context.quadraticCurveTo(x, y, x + topLeft, y);
+  context.closePath();
+}
+
 function drawCover(
   context: CanvasRenderingContext2D,
   image: HTMLImageElement,
@@ -54,7 +81,7 @@ function drawCover(
   width: number,
   height: number,
   focusX = 0.5,
-  focusY = 0.44,
+  focusY = 0.43,
 ): void {
   const imageRatio = image.width / image.height;
   const targetRatio = width / height;
@@ -121,52 +148,56 @@ function setFittedFont(
     if (context.measureText(text).width <= maxWidth) return size;
     size -= 2;
   } while (size >= minSize);
+  context.font = `${weight} ${minSize}px Raleway, Arial, sans-serif`;
   return minSize;
 }
 
-function drawCosmicBackground(context: CanvasRenderingContext2D): void {
+function drawFoundationBackground(context: CanvasRenderingContext2D): void {
   const background = context.createLinearGradient(0, 0, CARD_WIDTH, CARD_HEIGHT);
-  background.addColorStop(0, "#143c29");
-  background.addColorStop(0.48, "#09281b");
-  background.addColorStop(1, "#061c13");
+  background.addColorStop(0, "#28562e");
+  background.addColorStop(0.54, "#1d4728");
+  background.addColorStop(1, "#143820");
   context.fillStyle = background;
   context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-  const coralGlow = context.createRadialGradient(936, 196, 0, 936, 196, 390);
-  coralGlow.addColorStop(0, "rgba(247, 109, 49, 0.30)");
-  coralGlow.addColorStop(0.55, "rgba(255, 181, 181, 0.10)");
-  coralGlow.addColorStop(1, "rgba(255, 181, 181, 0)");
-  context.fillStyle = coralGlow;
-  context.fillRect(540, 0, 540, 610);
-
-  const greenGlow = context.createRadialGradient(96, 1560, 0, 96, 1560, 480);
-  greenGlow.addColorStop(0, "rgba(120, 187, 120, 0.15)");
-  greenGlow.addColorStop(1, "rgba(120, 187, 120, 0)");
-  context.fillStyle = greenGlow;
-  context.fillRect(0, 1120, 620, 800);
+  const warmGlow = context.createRadialGradient(1030, 40, 0, 1030, 40, 480);
+  warmGlow.addColorStop(0, "rgba(247, 109, 49, 0.34)");
+  warmGlow.addColorStop(0.46, "rgba(255, 181, 181, 0.10)");
+  warmGlow.addColorStop(1, "rgba(255, 181, 181, 0)");
+  context.fillStyle = warmGlow;
+  context.fillRect(540, 0, 540, 590);
 
   context.save();
-  context.strokeStyle = "rgba(255, 253, 248, 0.12)";
+  context.strokeStyle = "rgba(255, 253, 248, 0.10)";
   context.lineWidth = 2;
   context.beginPath();
-  context.ellipse(870, 1460, 520, 252, -0.3, 0, Math.PI * 2);
+  context.ellipse(782, 1600, 640, 286, -0.34, 0, Math.PI * 2);
   context.stroke();
   context.strokeStyle = "rgba(255, 181, 181, 0.12)";
   context.beginPath();
-  context.ellipse(836, 1484, 650, 330, 0.44, 0, Math.PI * 2);
+  context.ellipse(858, 1606, 520, 214, 0.24, 0, Math.PI * 2);
   context.stroke();
   context.restore();
+}
 
-  const stars = [
-    [92, 118], [748, 112], [1002, 278], [48, 824], [1008, 1172],
-    [864, 1264], [986, 1508], [534, 1768], [228, 1814], [916, 1810],
-  ] as const;
-  stars.forEach(([x, y], index) => {
-    context.fillStyle = index % 3 === 0 ? "rgba(255, 181, 181, 0.68)" : "rgba(255, 253, 248, 0.5)";
-    context.beginPath();
-    context.arc(x, y, index % 2 === 0 ? 4 : 3, 0, Math.PI * 2);
-    context.fill();
-  });
+function drawBrandRibbon(context: CanvasRenderingContext2D, animalName: string): void {
+  context.save();
+  context.translate(-48, 1034);
+  context.rotate(-0.055);
+
+  context.fillStyle = "#f76d31";
+  roundedRectPath(context, 0, 20, 1190, 128, 64);
+  context.fill();
+
+  context.fillStyle = "#ffb5b5";
+  roundedRectPath(context, 0, 0, 1190, 118, 59);
+  context.fill();
+
+  const ribbonText = `ЗНАКОМЬТЕСЬ, ${animalName.toLocaleUpperCase("ru")}`;
+  const fontSize = setFittedFont(context, ribbonText, 940, 48, 34, 850);
+  context.fillStyle = "#173c22";
+  context.fillText(ribbonText, 104, 60 + fontSize / 3);
+  context.restore();
 }
 
 export async function createResultCard(animal: Animal): Promise<Blob> {
@@ -183,30 +214,43 @@ export async function createResultCard(animal: Animal): Promise<Blob> {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas недоступен");
 
-  drawCosmicBackground(context);
+  drawFoundationBackground(context);
 
-  context.fillStyle = "#ffb5b5";
+  drawContain(
+    context,
+    logo,
+    layout.logo.left,
+    layout.logo.top,
+    layout.logo.width,
+    layout.logo.height,
+  );
+
+  context.fillStyle = "rgba(255, 253, 248, 0.10)";
   roundedRectPath(
     context,
     layout.badge.left,
     layout.badge.top,
     layout.badge.width,
     layout.badge.height,
-    39,
+    35,
   );
   context.fill();
-  context.fillStyle = "#15311f";
-  context.font = "800 34px Raleway, Arial, sans-serif";
-  context.fillText("ДЕНЬ ЗАБОТЫ ПРОЙДЕН", layout.badge.left + 34, layout.badge.top + 51);
+  context.strokeStyle = "rgba(255, 253, 248, 0.22)";
+  context.lineWidth = 2;
+  context.stroke();
+  context.fillStyle = "#fffdf8";
+  context.font = "800 28px Raleway, Arial, sans-serif";
+  context.fillText("ДЕНЬ ЗАБОТЫ ПРОЙДЕН", layout.badge.left + 28, layout.badge.top + 46);
 
+  const photoCorners = { topLeft: 62, topRight: 62, bottomRight: 170, bottomLeft: 62 };
   context.save();
-  roundedRectPath(
+  asymmetricRoundedRectPath(
     context,
     layout.photo.left,
     layout.photo.top,
     layout.photo.width,
     layout.photo.height,
-    62,
+    photoCorners,
   );
   context.clip();
   drawCover(
@@ -218,53 +262,61 @@ export async function createResultCard(animal: Animal): Promise<Blob> {
     layout.photo.height,
   );
   const photoShade = context.createLinearGradient(0, layout.photo.top, 0, layout.photo.top + layout.photo.height);
-  photoShade.addColorStop(0, "rgba(4, 24, 16, 0.02)");
-  photoShade.addColorStop(0.7, "rgba(4, 24, 16, 0.02)");
-  photoShade.addColorStop(1, "rgba(4, 24, 16, 0.28)");
+  photoShade.addColorStop(0, "rgba(9, 39, 21, 0.01)");
+  photoShade.addColorStop(0.7, "rgba(9, 39, 21, 0.01)");
+  photoShade.addColorStop(1, "rgba(9, 39, 21, 0.18)");
   context.fillStyle = photoShade;
   context.fillRect(layout.photo.left, layout.photo.top, layout.photo.width, layout.photo.height);
   context.restore();
 
-  context.strokeStyle = "rgba(255, 253, 248, 0.28)";
+  context.strokeStyle = "rgba(255, 253, 248, 0.34)";
   context.lineWidth = 3;
-  roundedRectPath(
+  asymmetricRoundedRectPath(
     context,
     layout.photo.left,
     layout.photo.top,
     layout.photo.width,
     layout.photo.height,
-    62,
+    photoCorners,
   );
   context.stroke();
 
-  context.fillStyle = "rgba(255, 253, 248, 0.72)";
-  context.font = "600 42px Raleway, Arial, sans-serif";
-  context.fillText("Сегодня я был рядом с", layout.copy.left, layout.copy.top);
+  drawBrandRibbon(context, animal.name);
+
+  context.fillStyle = "#ffb5b5";
+  context.font = "800 30px Raleway, Arial, sans-serif";
+  context.fillText("СЕГОДНЯ Я ПОМОГАЮ", layout.copy.left, layout.copy.top);
 
   context.fillStyle = "#fffdf8";
-  const nameSize = setFittedFont(context, animal.name, layout.copy.width, 118, 76, 800);
-  context.fillText(animal.name, layout.copy.left, layout.copy.top + nameSize + 18);
+  context.font = "850 82px Raleway, Arial, sans-serif";
+  context.fillText("фонду НИКА", layout.copy.left, layout.copy.top + 92);
 
-  context.fillStyle = "rgba(255, 253, 248, 0.72)";
-  context.font = "500 34px Raleway, Arial, sans-serif";
-  wrapText(context, animal.shortDescription, 760)
+  context.fillStyle = "rgba(255, 253, 248, 0.76)";
+  context.font = "550 34px Raleway, Arial, sans-serif";
+  wrapText(context, "рассказывать о подопечных, которым нужен дом.", 760)
     .slice(0, 2)
-    .forEach((line, index) => context.fillText(line, layout.copy.left, layout.copy.top + 212 + index * 46));
+    .forEach((line, index) => context.fillText(line, layout.copy.left, layout.copy.top + 154 + index * 44));
 
-  drawContain(
+  context.fillStyle = "#f76d31";
+  roundedRectPath(
     context,
-    logo,
-    layout.logo.left,
-    layout.logo.top,
-    layout.logo.width,
-    layout.logo.height,
+    layout.callout.left,
+    layout.callout.top,
+    layout.callout.width,
+    layout.callout.height,
+    44,
   );
+  context.fill();
   context.fillStyle = "#fffdf8";
-  context.font = "700 35px Raleway, Arial, sans-serif";
-  context.fillText("fond-nika.ru", 218, 1618);
-  context.fillStyle = "rgba(255, 253, 248, 0.52)";
-  context.font = "500 27px Raleway, Arial, sans-serif";
-  context.fillText("Благотворительный фонд помощи бездомным животным", 218, 1664);
+  context.font = "700 27px Raleway, Arial, sans-serif";
+  context.fillText("БОЛЬШЕ ИСТОРИЙ ПОДОПЕЧНЫХ", layout.callout.left + 38, layout.callout.top + 50);
+  context.font = "850 46px Raleway, Arial, sans-serif";
+  context.fillText("fond-nika.ru", layout.callout.left + 38, layout.callout.top + 106);
+
+  context.fillStyle = "rgba(255, 253, 248, 0.50)";
+  context.font = "550 25px Raleway, Arial, sans-serif";
+  context.fillText("Благотворительный фонд помощи бездомным животным", 72, 1798);
+  context.fillText("Помогаем животным с 2011 года", 72, 1836);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
