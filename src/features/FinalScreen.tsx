@@ -75,7 +75,7 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
       try {
         await navigator.share({
           title: `Знакомьтесь: ${animal.name} | фонд НИКА`,
-          text: `Сегодня я помогаю фонду НИКА рассказывать о подопечных. Знакомьтесь: ${animal.name}.`,
+          text: `Сегодня я помогаю фонду НИКА рассказывать о подопечных. ${animal.name} ищет дом.`,
           files: [file],
         });
         showActionFeedback("shared");
@@ -89,7 +89,7 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
 
   return (
     <main className="screen final-screen">
-      <AppHeader onBack={onBack} right="День заботы пройден" light />
+      <AppHeader onBack={onBack} right="Карточка готова" light />
       <div className="final-layout">
         <section className="final-copy">
           <div className="final-check"><HeartIcon /></div>

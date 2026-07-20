@@ -9,7 +9,7 @@ export function getResultCardLayout() {
     canvas: { left: 0, top: 0, width: CARD_WIDTH, height: CARD_HEIGHT },
     safeArea: { left: 72, top: 128, width: 936, height: 1562 },
     logo: { left: 72, top: 128, width: 86, height: 128 },
-    badge: { left: 574, top: 148, width: 434, height: 70 },
+    badge: { left: 714, top: 148, width: 294, height: 70 },
     photo: { left: 48, top: 292, width: 984, height: 806 },
     ribbon: { left: -56, top: 1010, width: 1192, height: 126 },
     copy: { left: 72, top: 1228, width: 936, height: 268 },
@@ -238,9 +238,13 @@ export async function createResultCard(animal: Animal): Promise<Blob> {
   context.strokeStyle = "rgba(255, 253, 248, 0.22)";
   context.lineWidth = 2;
   context.stroke();
+  context.fillStyle = "#ffb5b5";
+  context.beginPath();
+  context.arc(layout.badge.left + 36, layout.badge.top + 35, 7, 0, Math.PI * 2);
+  context.fill();
   context.fillStyle = "#fffdf8";
-  context.font = "800 28px Raleway, Arial, sans-serif";
-  context.fillText("ДЕНЬ ЗАБОТЫ ПРОЙДЕН", layout.badge.left + 28, layout.badge.top + 46);
+  context.font = "800 30px Raleway, Arial, sans-serif";
+  context.fillText("ИЩЕТ ДОМ", layout.badge.left + 58, layout.badge.top + 46);
 
   const photoCorners = { topLeft: 62, topRight: 62, bottomRight: 170, bottomLeft: 62 };
   context.save();
@@ -292,10 +296,12 @@ export async function createResultCard(animal: Animal): Promise<Blob> {
   context.fillText("фонду НИКА", layout.copy.left, layout.copy.top + 92);
 
   context.fillStyle = "rgba(255, 253, 248, 0.76)";
-  context.font = "550 34px Raleway, Arial, sans-serif";
-  wrapText(context, "рассказывать о подопечных, которым нужен дом.", 760)
-    .slice(0, 2)
-    .forEach((line, index) => context.fillText(line, layout.copy.left, layout.copy.top + 154 + index * 44));
+  context.font = "550 31px Raleway, Arial, sans-serif";
+  context.fillText("Помогаю рассказывать о подопечных.", layout.copy.left, layout.copy.top + 150);
+
+  context.fillStyle = "#ffb5b5";
+  setFittedFont(context, `${animal.name} ищет дом.`, 760, 40, 32, 800);
+  context.fillText(`${animal.name} ищет дом.`, layout.copy.left, layout.copy.top + 212);
 
   context.fillStyle = "#f76d31";
   roundedRectPath(
