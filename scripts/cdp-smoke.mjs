@@ -1406,8 +1406,49 @@ async function main() {
     }
     await capture("smoke-passport-complete-mobile.png");
     await clickButton("Стать опекуном");
-    await waitForText("Одному человеку не нужно делать всё");
-    await capture("smoke-team-mobile.png");
+    await waitForText("Быть рядом, пока не найдётся дом");
+    await sleep(700);
+    await capture("smoke-guardianship-mobile.png");
+    const guardianshipMetrics = await evaluate(`(() => {
+      const screen = document.querySelector('.guardianship-landing');
+      const text = screen?.innerText ?? '';
+      const directionCards = [...document.querySelectorAll('.guardianship-directions li')];
+      const cta = document.querySelector('.guardianship-actions .button');
+      const ctaStyle = cta ? getComputedStyle(cta) : null;
+      return {
+        catPrice: text.includes('2 000 ₽'),
+        dogPrice: text.includes('3 500 ₽'),
+        visits: text.includes('Четверг-воскресенье') && text.includes('11:00-16:00'),
+        goal: text.includes('Главная цель - будущая семья'),
+        directions: directionCards.length,
+        paddingLeft: screen ? Number.parseFloat(getComputedStyle(screen).paddingLeft) : null,
+        overflow: document.documentElement.scrollWidth - innerWidth,
+        screenHeight: screen?.scrollHeight ?? null,
+        documentHeight: document.documentElement.scrollHeight,
+        viewportHeight: innerHeight,
+        ctaWraps: cta ? cta.scrollHeight > cta.clientHeight + 1 : true,
+        ctaColor: ctaStyle?.color ?? null,
+      };
+    })()`);
+    if (
+      !guardianshipMetrics.catPrice
+      || !guardianshipMetrics.dogPrice
+      || !guardianshipMetrics.visits
+      || !guardianshipMetrics.goal
+      || guardianshipMetrics.directions !== 5
+      || guardianshipMetrics.paddingLeft === null
+      || guardianshipMetrics.paddingLeft < 16
+      || guardianshipMetrics.overflow > 1
+      || guardianshipMetrics.screenHeight === null
+      || guardianshipMetrics.screenHeight > guardianshipMetrics.viewportHeight * 2
+      || guardianshipMetrics.ctaWraps
+      || guardianshipMetrics.ctaColor !== 'rgb(255, 255, 255)'
+    ) {
+      throw new Error(`Guardianship landing regression: ${JSON.stringify(guardianshipMetrics)}`);
+    }
+    await evaluate("document.querySelector('.guardianship-team')?.scrollIntoView({ block: 'start', behavior: 'instant' })");
+    await sleep(180);
+    await capture("smoke-guardianship-team-mobile.png");
     await clickButton("Завершить орбиту");
     await waitForText("Сегодня вы были рядом");
 

@@ -1,7 +1,14 @@
+import { motion, useReducedMotion } from "framer-motion";
 import { AnimalPhoto } from "../components/AnimalPhoto";
 import { AppHeader } from "../components/AppHeader";
 import { Button } from "../components/Button";
-import { NumberedSteps } from "../components/NumberedSteps";
+import {
+  FoodIcon,
+  HealthIcon,
+  HeartIcon,
+  HomeIcon,
+  MovementIcon,
+} from "../components/Icons";
 import type { Animal } from "../types/app";
 
 interface GuardianshipScreenProps {
@@ -11,42 +18,140 @@ interface GuardianshipScreenProps {
 }
 
 const careDirections = [
-  "Повседневный уход и корм",
-  "Здоровье и лечение",
-  "Прогулки и социализация",
-  "Фотографии, истории и поиск дома",
-  "Внимание, подарки и участие в жизни",
-].map((label) => ({
-  id: label,
-  label,
-}));
+  {
+    label: "Повседневный уход и корм",
+    icon: FoodIcon,
+  },
+  {
+    label: "Здоровье и лечение",
+    icon: HealthIcon,
+  },
+  {
+    label: "Прогулки и социализация",
+    icon: MovementIcon,
+  },
+  {
+    label: "Фото, истории и поиск дома",
+    icon: HomeIcon,
+  },
+  {
+    label: "Внимание, подарки и участие",
+    icon: HeartIcon,
+  },
+];
 
 export function GuardianshipScreen({ animal, onBack, onContinue }: GuardianshipScreenProps) {
-  return (
-    <main className="screen guardianship-screen">
-      <AppHeader onBack={onBack} right="Что такое опека" />
-      <div className="guardianship-layout">
-        <section className="guardianship-intro">
-          <AnimalPhoto src={animal.photo} name={animal.name} />
-          <div>
-            <h1>Забота нужна каждый день.</h1>
-            <p>
-              Опека — это регулярное участие в жизни конкретного животного: содержание, здоровье,
-              доверие, внимание и помощь в поиске дома.
-            </p>
-          </div>
-        </section>
+  const reduceMotion = useReducedMotion();
+  const enter = (delay = 0) => ({
+    initial: reduceMotion ? false : { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: {
+      duration: reduceMotion ? 0.12 : 0.52,
+      delay: reduceMotion ? 0 : delay,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  });
 
-        <section className="team-section">
-          <span className="team-kicker">Команда до пяти опекунов</span>
-          <h2>Одному человеку не нужно делать всё</h2>
-          <p>У {animal.name} может быть команда до пяти опекунов.</p>
-          <NumberedSteps steps={careDirections} label="Направления помощи" tone="dark" />
-          <p className="directions-note">Это направления совместной помощи, а не жёстко закреплённые роли.</p>
-        </section>
+  return (
+    <main className="screen guardianship-screen guardianship-landing">
+      <AppHeader onBack={onBack} right="Что такое опека" light />
+
+      <div className="guardianship-landing__content">
+        <motion.section className="guardianship-hero" {...enter()}>
+          <div className="guardianship-hero__media">
+            <AnimalPhoto src={animal.photo} name={animal.name} />
+          </div>
+
+          <div className="guardianship-hero__copy">
+            <h1>Быть рядом, пока не найдётся дом</h1>
+            <p>
+              Опека в фонде «Ника» - регулярная адресная помощь конкретному животному.
+              Вы становитесь его виртуальным хозяином и участвуете в его жизни.
+            </p>
+
+            <div className="guardianship-home-goal">
+              <div className="guardianship-home-goal__visual" aria-hidden="true">
+                <span className="guardianship-home-goal__orbit" />
+                <span className="guardianship-home-goal__satellite"><HeartIcon /></span>
+                <span className="guardianship-home-goal__home"><HomeIcon /></span>
+              </div>
+              <div>
+                <strong>Главная цель - будущая семья</strong>
+                <span>Социализация и рассказы о питомце помогают ему быстрее встретить своих людей.</span>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        <motion.section
+          className="guardianship-facts"
+          aria-labelledby="guardianship-facts-title"
+          {...enter(0.08)}
+        >
+          <h2 id="guardianship-facts-title">Опека в нескольких фактах</h2>
+          <div className="guardianship-facts__grid">
+            <article className="guardianship-fact guardianship-fact--cat">
+              <span>Кошка</span>
+              <strong>2 000 ₽</strong>
+              <small>в месяц</small>
+            </article>
+            <article className="guardianship-fact guardianship-fact--dog">
+              <span>Собака</span>
+              <strong>3 500 ₽</strong>
+              <small>в месяц</small>
+            </article>
+            <article className="guardianship-fact guardianship-fact--visit">
+              <span>Можно приезжать в гости</span>
+              <strong>Четверг-воскресенье</strong>
+              <small>11:00-16:00 или в опекунские дни, предупредив менеджера</small>
+            </article>
+          </div>
+        </motion.section>
+
+        <motion.section
+          className="guardianship-team"
+          aria-labelledby="guardianship-team-title"
+          {...enter(0.16)}
+        >
+          <header className="guardianship-team__header">
+            <div>
+              <h2 id="guardianship-team-title">До пяти опекунов в одной команде</h2>
+              <p>Одному человеку не нужно делать всё. Каждый усиливает общую заботу о {animal.name}.</p>
+            </div>
+            <div className="guardianship-team__count" aria-label="До пяти опекунов">
+              <strong>5</strong>
+              <span>мест в команде</span>
+            </div>
+          </header>
+
+          <ol className="guardianship-directions" aria-label="Пять направлений помощи">
+            {careDirections.map((direction, index) => {
+              const DirectionIcon = direction.icon;
+              return (
+                <motion.li
+                  key={direction.label}
+                  initial={reduceMotion ? false : { opacity: 0, scale: 0.96, y: 10 }}
+                  whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.45 }}
+                  transition={{
+                    duration: reduceMotion ? 0.12 : 0.38,
+                    delay: reduceMotion ? 0 : index * 0.055,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                >
+                  <span><DirectionIcon /></span>
+                  <strong>{direction.label}</strong>
+                </motion.li>
+              );
+            })}
+          </ol>
+        </motion.section>
       </div>
-      <div className="screen-actions sticky-actions">
-        <Button fullWidth onClick={onContinue}>Завершить орбиту</Button>
+
+      <div className="screen-actions sticky-actions guardianship-actions">
+        <Button className="button--orange" fullWidth onClick={onContinue}>
+          Завершить орбиту
+        </Button>
       </div>
     </main>
   );

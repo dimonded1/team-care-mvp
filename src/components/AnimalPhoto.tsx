@@ -21,7 +21,7 @@ export function AnimalPhoto({ src, name, className = "" }: AnimalPhotoProps) {
     <img
       className={className}
       src={src}
-      alt={`Подопечный фонда НИКА — ${name}`}
+      alt={`Подопечный фонда НИКА - ${name}`}
       width="880"
       height="640"
       onError={() => setFailed(true)}
