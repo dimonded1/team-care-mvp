@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { AnimalPhoto } from "../components/AnimalPhoto";
 import { AppHeader } from "../components/AppHeader";
 import { Button } from "../components/Button";
 import { DownloadIcon, HeartIcon, ShareIcon } from "../components/Icons";
@@ -19,7 +18,7 @@ type CardState =
 
 export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
   const [card, setCard] = useState<CardState>({ status: "loading" });
-  const fileName = useMemo(() => `nika-${animal.id}-care-day.png`, [animal.id]);
+  const fileName = useMemo(() => `nika-${animal.id}-care-story-9x16.png`, [animal.id]);
 
   useEffect(() => {
     let active = true;
@@ -48,7 +47,10 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
     const link = document.createElement("a");
     link.href = card.url;
     link.download = fileName;
+    link.hidden = true;
+    document.body.append(link);
     link.click();
+    link.remove();
   };
 
   const shareCard = async () => {
@@ -57,8 +59,8 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
     if (navigator.share && navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({
-          title: `Сегодня я был рядом с ${animal.name}`,
-          text: `Познакомьтесь с ${animal.name} — подопечным фонда НИКА.`,
+          title: `День заботы с ${animal.name}`,
+          text: `Сегодня я был рядом с ${animal.name}. Познакомьтесь с подопечным фонда НИКА.`,
           files: [file],
         });
         return;
@@ -71,45 +73,46 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
 
   return (
     <main className="screen final-screen">
-      <AppHeader onBack={onBack} right="День заботы пройден" />
+      <AppHeader onBack={onBack} right="День заботы пройден" light />
       <div className="final-layout">
         <section className="final-copy">
           <div className="final-check"><HeartIcon /></div>
           <span className="screen-eyebrow">Орбита собрана</span>
-          <h1>Сегодня вы были рядом с {animal.name}.</h1>
-          <p>Четыре направления пройдены, а орбита заботы собрана.</p>
-          <div className="final-animal-mini">
-            <AnimalPhoto src={animal.photo} name={animal.name} />
-            <div><strong>{animal.name}</strong><span>{animal.shortDescription}</span></div>
-          </div>
+          <h1>Сегодня вы были рядом с {animal.name}</h1>
+          <p>Карточка уже собрана в формате сторис 9:16. Сохраните её или поделитесь прямо сейчас.</p>
         </section>
 
         <section className="card-preview-section" aria-live="polite">
           {card.status === "loading" ? (
-            <div className="card-skeleton" role="status">Создаём вашу карточку…</div>
+            <div className="card-skeleton" role="status"><span>Собираем story-карточку</span></div>
           ) : null}
           {card.status === "ready" ? (
-            <img className="result-card-preview" src={card.url} alt={`Карточка дня заботы с ${animal.name}`} />
+            <img
+              className="result-card-preview"
+              src={card.url}
+              width="1080"
+              height="1920"
+              alt={`Карточка дня заботы с ${animal.name} в формате сторис`}
+            />
           ) : null}
           {card.status === "error" ? (
             <div className="card-error"><strong>Карточка пока не создалась</strong><p>{card.message}</p></div>
           ) : null}
         </section>
-      </div>
-
-      <div className="final-actions">
-        <a className="button button--primary button--full" href={animal.profileUrl} target="_blank" rel="noreferrer">
-          Стать опекуном {animal.name}
-        </a>
-        <div className="final-action-row">
-          <Button variant="ghost" className="final-utility-action" onClick={saveCard} disabled={card.status !== "ready"}>
-            <DownloadIcon /> Сохранить
-          </Button>
-          <Button variant="ghost" className="final-utility-action" onClick={shareCard} disabled={card.status !== "ready"}>
-            <ShareIcon /> Поделиться
-          </Button>
+        <div className="final-actions">
+          <a className="button button--orange button--full" href={animal.profileUrl} target="_blank" rel="noreferrer">
+            Стать опекуном {animal.name}
+          </a>
+          <div className="final-action-row">
+            <Button variant="ghost" className="final-utility-action" onClick={saveCard} disabled={card.status !== "ready"}>
+              <DownloadIcon /> Сохранить
+            </Button>
+            <Button variant="ghost" className="final-utility-action" onClick={shareCard} disabled={card.status !== "ready"}>
+              <ShareIcon /> Поделиться
+            </Button>
+          </div>
+          <button className="text-button" type="button" onClick={onRestart}>Пройти ещё раз</button>
         </div>
-        <button className="text-button" type="button" onClick={onRestart}>Пройти ещё раз</button>
       </div>
     </main>
   );

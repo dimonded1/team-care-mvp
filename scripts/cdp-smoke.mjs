@@ -1460,6 +1460,47 @@ async function main() {
     const cardReady = await evaluate("Boolean(document.querySelector('.result-card-preview'))");
     if (!cardReady) throw new Error("Result card was not generated");
 
+    const storyMetrics = await evaluate(`(async () => {
+      const image = document.querySelector('.result-card-preview');
+      if (!(image instanceof HTMLImageElement)) return null;
+      await image.decode();
+      const rect = image.getBoundingClientRect();
+      return {
+        naturalWidth: image.naturalWidth,
+        naturalHeight: image.naturalHeight,
+        renderedRatio: rect.width / rect.height,
+        viewportOverflow: document.documentElement.scrollWidth - window.innerWidth,
+        saveEnabled: !Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('Сохранить'))?.disabled,
+        shareEnabled: !Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('Поделиться'))?.disabled,
+      };
+    })()`);
+    if (
+      !storyMetrics
+      || storyMetrics.naturalWidth !== 1080
+      || storyMetrics.naturalHeight !== 1920
+      || Math.abs(storyMetrics.renderedRatio - (9 / 16)) > 0.01
+      || storyMetrics.viewportOverflow > 1
+      || !storyMetrics.saveEnabled
+      || !storyMetrics.shareEnabled
+    ) {
+      throw new Error(`Story export regression: ${JSON.stringify(storyMetrics)}`);
+    }
+
+    const storyDataUrl = await evaluate(`(async () => {
+      const image = document.querySelector('.result-card-preview');
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d');
+      context.drawImage(image, 0, 0);
+      return canvas.toDataURL('image/png');
+    })()`);
+    await writeFile(
+      join(artifactsDir, "smoke-story-card-1080x1920.png"),
+      Buffer.from(storyDataUrl.split(",")[1], "base64"),
+    );
+
     await capture("smoke-final-mobile.png");
     await evaluate("window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })");
     await sleep(120);
