@@ -9,6 +9,7 @@ import { Progress } from "../components/Progress";
 import type { Animal, Mission } from "../types/app";
 import { DayBuilderGame } from "./DayBuilderGame";
 import { HealthCareGame } from "./HealthCareGame";
+import { HomeBuilderGame } from "./HomeBuilderGame";
 import { TrustCareGame } from "./TrustCareGame";
 
 interface JourneyScreenProps {
@@ -33,6 +34,7 @@ export function JourneyScreen({
   const [dayReady, setDayReady] = useState(false);
   const [healthReady, setHealthReady] = useState(false);
   const [trustReady, setTrustReady] = useState(false);
+  const [homeReady, setHomeReady] = useState(false);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -40,12 +42,14 @@ export function JourneyScreen({
     setDayReady(false);
     setHealthReady(false);
     setTrustReady(false);
+    setHomeReady(false);
   }, [mission.id]);
 
   const selected = mission.options.find((option) => option.id === selectedId) ?? null;
   const isDayGame = mission.id === "food";
   const isHealthGame = mission.id === "health";
   const isTrustGame = mission.id === "trust";
+  const isHomeGame = mission.id === "home";
   const missionAlreadyCompleted = completedMissionIds.includes(mission.id);
   const missionReady = isDayGame
     ? dayReady
@@ -53,20 +57,22 @@ export function JourneyScreen({
       ? healthReady
       : isTrustGame
         ? trustReady
+        : isHomeGame
+          ? homeReady
         : Boolean(selected?.correct);
   const visibleCompletedCount = missionAlreadyCompleted
     ? completedMissionIds.length
     : completedMissionIds.length + (missionReady ? 1 : 0);
 
   return (
-    <main className={`screen journey-screen${isDayGame ? " journey-screen--day-game" : ""}${isHealthGame ? " journey-screen--health-game" : ""}${isTrustGame ? " journey-screen--trust-game" : ""}`}>
+    <main className={`screen journey-screen${isDayGame ? " journey-screen--day-game" : ""}${isHealthGame ? " journey-screen--health-game" : ""}${isTrustGame ? " journey-screen--trust-game" : ""}${isHomeGame ? " journey-screen--home-game" : ""}`}>
       <AppHeader
         onBack={onBack}
-        right={isDayGame || isHealthGame || isTrustGame ? <FoundationMenu /> : `Орбита: ${animal.name}`}
-        light={isDayGame || isHealthGame || isTrustGame}
+        right={isDayGame || isHealthGame || isTrustGame || isHomeGame ? <FoundationMenu /> : `Орбита: ${animal.name}`}
+        light={isDayGame || isHealthGame || isTrustGame || isHomeGame}
       />
       <div className="journey-layout">
-        {!isDayGame && !isHealthGame && !isTrustGame ? (
+        {!isDayGame && !isHealthGame && !isTrustGame && !isHomeGame ? (
           <aside className="journey-animal">
             <JourneyPetScene animal={animal} mission={mission} />
           </aside>
@@ -80,6 +86,8 @@ export function JourneyScreen({
             <HealthCareGame animal={animal} onReadyChange={setHealthReady} />
           ) : isTrustGame ? (
             <TrustCareGame animal={animal} onReadyChange={setTrustReady} />
+          ) : isHomeGame ? (
+            <HomeBuilderGame animal={animal} onReadyChange={setHomeReady} />
           ) : (
             <motion.div
               key={mission.id}

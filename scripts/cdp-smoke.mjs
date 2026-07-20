@@ -448,6 +448,118 @@ async function main() {
         return;
       }
 
+      const isHomeGame = await evaluate("Boolean(document.querySelector('[data-testid=\"home-game\"]'))");
+      if (isHomeGame) {
+        const initial = await evaluate(`(() => {
+          const root = document.querySelector('[data-testid="home-game"]');
+          const room = document.querySelector('.home-scene__room');
+          const items = [...document.querySelectorAll('[data-testid="home-item"]')];
+          const rects = items.map((item) => item.getBoundingClientRect());
+          return {
+            phase: root?.dataset.homePhase ?? null,
+            placed: root?.dataset.homePlaced ?? null,
+            candidates: root?.dataset.homeCandidates ?? null,
+            items: items.length,
+            safe: items.filter((item) => item.dataset.itemSafe === 'true').length,
+            unsafe: items.filter((item) => item.dataset.itemSafe === 'false').length,
+            placements: document.querySelectorAll('[data-testid="home-placement"]').length,
+            roomLoaded: room instanceof HTMLImageElement && room.complete && room.naturalWidth > 0,
+            roomSource: room instanceof HTMLImageElement ? room.currentSrc : '',
+            minWidth: rects.length ? Math.min(...rects.map((rect) => rect.width)) : 0,
+            minHeight: rects.length ? Math.min(...rects.map((rect) => rect.height)) : 0,
+            realAnimalPhotos: document.querySelectorAll('.journey-screen img[src*="/assets/animals/"]').length,
+            overflow: document.documentElement.scrollWidth - innerWidth,
+          };
+        })()`);
+        if (
+          initial.phase !== 'building'
+          || initial.placed !== '0'
+          || initial.candidates !== '8'
+          || initial.items !== 4
+          || initial.safe !== 2
+          || initial.unsafe !== 2
+          || initial.placements !== 5
+          || !initial.roomLoaded
+          || !initial.roomSource.endsWith('home-room.webp')
+          || initial.minWidth < 44
+          || initial.minHeight < 44
+          || initial.realAnimalPhotos !== 0
+          || initial.overflow > 1
+        ) {
+          throw new Error(`Home game initial regression: ${JSON.stringify(initial)}`);
+        }
+        await capture("smoke-home-game-start-mobile.png");
+
+        await evaluate("document.querySelector('[data-testid=\"home-item\"][data-item-safe=\"false\"]')?.scrollIntoView({ block: 'center' })");
+        await sleep(280);
+        await capture("smoke-home-game-items-mobile.png");
+        await tapSelector('[data-testid="home-item"][data-item-safe="false"]');
+        await waitForSelector('.home-feedback--rejected');
+        const rejected = await evaluate(`(() => ({
+          placed: document.querySelector('[data-testid="home-game"]')?.dataset.homePlaced ?? null,
+          rejected: document.querySelectorAll('.home-item.is-rejected').length,
+          feedback: document.querySelector('[data-testid="home-feedback"]')?.textContent?.trim() ?? '',
+          final: Boolean(document.querySelector('[data-testid="home-final"]')),
+        }))()`);
+        if (rejected.placed !== '0' || rejected.rejected !== 1 || !rejected.feedback || rejected.final) {
+          throw new Error(`Home unsafe-item regression: ${JSON.stringify(rejected)}`);
+        }
+        await capture("smoke-home-game-rejected-mobile.png");
+
+        const safeIds = ['bed', 'water', 'rug', 'mesh', 'toy'];
+        for (let index = 0; index < safeIds.length; index += 1) {
+          const selector = `[data-testid="home-item"][data-item-id="${safeIds[index]}"]`;
+          await waitForEnabledSelector(selector, 4_000);
+          await evaluate(`document.querySelector(${JSON.stringify(selector)})?.scrollIntoView({ block: 'center' })`);
+          await sleep(120);
+          await tapSelector(selector);
+          await waitForSelector(`[data-testid="home-game"][data-home-placed="${index + 1}"]`);
+        }
+
+        await waitForSelector('[data-testid="home-game"][data-home-phase="final"][data-home-placed="5"]', true, 4_000);
+        await waitForSelector('[data-testid="home-final"]');
+        await sleep(1_900);
+        const final = await evaluate(`(() => {
+          const finalNode = document.querySelector('[data-testid="home-final"]');
+          const pet = finalNode?.querySelector('.home-final__pet');
+          const card = finalNode?.querySelector('.home-final__card');
+          const petRect = pet?.getBoundingClientRect();
+          const cardRect = card?.getBoundingClientRect();
+          const faceRect = petRect ? {
+            left: petRect.left + petRect.width * .2,
+            right: petRect.right - petRect.width * .2,
+            top: petRect.top,
+            bottom: petRect.top + petRect.height * .38,
+          } : null;
+          return {
+            filled: document.querySelectorAll('[data-placement-filled="true"]').length,
+            petLoaded: pet instanceof HTMLImageElement && pet.complete && pet.naturalWidth > 0,
+            petSource: pet instanceof HTMLImageElement ? pet.currentSrc : '',
+            text: card?.textContent?.trim() ?? '',
+            faceOverlap: Boolean(
+              faceRect && cardRect
+              && cardRect.left < faceRect.right
+              && cardRect.right > faceRect.left
+              && cardRect.top < faceRect.bottom
+              && cardRect.bottom > faceRect.top
+            ),
+            overflow: document.documentElement.scrollWidth - innerWidth,
+          };
+        })()`);
+        if (
+          final.filled !== 5
+          || !final.petLoaded
+          || !final.petSource.endsWith('.webp')
+          || !final.text.includes('Дом готов принять')
+          || final.faceOverlap
+          || final.overflow > 1
+        ) {
+          throw new Error(`Home final regression: ${JSON.stringify(final)}`);
+        }
+        await capture("smoke-home-game-final-mobile.png");
+        return;
+      }
+
       const isTrustGame = await evaluate("Boolean(document.querySelector('[data-testid=\"trust-game\"]'))");
       if (isTrustGame) {
         const situationIds = ["door-sound", "stranger-hand", "sudden-movement", "final-approach"];
@@ -1281,25 +1393,30 @@ async function main() {
     await openMissionNode("home");
     const tabletJourneyMetrics = await evaluate(`(() => {
       const layout = document.querySelector('.journey-layout');
-      const animal = document.querySelector('.journey-animal');
-      const content = document.querySelector('.journey-content');
+      const game = document.querySelector('[data-testid="home-game"]');
+      const scene = document.querySelector('.home-scene');
       const cta = document.querySelector('.sticky-actions .button');
       const layoutRect = layout?.getBoundingClientRect();
-      const animalRect = animal?.getBoundingClientRect();
-      const contentRect = content?.getBoundingClientRect();
+      const sceneRect = scene?.getBoundingClientRect();
       const ctaRect = cta?.getBoundingClientRect();
       return {
         layoutWidth: layoutRect?.width ?? null,
-        heightDelta: animalRect && contentRect ? Math.abs(animalRect.height - contentRect.height) : null,
+        hasHomeGame: Boolean(game),
+        sceneWidth: sceneRect?.width ?? null,
+        sceneHeight: sceneRect?.height ?? null,
         ctaBottom: ctaRect?.bottom ?? null,
         viewportHeight: window.innerHeight,
+        pageHeight: document.documentElement.scrollHeight,
+        overflow: document.documentElement.scrollWidth - innerWidth,
       };
     })()`);
     if (
       tabletJourneyMetrics.layoutWidth === null
-      || tabletJourneyMetrics.heightDelta === null
-      || tabletJourneyMetrics.heightDelta > 4
-      || tabletJourneyMetrics.ctaBottom > tabletJourneyMetrics.viewportHeight
+      || !tabletJourneyMetrics.hasHomeGame
+      || tabletJourneyMetrics.sceneWidth === null
+      || tabletJourneyMetrics.sceneHeight < 500
+      || tabletJourneyMetrics.ctaBottom > tabletJourneyMetrics.pageHeight
+      || tabletJourneyMetrics.overflow > 1
     ) {
       throw new Error(`Tablet journey grid regression: ${JSON.stringify(tabletJourneyMetrics)}`);
     }
