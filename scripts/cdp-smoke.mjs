@@ -441,6 +441,10 @@ async function main() {
               `[data-testid="day-scene"][data-day-scene="${sceneId}"] [data-testid="day-choice"][data-choice-correct="true"]`,
             );
           }
+          if (index === scenes.length - 1) {
+            await evaluate("window.scrollTo({ top: 260, behavior: 'instant' })");
+            await sleep(80);
+          }
           await evaluate(
             `document.querySelector('[data-testid="day-scene"][data-day-scene="${sceneId}"] [data-testid="day-choice"][data-choice-correct="true"]')?.click()`,
           );
@@ -492,6 +496,43 @@ async function main() {
         ) {
           throw new Error(`Home game initial regression: ${JSON.stringify(initial)}`);
         }
+        await cdp.call("Emulation.setDeviceMetricsOverride", {
+          width: 320,
+          height: 568,
+          deviceScaleFactor: 1,
+          mobile: true,
+        });
+        await sleep(180);
+        const compactHomeLayout = await evaluate(`(() => {
+          const scene = document.querySelector('.home-scene');
+          const box = document.querySelector('.home-box');
+          const sceneRect = scene?.getBoundingClientRect();
+          const boxRect = box?.getBoundingClientRect();
+          return {
+            sceneTop: sceneRect?.top ?? null,
+            sceneBottom: sceneRect?.bottom ?? null,
+            boxTop: boxRect?.top ?? null,
+            viewportHeight: innerHeight,
+            overflow: document.documentElement.scrollWidth - innerWidth,
+          };
+        })()`);
+        if (
+          compactHomeLayout.sceneTop === null
+          || compactHomeLayout.sceneBottom === null
+          || compactHomeLayout.boxTop === null
+          || compactHomeLayout.boxTop > compactHomeLayout.viewportHeight - 28
+          || compactHomeLayout.overflow > 1
+        ) {
+          throw new Error(`Compact home game regression: ${JSON.stringify(compactHomeLayout)}`);
+        }
+        await capture("smoke-home-game-320x568.png");
+        await cdp.call("Emulation.setDeviceMetricsOverride", {
+          width: 390,
+          height: 844,
+          deviceScaleFactor: 1,
+          mobile: true,
+        });
+        await sleep(180);
         await capture("smoke-home-game-start-mobile.png");
 
         await evaluate("document.querySelector('[data-testid=\"home-item\"][data-item-safe=\"false\"]')?.scrollIntoView({ block: 'center' })");
@@ -608,6 +649,45 @@ async function main() {
             ) {
               throw new Error(`Trust approach regression: ${JSON.stringify(approachMetrics)}`);
             }
+            await cdp.call("Emulation.setDeviceMetricsOverride", {
+              width: 320,
+              height: 568,
+              deviceScaleFactor: 1,
+              mobile: true,
+            });
+            await sleep(180);
+            const compactTrustLayout = await evaluate(`(() => {
+              const stage = document.querySelector('.trust-stage');
+              const tap = document.querySelector('.trust-stage__tap');
+              const stageRect = stage?.getBoundingClientRect();
+              const tapRect = tap?.getBoundingClientRect();
+              return {
+                stageTop: stageRect?.top ?? null,
+                stageBottom: stageRect?.bottom ?? null,
+                tapTop: tapRect?.top ?? null,
+                tapBottom: tapRect?.bottom ?? null,
+                viewportHeight: innerHeight,
+                overflow: document.documentElement.scrollWidth - innerWidth,
+              };
+            })()`);
+            if (
+              compactTrustLayout.stageTop === null
+              || compactTrustLayout.stageBottom === null
+              || compactTrustLayout.tapTop === null
+              || compactTrustLayout.tapBottom === null
+              || compactTrustLayout.tapTop > compactTrustLayout.viewportHeight - 44
+              || compactTrustLayout.overflow > 1
+            ) {
+              throw new Error(`Compact trust game regression: ${JSON.stringify(compactTrustLayout)}`);
+            }
+            await capture("smoke-trust-game-320x568.png");
+            await cdp.call("Emulation.setDeviceMetricsOverride", {
+              width: 390,
+              height: 844,
+              deviceScaleFactor: 1,
+              mobile: true,
+            });
+            await sleep(180);
             await capture("smoke-trust-game-far-mobile.png");
           }
           await evaluate("document.querySelector('[data-testid=\"trust-pet\"]')?.click()");
@@ -940,6 +1020,44 @@ async function main() {
     }
 
     await capture("smoke-quiz-rest-mobile.png");
+    await cdp.call("Emulation.setDeviceMetricsOverride", {
+      width: 320,
+      height: 568,
+      deviceScaleFactor: 1,
+      mobile: true,
+    });
+    await sleep(180);
+    const compactMatchingLayout = await evaluate(`(() => {
+      const card = document.querySelector('[data-testid="swipe-card"]');
+      const controls = document.querySelector('.swipe-controls');
+      const cardRect = card?.getBoundingClientRect();
+      const controlsRect = controls?.getBoundingClientRect();
+      return {
+        cardBottom: cardRect?.bottom ?? null,
+        controlsTop: controlsRect?.top ?? null,
+        controlsBottom: controlsRect?.bottom ?? null,
+        viewportHeight: innerHeight,
+        overflow: document.documentElement.scrollWidth - innerWidth,
+      };
+    })()`);
+    if (
+      compactMatchingLayout.cardBottom === null
+      || compactMatchingLayout.controlsTop === null
+      || compactMatchingLayout.controlsBottom === null
+      || compactMatchingLayout.controlsTop < compactMatchingLayout.cardBottom + 12
+      || compactMatchingLayout.controlsBottom > compactMatchingLayout.viewportHeight - 6
+      || compactMatchingLayout.overflow > 1
+    ) {
+      throw new Error(`Compact matching layout regression: ${JSON.stringify(compactMatchingLayout)}`);
+    }
+    await capture("smoke-quiz-320x568.png");
+    await cdp.call("Emulation.setDeviceMetricsOverride", {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 1,
+      mobile: true,
+    });
+    await sleep(180);
     await clickButton("Меню");
     await waitForText("Все подопечные");
     await clickButton("Как это работает");
@@ -983,11 +1101,19 @@ async function main() {
     ) {
       throw new Error(`Right edge swipe escaped the quiz: ${JSON.stringify(rightEdgeSwipe)}`);
     }
-    const postTutorialControls = await evaluate(
-      "document.querySelectorAll('.swipe-controls').length",
-    );
-    if (postTutorialControls !== 0) {
-      throw new Error(`Swipe tutorial remains after the first answer: ${postTutorialControls}`);
+    const postTutorialControls = await evaluate(`(() => ({
+      groups: document.querySelectorAll('.swipe-controls').length,
+      noButtons: document.querySelectorAll('[aria-label="Ответить нет"]').length,
+      yesButtons: document.querySelectorAll('[aria-label="Ответить да"]').length,
+      scrollY: window.scrollY,
+    }))()`);
+    if (
+      postTutorialControls.groups !== 1
+      || postTutorialControls.noButtons !== 1
+      || postTutorialControls.yesButtons !== 1
+      || postTutorialControls.scrollY > 4
+    ) {
+      throw new Error(`Tap fallback is missing after the first answer: ${JSON.stringify(postTutorialControls)}`);
     }
     await capture("smoke-quiz-clean-mobile.png");
 
@@ -1179,6 +1305,46 @@ async function main() {
       throw new Error(`Day game mobile regression: ${JSON.stringify(dayGameMetrics)}`);
     }
     await capture("smoke-day-game-morning-mobile.png");
+    await cdp.call("Emulation.setDeviceMetricsOverride", {
+      width: 320,
+      height: 568,
+      deviceScaleFactor: 1,
+      mobile: true,
+    });
+    await sleep(180);
+    const compactDayLayout = await evaluate(`(() => {
+      const scene = document.querySelector('[data-testid="day-scene"]');
+      const choices = document.querySelector('.day-scene__choices');
+      const sceneRect = scene?.getBoundingClientRect();
+      const choicesRect = choices?.getBoundingClientRect();
+      return {
+        sceneTop: sceneRect?.top ?? null,
+        sceneBottom: sceneRect?.bottom ?? null,
+        choicesTop: choicesRect?.top ?? null,
+        choicesBottom: choicesRect?.bottom ?? null,
+        viewportHeight: innerHeight,
+        overflow: document.documentElement.scrollWidth - innerWidth,
+      };
+    })()`);
+    if (
+      compactDayLayout.sceneTop === null
+      || compactDayLayout.sceneBottom === null
+      || compactDayLayout.choicesTop === null
+      || compactDayLayout.choicesBottom === null
+      || compactDayLayout.choicesTop > compactDayLayout.viewportHeight - 72
+      || compactDayLayout.sceneBottom <= compactDayLayout.choicesTop
+      || compactDayLayout.overflow > 1
+    ) {
+      throw new Error(`Compact day game regression: ${JSON.stringify(compactDayLayout)}`);
+    }
+    await capture("smoke-day-game-320x568.png");
+    await cdp.call("Emulation.setDeviceMetricsOverride", {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 1,
+      mobile: true,
+    });
+    await sleep(180);
     await tapSelector('[data-testid="day-scene"][data-day-scene="morning"] [data-testid="day-choice"][data-choice-correct="false"]');
     await waitForSelector('.day-scene__feedback--incorrect');
     await sleep(320);
@@ -1370,7 +1536,26 @@ async function main() {
       ) {
         throw new Error(`Journey spacing regression: ${JSON.stringify(journeyRhythm)}`);
       }
-      if (missionOrder[mission] === "food") await capture("smoke-day-game-complete-mobile.png");
+      if (missionOrder[mission] === "food") {
+        const montageFocus = await evaluate(`(() => {
+          const title = document.querySelector('[data-testid="day-montage"] h2');
+          return {
+            scrollY: window.scrollY,
+            titleTop: title?.getBoundingClientRect().top ?? null,
+            titleBottom: title?.getBoundingClientRect().bottom ?? null,
+          };
+        })()`);
+        if (
+          montageFocus.scrollY > 4
+          || montageFocus.titleTop === null
+          || montageFocus.titleTop < 0
+          || montageFocus.titleBottom === null
+          || montageFocus.titleBottom > innerHeight
+        ) {
+          throw new Error(`Day montage did not reset the reading position: ${JSON.stringify(montageFocus)}`);
+        }
+        await capture("smoke-day-game-complete-mobile.png");
+      }
       if (mission === 0) await capture("smoke-journey-mobile.png");
       await clickButton(isDayMission ? "Вернуться" : "Сохранить и вернуться");
       await waitForText("Выберите мини-игру");

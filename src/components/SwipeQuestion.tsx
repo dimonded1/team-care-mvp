@@ -204,31 +204,29 @@ export function SwipeQuestion({
         </motion.article>
       </div>
 
-      {showGestureGuide && (
-        <div className="swipe-controls" role="group" aria-label="Ответ на вопрос">
-          <button
-            className="swipe-control swipe-control--no"
-            type="button"
-            onClick={() => answer(false)}
-            disabled={Boolean(direction)}
-            aria-label="Ответить нет"
-          >
-            <CloseIcon />
-            <span>Нет</span>
-          </button>
-          <p>Потяните карточку</p>
-          <button
-            className="swipe-control swipe-control--yes"
-            type="button"
-            onClick={() => answer(true)}
-            disabled={Boolean(direction)}
-            aria-label="Ответить да"
-          >
-            <span>Да</span>
-            <CheckIcon />
-          </button>
-        </div>
-      )}
+      <div className="swipe-controls" role="group" aria-label="Ответ на вопрос">
+        <button
+          className="swipe-control swipe-control--no"
+          type="button"
+          onClick={() => answer(false)}
+          disabled={Boolean(direction)}
+          aria-label="Ответить нет"
+        >
+          <CloseIcon />
+          <span>Нет</span>
+        </button>
+        <p>{showGestureGuide ? "Потяните карточку" : "Или выберите ответ"}</p>
+        <button
+          className="swipe-control swipe-control--yes"
+          type="button"
+          onClick={() => answer(true)}
+          disabled={Boolean(direction)}
+          aria-label="Ответить да"
+        >
+          <span>Да</span>
+          <CheckIcon />
+        </button>
+      </div>
     </div>
   );
 }

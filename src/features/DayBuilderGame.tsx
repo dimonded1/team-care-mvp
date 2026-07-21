@@ -382,6 +382,10 @@ export function DayBuilderGame({ animal, onReadyChange }: DayBuilderGameProps) {
     setReaction(null);
   };
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [phase, sceneIndex]);
+
   return (
     <div
       className="day-game"
