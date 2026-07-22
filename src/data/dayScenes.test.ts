@@ -11,10 +11,10 @@ describe("day scenes", () => {
     ]);
   });
 
-  it("offers three unique tap choices in every scene", () => {
+  it("offers four varied tap choices in every scene", () => {
     dayScenes.forEach((scene) => {
-      expect(scene.choices).toHaveLength(3);
-      expect(new Set(scene.choices.map((choice) => choice.id)).size).toBe(3);
+      expect(scene.choices).toHaveLength(4);
+      expect(new Set(scene.choices.map((choice) => choice.id)).size).toBe(4);
       expect(scene.choices.filter((choice) => choice.correct)).toHaveLength(1);
       scene.choices.forEach((choice) => {
         expect(choice.label.trim()).not.toBe("");
@@ -34,7 +34,14 @@ describe("day scenes", () => {
 
   it("uses clear bedtime language without the old team-plan phrasing", () => {
     const evening = dayScenes.find((scene) => scene.id === "evening");
-    expect(evening?.choices.find((choice) => choice.correct)?.label).toBe("Тихий ритуал перед сном");
+    expect(evening?.choices.find((choice) => choice.correct)?.label).toBe("Пять минут тихого поиска");
     expect(JSON.stringify(evening)).not.toContain("по плану команды");
+  });
+
+  it("frames every step as a concrete everyday situation", () => {
+    dayScenes.forEach((scene) => {
+      expect(scene.prompt.length).toBeGreaterThan(35);
+      expect(scene.title).not.toMatch(/^(Утро|День|Вечер|Ночь)$/);
+    });
   });
 });

@@ -84,10 +84,13 @@ export default function App() {
     let active = true;
     const saved = loadSession();
     const minimumBoot = new Promise((resolve) => window.setTimeout(resolve, 650));
-    const assets = Promise.allSettled([
-      preload(assetUrl("assets/brand/logo-nika-green.jpg")),
-      preload(animals[0]?.photo ?? ""),
-      preload(animals[1]?.photo ?? ""),
+    const assets = Promise.race([
+      Promise.allSettled([
+        preload(assetUrl("assets/brand/logo-nika-green.jpg")),
+        preload(animals[0]?.photo ?? ""),
+        preload(animals[1]?.photo ?? ""),
+      ]),
+      new Promise((resolve) => window.setTimeout(resolve, 2_500)),
     ]);
 
     Promise.all([minimumBoot, assets]).then(() => {

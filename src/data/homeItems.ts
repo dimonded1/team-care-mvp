@@ -6,7 +6,11 @@ export type HomeItemId =
   | "toy"
   | "plant"
   | "cable"
-  | "candle";
+  | "candle"
+  | "diffuser"
+  | "tilt-window"
+  | "ribbons"
+  | "small-parts-toy";
 
 export type HomePlacementId = "quiet-corner" | "water-place" | "safe-floor" | "window" | "play-place";
 
@@ -99,6 +103,42 @@ export const homeItems: HomeItem[] = [
     feedback: "Открытый огонь оставим за пределами комнаты: любопытный питомец может задеть свечу.",
     asset: "assets/home-game/candle.webp",
   },
+  {
+    id: "diffuser",
+    label: "Диффузор с эфирным маслом",
+    shortLabel: "Аромадиффузор",
+    description: "Стоит на низкой полке и легко опрокидывается",
+    safe: false,
+    feedback: "Красиво, но не здесь: концентрированное масло нельзя оставлять в доступе, а сильный аромат может быть слишком резким для питомца.",
+    asset: "assets/home-game/diffuser.webp",
+  },
+  {
+    id: "tilt-window",
+    label: "Окно в режиме проветривания",
+    shortLabel: "Откидное окно",
+    description: "Узкая щель без фиксатора и защитной сетки",
+    safe: false,
+    feedback: "Такая щель выглядит небольшой, но в ней можно застрять. Проветривать безопаснее с прочной сеткой или ограничителем.",
+    asset: "assets/home-game/tilt-window.webp",
+  },
+  {
+    id: "ribbons",
+    label: "Длинные ленты для игры",
+    shortLabel: "Ленты и шнуры",
+    description: "Красивые петли лежат без присмотра",
+    safe: false,
+    feedback: "Длинные ленты легко проглотить или запутать вокруг лапы. Их используют только вместе с человеком и потом убирают.",
+    asset: "assets/home-game/ribbons.webp",
+  },
+  {
+    id: "small-parts-toy",
+    label: "Игрушка с пуговицами и колокольчиком",
+    shortLabel: "Плюшевый зайчик",
+    description: "Мелкие детали и свободная нитка",
+    safe: false,
+    feedback: "Мягкий вид обманчив: пуговицы, колокольчик и нитка могут оторваться. Лучше выбрать прочную игрушку без мелких деталей.",
+    asset: "assets/home-game/small-parts-toy.webp",
+  },
 ];
 
 export const safeHomeItems = homeItems.filter((item) => item.safe);
@@ -106,11 +146,15 @@ export const unsafeHomeItems = homeItems.filter((item) => !item.safe);
 
 export const homeItemQueue: HomeItemId[] = [
   "bed",
-  "plant",
+  "diffuser",
   "water",
-  "cable",
+  "tilt-window",
+  "ribbons",
   "rug",
-  "candle",
+  "plant",
   "mesh",
+  "small-parts-toy",
+  "cable",
+  "candle",
   "toy",
 ];

@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { homeItemQueue, homeItems, safeHomeItems, unsafeHomeItems } from "./homeItems";
 
 describe("homeItems", () => {
-  it("contains a short balanced set for the safe-home game", () => {
-    expect(homeItems).toHaveLength(8);
+  it("contains more subtle hazards than obvious safe items", () => {
+    expect(homeItems).toHaveLength(12);
     expect(safeHomeItems).toHaveLength(5);
-    expect(unsafeHomeItems).toHaveLength(3);
+    expect(unsafeHomeItems).toHaveLength(7);
   });
 
   it("gives every safe item a unique visual destination", () => {
@@ -26,5 +26,14 @@ describe("homeItems", () => {
     expect(firstBox.filter((item) => item?.safe)).toHaveLength(2);
     expect(firstBox.filter((item) => item && !item.safe)).toHaveLength(2);
     expect(new Set(homeItemQueue).size).toBe(homeItems.length);
+  });
+
+  it("includes deceptively ordinary household hazards", () => {
+    expect(unsafeHomeItems.map((item) => item.id)).toEqual(expect.arrayContaining([
+      "diffuser",
+      "tilt-window",
+      "ribbons",
+      "small-parts-toy",
+    ]));
   });
 });

@@ -12,7 +12,7 @@ interface HomeBuilderGameProps {
 
 type HomeReaction = { item: HomeItem; kind: "placed" | "rejected" } | null;
 
-const FEEDBACK_DURATION_MS = 1_750;
+const FEEDBACK_DURATION_MS = 1_450;
 
 export function HomeBuilderGame({ animal, onReadyChange }: HomeBuilderGameProps) {
   const reduceMotion = useReducedMotion();

@@ -94,7 +94,7 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
         <section className="final-copy">
           <div className="final-check"><HeartIcon /></div>
           <span className="screen-eyebrow">Помощь продолжается</span>
-          <h1>Расскажите друзьям про {animal.name}</h1>
+          <h1>Познакомьте друзей: {animal.name}</h1>
           <p>Готовая сторис поможет большему числу людей узнать о подопечном фонда и его поиске дома.</p>
         </section>
 

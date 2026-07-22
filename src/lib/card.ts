@@ -185,17 +185,24 @@ function drawBrandRibbon(context: CanvasRenderingContext2D, animalName: string):
   context.translate(-48, 1034);
   context.rotate(-0.055);
 
-  context.fillStyle = "#f76d31";
+  context.fillStyle = "#c94820";
   roundedRectPath(context, 0, 20, 1190, 128, 64);
   context.fill();
 
-  context.fillStyle = "#ffb5b5";
+  const ribbonGradient = context.createLinearGradient(0, 0, 1190, 118);
+  ribbonGradient.addColorStop(0, "#f76d31");
+  ribbonGradient.addColorStop(0.58, "#ff7f42");
+  ribbonGradient.addColorStop(1, "#ef5b25");
+  context.fillStyle = ribbonGradient;
   roundedRectPath(context, 0, 0, 1190, 118, 59);
   context.fill();
 
   const ribbonText = `ЗНАКОМЬТЕСЬ, ${animalName.toLocaleUpperCase("ru")}`;
   const fontSize = setFittedFont(context, ribbonText, 940, 48, 34, 850);
-  context.fillStyle = "#173c22";
+  context.fillStyle = "#fffdf8";
+  context.shadowColor = "rgba(91, 28, 8, 0.24)";
+  context.shadowBlur = 10;
+  context.shadowOffsetY = 2;
   context.fillText(ribbonText, 104, 60 + fontSize / 3);
   context.restore();
 }
@@ -225,7 +232,14 @@ export async function createResultCard(animal: Animal): Promise<Blob> {
     layout.logo.height,
   );
 
-  context.fillStyle = "rgba(255, 253, 248, 0.10)";
+  context.fillStyle = "#fffdf8";
+  context.font = "850 27px Raleway, Arial, sans-serif";
+  context.fillText("ФОНД НИКА", 182, 178);
+  context.fillStyle = "rgba(255, 253, 248, 0.58)";
+  context.font = "650 18px Raleway, Arial, sans-serif";
+  context.fillText("ПОМОЩЬ БЕЗДОМНЫМ ЖИВОТНЫМ", 182, 210);
+
+  context.fillStyle = "#f76d31";
   roundedRectPath(
     context,
     layout.badge.left,
@@ -235,10 +249,10 @@ export async function createResultCard(animal: Animal): Promise<Blob> {
     35,
   );
   context.fill();
-  context.strokeStyle = "rgba(255, 253, 248, 0.22)";
+  context.strokeStyle = "rgba(255, 253, 248, 0.34)";
   context.lineWidth = 2;
   context.stroke();
-  context.fillStyle = "#ffb5b5";
+  context.fillStyle = "#fffdf8";
   context.beginPath();
   context.arc(layout.badge.left + 36, layout.badge.top + 35, 7, 0, Math.PI * 2);
   context.fill();
@@ -295,11 +309,12 @@ export async function createResultCard(animal: Animal): Promise<Blob> {
   context.font = "850 82px Raleway, Arial, sans-serif";
   context.fillText("фонду НИКА", layout.copy.left, layout.copy.top + 92);
 
-  context.fillStyle = "rgba(255, 253, 248, 0.76)";
-  context.font = "550 31px Raleway, Arial, sans-serif";
-  context.fillText("Помогаю рассказывать о подопечных.", layout.copy.left, layout.copy.top + 150);
+  context.fillStyle = "rgba(255, 253, 248, 0.78)";
+  const besideText = `Сегодня рядом — ${animal.name}.`;
+  setFittedFont(context, besideText, 880, 34, 27, 600);
+  context.fillText(besideText, layout.copy.left, layout.copy.top + 154);
 
-  context.fillStyle = "#ffb5b5";
+  context.fillStyle = "#ffb99d";
   setFittedFont(context, `${animal.name} ищет дом.`, 760, 40, 32, 800);
   context.fillText(`${animal.name} ищет дом.`, layout.copy.left, layout.copy.top + 212);
 

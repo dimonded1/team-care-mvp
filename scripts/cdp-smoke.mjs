@@ -142,7 +142,10 @@ async function main() {
         if ((await bodyText()).toLocaleLowerCase("ru").includes(normalizedNeedle)) return;
         await sleep(80);
       }
-      throw new Error(`Expected visible text: ${needle}\nCurrent body: ${(await bodyText()).slice(0, 1200)}`);
+      throw new Error(
+        `Expected visible text: ${needle}\nCurrent body: ${(await bodyText()).slice(0, 1200)}`
+        + `\nConsole errors: ${consoleErrors.join(" | ") || "none"}`,
+      );
     };
 
     const waitForSelector = async (selector, present = true, timeoutMs = 6_000) => {
@@ -376,7 +379,7 @@ async function main() {
           if (
             sceneMetrics.activeScene !== sceneId
             || sceneMetrics.activeSceneCount !== 1
-            || sceneMetrics.choices !== 3
+            || sceneMetrics.choices !== 4
             || sceneMetrics.correctChoices !== 1
             || sceneMetrics.minHeight < 44
             || sceneMetrics.legacyDragNodes !== 0
@@ -481,7 +484,7 @@ async function main() {
         if (
           initial.phase !== 'building'
           || initial.placed !== '0'
-          || initial.candidates !== '8'
+          || initial.candidates !== '12'
           || initial.items !== 4
           || initial.safe !== 2
           || initial.unsafe !== 2
@@ -551,14 +554,32 @@ async function main() {
         }
         await capture("smoke-home-game-rejected-mobile.png");
 
-        const safeIds = ['bed', 'water', 'rug', 'mesh', 'toy'];
-        for (let index = 0; index < safeIds.length; index += 1) {
-          const selector = `[data-testid="home-item"][data-item-id="${safeIds[index]}"]`;
+        const remainingItems = [
+          { id: 'tilt-window', safe: false },
+          { id: 'ribbons', safe: false },
+          { id: 'bed', safe: true },
+          { id: 'water', safe: true },
+          { id: 'plant', safe: false },
+          { id: 'small-parts-toy', safe: false },
+          { id: 'rug', safe: true },
+          { id: 'cable', safe: false },
+          { id: 'candle', safe: false },
+          { id: 'mesh', safe: true },
+          { id: 'toy', safe: true },
+        ];
+        let placedCount = 0;
+        for (const item of remainingItems) {
+          const selector = `[data-testid="home-item"][data-item-id="${item.id}"]`;
           await waitForEnabledSelector(selector, 4_000);
           await evaluate(`document.querySelector(${JSON.stringify(selector)})?.scrollIntoView({ block: 'center' })`);
           await sleep(120);
           await tapSelector(selector);
-          await waitForSelector(`[data-testid="home-game"][data-home-placed="${index + 1}"]`);
+          if (item.safe) {
+            placedCount += 1;
+            await waitForSelector(`[data-testid="home-game"][data-home-placed="${placedCount}"]`);
+          } else {
+            await waitForSelector('.home-feedback--rejected');
+          }
         }
 
         await waitForSelector('[data-testid="home-game"][data-home-phase="final"][data-home-placed="5"]', true, 4_000);
@@ -1290,7 +1311,7 @@ async function main() {
     if (
       dayGameMetrics.activeScene !== "morning"
       || dayGameMetrics.progressItems !== 4
-      || dayGameMetrics.choices.length !== 3
+      || dayGameMetrics.choices.length !== 4
       || dayGameMetrics.choices.some((choice) => choice.width < 44 || choice.height < 44 || choice.touchAction === "none")
       || dayGameMetrics.sceneWidth === null
       || dayGameMetrics.sceneWidth > dayGameMetrics.viewportWidth
@@ -1332,6 +1353,7 @@ async function main() {
       || compactDayLayout.choicesTop === null
       || compactDayLayout.choicesBottom === null
       || compactDayLayout.choicesTop > compactDayLayout.viewportHeight - 72
+      || compactDayLayout.choicesBottom > compactDayLayout.viewportHeight - 4
       || compactDayLayout.sceneBottom <= compactDayLayout.choicesTop
       || compactDayLayout.overflow > 1
     ) {
@@ -2007,7 +2029,7 @@ async function main() {
       || Math.abs(desktopDayGame.screenRight - desktopDayGame.viewportWidth) > 1
       || desktopDayGame.sceneWidth === null
       || desktopDayGame.sceneWidth < 1100
-      || desktopDayGame.choices !== 3
+      || desktopDayGame.choices !== 4
       || desktopDayGame.correctChoices !== 1
       || desktopDayGame.minChoiceHeight < 44
       || !desktopDayGame.artLoaded

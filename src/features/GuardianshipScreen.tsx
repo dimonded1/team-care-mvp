@@ -40,6 +40,24 @@ const careDirections = [
   },
 ];
 
+const fitProfiles = [
+  {
+    title: "Хотите помогать адресно",
+    text: "Вы знаете имя подопечного, следите за его историей и видите, на чью жизнь влияет ваша помощь.",
+    icon: HeartIcon,
+  },
+  {
+    title: "Пока не можете забрать домой",
+    text: "Можно стать важным человеком рядом, даже если дома сейчас нет условий для питомца.",
+    icon: HomeIcon,
+  },
+  {
+    title: "Ищете посильный формат",
+    text: "Не нужно делать всё одному: у животного может быть команда до пяти опекунов.",
+    icon: MovementIcon,
+  },
+];
+
 export function GuardianshipScreen({ animal, onBack, onContinue }: GuardianshipScreenProps) {
   const reduceMotion = useReducedMotion();
   const enter = (delay = 0) => ({
@@ -105,13 +123,52 @@ export function GuardianshipScreen({ animal, onBack, onContinue }: GuardianshipS
               <strong>Четверг-воскресенье</strong>
               <small>11:00-16:00 или в опекунские дни, предупредив менеджера</small>
             </article>
+            <article className="guardianship-fact guardianship-fact--news">
+              <span>Оставаться в курсе</span>
+              <strong>Новости, фото и видео</strong>
+              <small>закрытые каналы опекунов в Telegram и MAX</small>
+            </article>
+            <article className="guardianship-fact guardianship-fact--symbol">
+              <span>Знак личного участия</span>
+              <strong>Сертификат и значок</strong>
+              <small>ваше имя появится в карточке подопечного и в приюте</small>
+            </article>
+          </div>
+        </motion.section>
+
+        <motion.section
+          className="guardianship-fit"
+          aria-labelledby="guardianship-fit-title"
+          {...enter(0.13)}
+        >
+          <header>
+            <span>Забота в удобном ритме</span>
+            <h2 id="guardianship-fit-title">Кому подходит опека</h2>
+          </header>
+          <div className="guardianship-fit__grid">
+            {fitProfiles.map((profile, index) => {
+              const ProfileIcon = profile.icon;
+              return (
+                <motion.article
+                  key={profile.title}
+                  initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.5 }}
+                  transition={{ duration: reduceMotion ? 0.12 : 0.36, delay: reduceMotion ? 0 : index * 0.06 }}
+                >
+                  <span aria-hidden="true"><ProfileIcon /></span>
+                  <strong>{profile.title}</strong>
+                  <p>{profile.text}</p>
+                </motion.article>
+              );
+            })}
           </div>
         </motion.section>
 
         <motion.section
           className="guardianship-team"
           aria-labelledby="guardianship-team-title"
-          {...enter(0.16)}
+          {...enter(0.2)}
         >
           <header className="guardianship-team__header">
             <div>

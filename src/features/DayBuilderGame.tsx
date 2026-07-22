@@ -35,7 +35,7 @@ type DayReaction = {
   correct: boolean;
 };
 
-const CORRECT_FEEDBACK_DURATION_MS = 2_600;
+const CORRECT_FEEDBACK_DURATION_MS = 2_100;
 const INCORRECT_FEEDBACK_LOCK_MS = 1_800;
 
 const animalNameGenitiveById: Record<string, string> = {

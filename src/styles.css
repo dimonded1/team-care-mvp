@@ -7902,7 +7902,7 @@ p {
   bottom: clamp(14px, 2vw, 24px);
   left: clamp(14px, 2vw, 24px);
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(8px, 1.2vw, 14px);
 }
 
@@ -8354,12 +8354,12 @@ p {
 
   .day-character {
     right: 1%;
-    bottom: 116px;
-    width: clamp(140px, 45vw, 205px);
+    bottom: 182px;
+    width: clamp(128px, 40vw, 182px);
   }
 
   .day-character--cat {
-    width: clamp(135px, 43vw, 196px);
+    width: clamp(124px, 39vw, 176px);
   }
 
   .day-scene__choices {
@@ -8370,7 +8370,7 @@ p {
   }
 
   .day-choice {
-    min-height: 106px;
+    min-height: 84px;
     padding: 10px 7px;
     display: flex;
     flex-direction: column;
@@ -8463,12 +8463,12 @@ p {
   }
 
   .day-character {
-    bottom: 112px;
-    width: 150px;
+    bottom: 178px;
+    width: 132px;
   }
 
   .day-choice {
-    min-height: 104px;
+    min-height: 72px;
   }
 
   .day-choice__copy strong {
@@ -11580,7 +11580,7 @@ p {
 }
 
 .guardianship-home-goal strong,
-.guardianship-home-goal span {
+.guardianship-home-goal > div:last-child span {
   display: block;
 }
 
@@ -11598,6 +11598,7 @@ p {
 }
 
 .guardianship-facts,
+.guardianship-fit,
 .guardianship-team {
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 34px;
@@ -11610,6 +11611,7 @@ p {
 }
 
 .guardianship-facts h2,
+.guardianship-fit h2,
 .guardianship-team h2 {
   margin: 0;
   color: #fffdf8;
@@ -11620,8 +11622,14 @@ p {
 .guardianship-facts__grid {
   margin-top: 18px;
   display: grid;
-  grid-template-columns: minmax(0, 0.82fr) minmax(0, 0.82fr) minmax(280px, 1.36fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
+}
+
+.guardianship-fact--visit,
+.guardianship-fact--news,
+.guardianship-fact--symbol {
+  grid-column: span 2;
 }
 
 .guardianship-fact {
@@ -11664,6 +11672,14 @@ p {
     rgba(255, 255, 255, 0.065);
 }
 
+.guardianship-fact--news {
+  background: linear-gradient(145deg, rgba(120, 187, 120, 0.17), rgba(255, 255, 255, 0.05));
+}
+
+.guardianship-fact--symbol {
+  background: linear-gradient(145deg, rgba(255, 181, 181, 0.13), rgba(247, 109, 49, 0.08));
+}
+
 .guardianship-fact span,
 .guardianship-fact strong,
 .guardianship-fact small {
@@ -11686,7 +11702,9 @@ p {
   letter-spacing: -0.045em;
 }
 
-.guardianship-fact--visit strong {
+.guardianship-fact--visit strong,
+.guardianship-fact--news strong,
+.guardianship-fact--symbol strong {
   font-size: clamp(20px, 2.6vw, 31px);
 }
 
@@ -11695,6 +11713,72 @@ p {
   color: rgba(255, 253, 248, 0.66);
   font-size: 11px;
   line-height: 1.35;
+}
+
+.guardianship-fit {
+  padding: clamp(22px, 3.5vw, 38px);
+  background:
+    radial-gradient(circle at 8% 8%, rgba(255, 181, 181, 0.12), transparent 16rem),
+    rgba(18, 55, 35, 0.86);
+}
+
+.guardianship-fit > header > span {
+  color: #ffb99d;
+  font-size: 11px;
+  font-weight: 820;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.guardianship-fit h2 {
+  margin-top: 7px;
+}
+
+.guardianship-fit__grid {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.guardianship-fit__grid article {
+  min-width: 0;
+  min-height: 156px;
+  padding: 18px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.guardianship-fit__grid article > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(247, 109, 49, 0.14);
+  color: #ffb99d;
+}
+
+.guardianship-fit__grid svg {
+  width: 23px;
+  height: 23px;
+}
+
+.guardianship-fit__grid strong {
+  color: #fffdf8;
+  font-size: 15px;
+  line-height: 1.18;
+}
+
+.guardianship-fit__grid p {
+  margin: 0;
+  color: rgba(255, 253, 248, 0.66);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .guardianship-team {
@@ -11858,6 +11942,24 @@ p {
     grid-column: 1 / -1;
   }
 
+  .guardianship-fact--news,
+  .guardianship-fact--symbol {
+    grid-column: auto;
+  }
+
+  .guardianship-fit__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .guardianship-fit__grid article {
+    min-height: 0;
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .guardianship-fit__grid article > span {
+    grid-row: span 2;
+  }
+
   .guardianship-directions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -11948,6 +12050,7 @@ p {
   }
 
   .guardianship-facts,
+  .guardianship-fit,
   .guardianship-team {
     border-radius: 26px;
   }
@@ -11957,6 +12060,7 @@ p {
   }
 
   .guardianship-facts h2,
+  .guardianship-fit h2,
   .guardianship-team h2 {
     font-size: 24px;
   }
@@ -11980,8 +12084,50 @@ p {
     min-height: 116px;
   }
 
-  .guardianship-fact--visit strong {
+  .guardianship-fact--visit strong,
+  .guardianship-fact--news strong,
+  .guardianship-fact--symbol strong {
     font-size: clamp(19px, 5.8vw, 24px);
+  }
+
+  .guardianship-fit {
+    padding: 18px;
+  }
+
+  .guardianship-fit > header > span {
+    font-size: 9px;
+  }
+
+  .guardianship-fit__grid {
+    margin-top: 14px;
+    gap: 8px;
+  }
+
+  .guardianship-fit__grid article {
+    padding: 13px;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 5px 9px;
+    border-radius: 18px;
+  }
+
+  .guardianship-fit__grid article > span {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+  }
+
+  .guardianship-fit__grid svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .guardianship-fit__grid strong {
+    font-size: 12px;
+  }
+
+  .guardianship-fit__grid p {
+    font-size: 10px;
+    line-height: 1.35;
   }
 
   .guardianship-team {
@@ -12560,16 +12706,39 @@ p {
   }
 
   .day-character {
-    bottom: 102px;
-    width: 132px;
+    bottom: 148px;
+    width: 116px;
   }
 
   .day-character--cat {
-    width: 126px;
+    width: 112px;
   }
 
   .day-choice {
-    min-height: 92px;
+    min-height: 68px;
+    padding: 7px 6px;
+    gap: 4px;
+  }
+
+  .day-choice__icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .day-choice__icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .day-choice__copy strong {
+    font-size: 9px;
+  }
+
+  .day-choice__mark {
+    top: 7px;
+    right: 7px;
+    width: 19px;
+    height: 19px;
   }
 
   .day-scene__feedback {
