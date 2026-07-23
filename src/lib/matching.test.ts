@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { animals } from "../data/animals";
 import { questions } from "../data/questions";
-import { buildUserProfile, findMatch, matchAxes, scoreAnimal } from "./matching";
+import {
+  buildUserProfile,
+  createMatchResult,
+  findMatch,
+  matchAxes,
+  scoreAnimal,
+} from "./matching";
 
 describe("matching", () => {
   it("keeps every profile axis inside 0..100", () => {
@@ -29,5 +35,14 @@ describe("matching", () => {
     const result = findMatch(animals, questions, questions.map(() => false));
     expect(result.reasons).toHaveLength(2);
     expect(result.reasons.every((reason) => reason.endsWith("."))).toBe(true);
+  });
+
+  it("recomputes the score and reasons when restoring a saved animal", () => {
+    const userProfile = buildUserProfile(questions, questions.map(() => true));
+    const restored = createMatchResult(userProfile, animals[1]);
+
+    expect(restored.animal.id).toBe(animals[1].id);
+    expect(restored.score).toBe(scoreAnimal(userProfile, animals[1]));
+    expect(restored.reasons).toHaveLength(2);
   });
 });

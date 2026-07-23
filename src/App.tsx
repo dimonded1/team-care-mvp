@@ -15,6 +15,7 @@ import {
   type LegalDocumentId,
 } from "./data/legalDocuments";
 import { BootScreen } from "./features/BootScreen";
+import { CareCycleIntro } from "./features/CareCycleIntro";
 import { FinalScreen } from "./features/FinalScreen";
 import { GuardianshipScreen } from "./features/GuardianshipScreen";
 import { JourneyScreen } from "./features/JourneyScreen";
@@ -22,7 +23,7 @@ import { PassportScreen } from "./features/PassportScreen";
 import { RevealScreen } from "./features/RevealScreen";
 import { WelcomeScreen } from "./features/WelcomeScreen";
 import { clearSession, loadSession, saveSession } from "./lib/storage";
-import { findMatch } from "./lib/matching";
+import { createMatchResult, findMatch } from "./lib/matching";
 import { assetUrl } from "./lib/assets";
 import type { Mission, Stage, StoredSession } from "./types/app";
 
@@ -38,6 +39,7 @@ function preload(src: string): Promise<void> {
 const restorableStages = new Set<StoredSession["stage"]>([
   "welcome",
   "quiz",
+  "care-intro",
   "passport",
   "journey",
   "guardianship",
@@ -117,7 +119,7 @@ export default function App() {
     const result = findMatch(animals, questions, answers);
     if (!animalId || result.animal.id === animalId) return result;
     const storedAnimal = animals.find((animal) => animal.id === animalId);
-    return storedAnimal ? { ...result, animal: storedAnimal } : result;
+    return storedAnimal ? createMatchResult(result.userProfile, storedAnimal) : result;
   }, [answers, animalId]);
 
   const selectedAnimal = matchResult?.animal ?? animals.find((animal) => animal.id === animalId) ?? null;
@@ -195,7 +197,12 @@ export default function App() {
   };
 
   const openMission = (missionId: Mission["id"]) => {
-    if (!missions.some((mission) => mission.id === missionId)) return;
+    const missionIndex = missions.findIndex((mission) => mission.id === missionId);
+    if (missionIndex < 0) return;
+    const prerequisitesComplete = missions
+      .slice(0, missionIndex)
+      .every((mission) => completedMissionIds.includes(mission.id));
+    if (!prerequisitesComplete && !completedMissionIds.includes(missionId)) return;
     setActiveMissionId(missionId);
     setStartedMissionIds((current) =>
       current.includes(missionId) ? current : [...current, missionId],
@@ -294,7 +301,16 @@ export default function App() {
       );
     }
     if (stage === "reveal" && matchResult) {
-      return <RevealScreen result={matchResult} onContinue={() => setStage("passport")} />;
+      return <RevealScreen result={matchResult} onContinue={() => setStage("care-intro")} />;
+    }
+    if (stage === "care-intro" && selectedAnimal) {
+      return (
+        <CareCycleIntro
+          animal={selectedAnimal}
+          onBack={() => setStage("reveal")}
+          onContinue={() => setStage("passport")}
+        />
+      );
     }
     if (stage === "passport" && matchResult) {
       return (
@@ -303,7 +319,7 @@ export default function App() {
           missions={missions}
           startedMissionIds={startedMissionIds}
           completedMissionIds={completedMissionIds}
-          onBack={() => setStage("reveal")}
+          onBack={() => setStage("care-intro")}
           onSelectMission={openMission}
           onContinue={() => setStage("guardianship")}
         />

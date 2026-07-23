@@ -157,8 +157,8 @@ export function TrustCareGame({ animal, onReadyChange }: TrustCareGameProps) {
       aria-labelledby="trust-game-title"
     >
       <header className="trust-game__header">
-        <p className="section-number">Направление заботы · 03</p>
-        <h1 id="trust-game-title">Дайте доверию подойти</h1>
+        <p className="section-number">Круг заботы · 01</p>
+        <h1 id="trust-game-title">Начните знакомство без спешки</h1>
         <p>Не торопите питомца: каждый спокойный выбор помогает ему сделать шаг навстречу.</p>
       </header>
 

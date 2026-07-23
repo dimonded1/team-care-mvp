@@ -59,6 +59,7 @@ export type Stage =
   | "welcome"
   | "quiz"
   | "reveal"
+  | "care-intro"
   | "passport"
   | "journey"
   | "guardianship"

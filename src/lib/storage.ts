@@ -5,6 +5,7 @@ const missionIds: Mission["id"][] = ["food", "health", "trust", "home"];
 const restorableStages: StoredSession["stage"][] = [
   "welcome",
   "quiz",
+  "care-intro",
   "passport",
   "journey",
   "guardianship",

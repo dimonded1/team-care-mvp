@@ -12,10 +12,9 @@ import { Button } from "../components/Button";
 import { FoundationMenu } from "../components/FoundationMenu";
 import {
   CheckIcon,
-  FoodIcon,
   HealthIcon,
   HeartIcon,
-  HomeIcon,
+  MovementIcon,
   TrustIcon,
 } from "../components/Icons";
 import { OrbitField } from "../components/OrbitField";
@@ -31,74 +30,58 @@ interface PassportScreenProps {
   onContinue: () => void;
 }
 
-type MissionStatus = "available" | "started" | "completed";
+type MissionStatus = "available" | "started" | "completed" | "locked";
 
 const missionPresentation = {
   food: {
-    title: "Повседневность",
-    description: "Соберите спокойный день",
-    duration: 3,
-    Icon: FoodIcon,
+    title: "Визит",
+    description: "Как договориться о встрече и быть рядом без давления",
+    duration: 2,
+    Icon: HeartIcon,
   },
   health: {
     title: "Здоровье",
-    description: "Что важно ему сейчас",
+    description: "Как заметить важное и подготовить визит к ветеринару",
     duration: 2,
     Icon: HealthIcon,
   },
   trust: {
-    title: "Доверие",
-    description: "Как знакомиться бережно",
+    title: "Знакомство",
+    description: "Четыре ситуации о бережном первом контакте",
     duration: 3,
     Icon: TrustIcon,
   },
   home: {
-    title: "Шанс на дом",
-    description: "Проложите маршрут к семье",
+    title: "Прогулка",
+    description: "Четыре решения для спокойного маршрута",
     duration: 3,
-    Icon: HomeIcon,
+    Icon: MovementIcon,
   },
 } satisfies Record<
   Mission["id"],
-  { title: string; description: string; duration: number; Icon: typeof FoodIcon }
+  { title: string; description: string; duration: number; Icon: typeof HeartIcon }
 >;
-
-const statusLabels: Record<MissionStatus, string> = {
-  available: "Не начато",
-  started: "В процессе",
-  completed: "Пройдено",
-};
 
 function getMissionStatus(
   missionId: Mission["id"],
+  missionIndex: number,
+  firstIncompleteIndex: number,
   startedMissionIds: Mission["id"][],
   completedMissionIds: Mission["id"][],
 ): MissionStatus {
   if (completedMissionIds.includes(missionId)) return "completed";
+  if (firstIncompleteIndex >= 0 && missionIndex > firstIncompleteIndex) return "locked";
   if (startedMissionIds.includes(missionId)) return "started";
   return "available";
-}
-
-function getRecommendedMission(animal: MatchResult["animal"]): Mission["id"] {
-  const needs = animal.careTags.join(" ").toLocaleLowerCase("ru");
-  if (needs.includes("довер") || needs.includes("социал") || needs.includes("простран")) {
-    return "trust";
-  }
-  if (needs.includes("здоров")) return "health";
-  if (needs.includes("движ") || needs.includes("режим") || needs.includes("игр")) {
-    return "food";
-  }
-  return "home";
 }
 
 function getActionLabel(
   status: MissionStatus,
   duration: number,
-  recommended: boolean,
 ) {
-  if (status === "completed") return "Пройдено";
+  if (status === "completed") return "Пройдено · повторить";
   if (status === "started") return "Продолжить";
-  if (recommended) return "Рекомендуем начать";
+  if (status === "locked") return "Откроется после предыдущего";
   return `Начать · ${duration} мин`;
 }
 
@@ -143,7 +126,7 @@ function MissionAtmosphere({ missionId }: { missionId: Mission["id"] }) {
       <i className="mission-home-dot mission-home-dot--one" />
       <i className="mission-home-dot mission-home-dot--two" />
       <i className="mission-home-dot mission-home-dot--three" />
-      <span className="mission-home-glyph"><HomeIcon /></span>
+      <span className="mission-home-glyph"><MovementIcon /></span>
     </span>
   );
 }
@@ -170,11 +153,19 @@ export function PassportScreen({
   const nodesX = useTransform(smoothX, [-1, 1], [4, -4]);
   const nodesY = useTransform(smoothY, [-1, 1], [3, -3]);
   const complete = completedMissionIds.length === missions.length && missions.length > 0;
-  const recommendedMissionId = getRecommendedMission(animal);
   const roundedScore = Math.round(score);
-  const missionStatuses = missions.map((mission) => ({
+  const firstIncompleteIndex = missions.findIndex(
+    (mission) => !completedMissionIds.includes(mission.id),
+  );
+  const missionStatuses = missions.map((mission, index) => ({
     id: mission.id,
-    status: getMissionStatus(mission.id, startedMissionIds, completedMissionIds),
+    status: getMissionStatus(
+      mission.id,
+      index,
+      firstIncompleteIndex,
+      startedMissionIds,
+      completedMissionIds,
+    ),
   }));
   const hasStartedMission = missionStatuses.some(({ status }) => status === "started");
   const segmentStyles = Object.fromEntries(
@@ -274,18 +265,23 @@ export function PassportScreen({
             </div>
           </motion.div>
 
-          <p className="passport-routes-title">Выберите мини-игру</p>
+          <div className="passport-routes-heading">
+            <p className="passport-routes-title">Четыре круга заботы</p>
+            <span>Пройдите их по порядку: от первого контакта до внимания к самочувствию.</span>
+          </div>
 
           <div className="passport-mission-nodes passport-mission-nodes--v2">
             {missions.map((mission, index) => {
               const presentation = missionPresentation[mission.id];
               const status = getMissionStatus(
                 mission.id,
+                index,
+                firstIncompleteIndex,
                 startedMissionIds,
                 completedMissionIds,
               );
-              const recommended = mission.id === recommendedMissionId && status === "available";
-              const actionLabel = getActionLabel(status, presentation.duration, recommended);
+              const recommended = index === firstIncompleteIndex && status === "available";
+              const actionLabel = getActionLabel(status, presentation.duration);
               const Icon = presentation.Icon;
               return (
                 <motion.button
@@ -296,6 +292,7 @@ export function PassportScreen({
                   data-mission-id={mission.id}
                   data-mission-status={status}
                   aria-label={`${presentation.title}. ${presentation.description}. ${actionLabel}`}
+                  disabled={status === "locked"}
                   onClick={() => onSelectMission(mission.id)}
                   initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.92, y: reduceMotion ? 0 : 14 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -310,6 +307,7 @@ export function PassportScreen({
                   <MissionAtmosphere missionId={mission.id} />
                   <span className="passport-mission-node__planet" aria-hidden="true">
                     <Icon />
+                    <small>{index + 1}</small>
                   </span>
                   <span className="passport-mission-node__copy">
                     <strong>{presentation.title}</strong>
@@ -318,7 +316,8 @@ export function PassportScreen({
                   <span className="passport-mission-node__status">
                     {status === "completed" ? <CheckIcon /> : null}
                     <span>{actionLabel}</span>
-                    {status !== "completed" ? <span aria-hidden="true">→</span> : null}
+                    {status !== "completed" && status !== "locked" ? <span aria-hidden="true">→</span> : null}
+                    {status === "locked" ? <span aria-hidden="true">○</span> : null}
                   </span>
                 </motion.button>
               );
@@ -331,7 +330,7 @@ export function PassportScreen({
               className="passport-scroll-cue passport-scroll-cue--goal"
               onClick={onContinue}
             >
-              Стать опекуном <span aria-hidden="true">→</span>
+              Узнать, как устроена опека <span aria-hidden="true">→</span>
             </button>
           ) : (
             <a className="passport-scroll-cue" href="#animal-passport">
@@ -383,7 +382,7 @@ export function PassportScreen({
                 <div className="passport-hub__care-tags">
                   {animal.careTags.map((tag) => <span key={tag}>{tag}</span>)}
                 </div>
-                <p>Это четыре стороны повседневной заботы. Откройте каждую мини-игру, чтобы увидеть, как опекун помогает подопечному.</p>
+                <p>Это четыре повторяющихся действия опекуна: знакомиться бережно, приезжать, гулять и замечать изменения в самочувствии.</p>
               </div>
             </details>
 
@@ -401,17 +400,17 @@ export function PassportScreen({
             <HeartIcon />
           </div>
           <div className="passport-goal__copy">
-            <p>Цель маршрута</p>
-            <h2 id="passport-goal-title">Стать частью команды {animal.name}</h2>
+            <p>Круг опеки</p>
+            <h2 id="passport-goal-title">Быть рядом с {animal.name} регулярно</h2>
             <span>
               {complete
                 ? "Вы познакомились со всеми направлениями заботы. Теперь можно узнать, как присоединиться к команде опекунов."
-                : `Пройдите ещё ${missions.length - completedMissionIds.length} из ${missions.length} направлений — и откроется следующий шаг.`}
+                : `Пройдите ещё ${missions.length - completedMissionIds.length} из ${missions.length} кругов — каждый следующий откроется по порядку.`}
             </span>
           </div>
           {complete ? (
             <Button className="button--orange passport-goal__action" onClick={onContinue}>
-              Стать опекуном
+              Узнать, как устроена опека
             </Button>
           ) : (
             <button

@@ -77,6 +77,18 @@ function getReasons(user: MatchProfile, animal: Animal): string[] {
     .map(({ axis }) => reasonLabels[axis]);
 }
 
+export function createMatchResult(
+  userProfile: MatchProfile,
+  animal: Animal,
+): MatchResult {
+  return {
+    animal,
+    score: scoreAnimal(userProfile, animal),
+    userProfile,
+    reasons: getReasons(userProfile, animal),
+  };
+}
+
 export function findMatch(
   animals: Animal[],
   questions: Question[],
@@ -92,9 +104,5 @@ export function findMatch(
     .toSorted((a, b) => b.score - a.score || a.animal.id.localeCompare(b.animal.id));
   const winner = ranked[0];
 
-  return {
-    ...winner,
-    userProfile,
-    reasons: getReasons(userProfile, winner.animal),
-  };
+  return createMatchResult(userProfile, winner.animal);
 }

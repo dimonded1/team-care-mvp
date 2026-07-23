@@ -209,12 +209,12 @@ function DayMontage({
       transition={{ duration: 0.42, ease: [0.23, 1, 0.32, 1] }}
     >
       <div className="day-montage__heading">
-        <p className="section-number">Ваш маршрут заботы</p>
-        <h2>{complete ? `День ${animalNameGenitive} собран` : "Смотрим день целиком"}</h2>
+        <p className="section-number">Прогулка по шагам</p>
+        <h2>{complete ? `Маршрут ${animalNameGenitive} пройден` : "Смотрим прогулку целиком"}</h2>
         <p>
           {complete
-            ? "В нём есть движение, внимание и время для спокойствия."
-            : "Утро, день, вечер и ночь складываются в один бережный ритм."}
+            ? "В нём есть подготовка, выбор дистанции, пауза и спокойное возвращение."
+            : "Четыре решения складываются в один бережный маршрут."}
         </p>
       </div>
 
@@ -273,12 +273,12 @@ export function DayBuilderGame({ animal, onReadyChange }: DayBuilderGameProps) {
   const animalNameGenitive = animalNameGenitiveById[animal.id] ?? animal.name;
 
   const sceneAnnouncement = useMemo(() => {
-    if (phase === "complete") return `День ${animalNameGenitive} собран.`;
-    if (phase === "montage") return "Показываем собранный день.";
+    if (phase === "complete") return `Маршрут ${animalNameGenitive} пройден.`;
+    if (phase === "montage") return "Показываем прогулку целиком.";
     if (reactionChoice) {
       return `${reactionChoice.correct ? "Верно." : "Попробуйте ещё."} ${reactionChoice.feedback}`;
     }
-    return `${currentScene.label}. Выберите одно занятие.`;
+    return `${currentScene.label}. Выберите действие.`;
   }, [animalNameGenitive, currentScene.label, phase, reactionChoice]);
 
   useEffect(() => {
@@ -395,12 +395,12 @@ export function DayBuilderGame({ animal, onReadyChange }: DayBuilderGameProps) {
     >
       <header className="day-game__header">
         <div>
-          <p className="section-number">Качество повседневной жизни</p>
-          <h1>Соберите день {animalNameGenitive}</h1>
+          <p className="section-number">Круг заботы · 03</p>
+          <h1>Пройдите маршрут с {animalNameGenitive}</h1>
         </div>
       </header>
 
-      <ol className="day-game__progress" data-testid="day-scene-progress" aria-label="Четыре части дня">
+      <ol className="day-game__progress" data-testid="day-scene-progress" aria-label="Четыре момента прогулки">
         {dayScenes.map((scene, index) => {
           const complete = Boolean(selections[scene.id]);
           const active = phase === "choosing" && scene.id === currentScene.id;
@@ -519,7 +519,7 @@ export function DayBuilderGame({ animal, onReadyChange }: DayBuilderGameProps) {
                 <p>{currentScene.prompt}</p>
               </div>
 
-              <div className="day-scene__choices" aria-label={`Занятия на ${currentScene.label.toLowerCase()}`}>
+              <div className="day-scene__choices" aria-label={`Действия на этапе «${currentScene.label}»`}>
                 {currentScene.choices.map((choice) => (
                   <ActivityChoice
                     key={choice.id}

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { dayActivityIds, dayScenes } from "./dayScenes";
 
 describe("day scenes", () => {
-  it("keeps the four-part day in chronological order", () => {
+  it("keeps the four walk moments in order", () => {
     expect(dayScenes.map((scene) => scene.id)).toEqual([
       "morning",
       "day",
@@ -32,9 +32,9 @@ describe("day scenes", () => {
     expect([...usedActivities].sort()).toEqual([...dayActivityIds].sort());
   });
 
-  it("uses clear bedtime language without the old team-plan phrasing", () => {
+  it("uses clear care language without the old team-plan phrasing", () => {
     const evening = dayScenes.find((scene) => scene.id === "evening");
-    expect(evening?.choices.find((choice) => choice.correct)?.label).toBe("Пять минут тихого поиска");
+    expect(evening?.choices.find((choice) => choice.correct)?.label).toBe("Перейти в тень и предложить воду");
     expect(JSON.stringify(evening)).not.toContain("по плану команды");
   });
 

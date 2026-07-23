@@ -254,11 +254,11 @@ function HealthSummary({ round }: { round: HealthSituation[] }) {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.28 }}
     >
-      <p className="section-number">Шесть наблюдений</p>
-      <h2>Первая забота начинается с внимания</h2>
+      <p className="section-number">Наблюдения собраны</p>
+      <h2>К визиту к ветеринару готовы</h2>
       <p>
-        Вы прошли бытовые ситуации без диагностики и лечения: где-то достаточно
-        простого ухода, а где-то безопаснее сразу обратиться к ветеринару.
+        Вы не ставили диагноз и не назначали лечение: заметили важное, выбрали
+        безопасную первую реакцию и подготовили понятную информацию для команды.
       </p>
       <ul>
         {round.map((situation) => {
@@ -278,8 +278,8 @@ function HealthSummary({ round }: { round: HealthSituation[] }) {
       <div className="health-summary__note">
         <VetIcon aria-hidden="true" />
         <p>
-          Если питомцу больно, состояние меняется или ситуация вызывает сомнение,
-          правильная первая реакция — связаться с ветеринаром.
+          Дальше опекун помогает согласовать поездку, спокойно сопровождает
+          подопечного и передаёт ветеринару точные наблюдения.
         </p>
       </div>
     </motion.section>
@@ -365,8 +365,9 @@ export function HealthCareGame({ animal, onReadyChange }: HealthCareGameProps) {
     >
       <header className="health-game__header">
         <div>
-          <p className="section-number">Бытовая внимательность</p>
-          <h1>Окажи подопечному первую помощь</h1>
+          <p className="section-number">Круг заботы · 04</p>
+          <h1>Подготовьте визит к ветеринару</h1>
+          <p>Осмотрите питомца вместе с командой: опекун замечает изменения, выбирает безопасный первый шаг и помогает передать врачу точные наблюдения.</p>
         </div>
       </header>
 
