@@ -52,4 +52,22 @@ describe("session storage", () => {
       completedMissionIds: ["food"],
     });
   });
+
+  it("migrates the removed care intro into the interactive orbit", () => {
+    values.set("nika-team-care-mvp-v1", JSON.stringify({
+      version: 2,
+      stage: "care-intro",
+      answers: [true],
+      animalId: "lis-1",
+      activeMissionId: null,
+      startedMissionIds: [],
+      completedMissionIds: [],
+      updatedAt: "2026-07-16T00:00:00.000Z",
+    }));
+
+    expect(loadSession()).toMatchObject({
+      stage: "passport",
+      animalId: "lis-1",
+    });
+  });
 });

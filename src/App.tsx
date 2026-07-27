@@ -15,7 +15,6 @@ import {
   type LegalDocumentId,
 } from "./data/legalDocuments";
 import { BootScreen } from "./features/BootScreen";
-import { CareCycleIntro } from "./features/CareCycleIntro";
 import { FinalScreen } from "./features/FinalScreen";
 import { GuardianshipScreen } from "./features/GuardianshipScreen";
 import { JourneyScreen } from "./features/JourneyScreen";
@@ -39,7 +38,6 @@ function preload(src: string): Promise<void> {
 const restorableStages = new Set<StoredSession["stage"]>([
   "welcome",
   "quiz",
-  "care-intro",
   "passport",
   "journey",
   "guardianship",
@@ -199,10 +197,6 @@ export default function App() {
   const openMission = (missionId: Mission["id"]) => {
     const missionIndex = missions.findIndex((mission) => mission.id === missionId);
     if (missionIndex < 0) return;
-    const prerequisitesComplete = missions
-      .slice(0, missionIndex)
-      .every((mission) => completedMissionIds.includes(mission.id));
-    if (!prerequisitesComplete && !completedMissionIds.includes(missionId)) return;
     setActiveMissionId(missionId);
     setStartedMissionIds((current) =>
       current.includes(missionId) ? current : [...current, missionId],
@@ -301,16 +295,7 @@ export default function App() {
       );
     }
     if (stage === "reveal" && matchResult) {
-      return <RevealScreen result={matchResult} onContinue={() => setStage("care-intro")} />;
-    }
-    if (stage === "care-intro" && selectedAnimal) {
-      return (
-        <CareCycleIntro
-          animal={selectedAnimal}
-          onBack={() => setStage("reveal")}
-          onContinue={() => setStage("passport")}
-        />
-      );
+      return <RevealScreen result={matchResult} onContinue={() => setStage("passport")} />;
     }
     if (stage === "passport" && matchResult) {
       return (
@@ -319,9 +304,10 @@ export default function App() {
           missions={missions}
           startedMissionIds={startedMissionIds}
           completedMissionIds={completedMissionIds}
-          onBack={() => setStage("care-intro")}
+          onBack={() => setStage("reveal")}
           onSelectMission={openMission}
-          onContinue={() => setStage("guardianship")}
+          onOpenGuardianship={() => setStage("guardianship")}
+          onContinue={() => setStage("final")}
         />
       );
     }
@@ -344,10 +330,17 @@ export default function App() {
       return (
         <GuardianshipScreen
           animal={selectedAnimal}
+          complete={completedMissionIds.length === missions.length && missions.length > 0}
           onBack={() => {
             setStage("passport");
           }}
-          onContinue={() => setStage("final")}
+          onContinue={() => {
+            setStage(
+              completedMissionIds.length === missions.length && missions.length > 0
+                ? "final"
+                : "passport",
+            );
+          }}
         />
       );
     }
@@ -355,7 +348,7 @@ export default function App() {
       return (
         <FinalScreen
           animal={selectedAnimal}
-          onBack={() => setStage("guardianship")}
+          onBack={() => setStage("passport")}
           onRestart={restart}
         />
       );

@@ -13,6 +13,7 @@ import type { Animal } from "../types/app";
 
 interface GuardianshipScreenProps {
   animal: Animal;
+  complete: boolean;
   onBack: () => void;
   onContinue: () => void;
 }
@@ -58,7 +59,12 @@ const fitProfiles = [
   },
 ];
 
-export function GuardianshipScreen({ animal, onBack, onContinue }: GuardianshipScreenProps) {
+export function GuardianshipScreen({
+  animal,
+  complete,
+  onBack,
+  onContinue,
+}: GuardianshipScreenProps) {
   const reduceMotion = useReducedMotion();
   const enter = (delay = 0) => ({
     initial: reduceMotion ? false : { opacity: 0, y: 20 },
@@ -207,7 +213,7 @@ export function GuardianshipScreen({ animal, onBack, onContinue }: GuardianshipS
 
       <div className="screen-actions sticky-actions guardianship-actions">
         <Button className="button--orange" fullWidth onClick={onContinue}>
-          Завершить орбиту
+          {complete ? "Перейти к финалу" : "Вернуться к орбите"}
         </Button>
       </div>
     </main>

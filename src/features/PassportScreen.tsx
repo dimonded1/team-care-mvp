@@ -19,6 +19,12 @@ import {
 } from "../components/Icons";
 import { OrbitField } from "../components/OrbitField";
 import type { MatchResult, Mission } from "../types/app";
+import {
+  getActionLabel,
+  getMissionStatus,
+  getOrbitStoryFragments,
+  getRecommendedMissionId,
+} from "./passportModel";
 
 interface PassportScreenProps {
   result: MatchResult;
@@ -27,10 +33,9 @@ interface PassportScreenProps {
   completedMissionIds: Mission["id"][];
   onBack: () => void;
   onSelectMission: (missionId: Mission["id"]) => void;
+  onOpenGuardianship: () => void;
   onContinue: () => void;
 }
-
-type MissionStatus = "available" | "started" | "completed" | "locked";
 
 const missionPresentation = {
   food: {
@@ -61,29 +66,6 @@ const missionPresentation = {
   Mission["id"],
   { title: string; description: string; duration: number; Icon: typeof HeartIcon }
 >;
-
-function getMissionStatus(
-  missionId: Mission["id"],
-  missionIndex: number,
-  firstIncompleteIndex: number,
-  startedMissionIds: Mission["id"][],
-  completedMissionIds: Mission["id"][],
-): MissionStatus {
-  if (completedMissionIds.includes(missionId)) return "completed";
-  if (firstIncompleteIndex >= 0 && missionIndex > firstIncompleteIndex) return "locked";
-  if (startedMissionIds.includes(missionId)) return "started";
-  return "available";
-}
-
-function getActionLabel(
-  status: MissionStatus,
-  duration: number,
-) {
-  if (status === "completed") return "Пройдено · повторить";
-  if (status === "started") return "Продолжить";
-  if (status === "locked") return "Откроется после предыдущего";
-  return `Начать · ${duration} мин`;
-}
 
 function MissionAtmosphere({ missionId }: { missionId: Mission["id"] }) {
   if (missionId === "food") {
@@ -138,6 +120,7 @@ export function PassportScreen({
   completedMissionIds,
   onBack,
   onSelectMission,
+  onOpenGuardianship,
   onContinue,
 }: PassportScreenProps) {
   const { animal, reasons, score } = result;
@@ -154,20 +137,13 @@ export function PassportScreen({
   const nodesY = useTransform(smoothY, [-1, 1], [3, -3]);
   const complete = completedMissionIds.length === missions.length && missions.length > 0;
   const roundedScore = Math.round(score);
-  const firstIncompleteIndex = missions.findIndex(
-    (mission) => !completedMissionIds.includes(mission.id),
-  );
-  const missionStatuses = missions.map((mission, index) => ({
+  const recommendedMissionId = getRecommendedMissionId(missions, completedMissionIds);
+  const missionStatuses = missions.map((mission) => ({
     id: mission.id,
-    status: getMissionStatus(
-      mission.id,
-      index,
-      firstIncompleteIndex,
-      startedMissionIds,
-      completedMissionIds,
-    ),
+    status: getMissionStatus(mission.id, startedMissionIds, completedMissionIds),
   }));
   const hasStartedMission = missionStatuses.some(({ status }) => status === "started");
+  const storyFragments = getOrbitStoryFragments(animal);
   const segmentStyles = Object.fromEntries(
     missionStatuses.map(({ id, status }) => [
       `--segment-${id}`,
@@ -222,6 +198,39 @@ export function PassportScreen({
             <span className="passport-orbit-ring passport-orbit-ring--inner" />
           </motion.div>
 
+          <div className="passport-story-fragments" aria-hidden="true">
+            {storyFragments.map((fragment, index) => {
+              const starts = [
+                { x: -84, y: -18 },
+                { x: 82, y: 4 },
+                { x: -28, y: 78 },
+              ];
+              const start = starts[index] ?? starts[0];
+              return (
+                <motion.span
+                  key={fragment}
+                  className={`passport-story-fragment passport-story-fragment--${index + 1}`}
+                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, ...start }}
+                  animate={reduceMotion
+                    ? { opacity: 0 }
+                    : {
+                        opacity: [0, 1, 1, 0],
+                        x: [start.x, 0, 0, 0],
+                        y: [start.y, 0, 0, 0],
+                      }}
+                  transition={{
+                    duration: reduceMotion ? 0.01 : 1.25,
+                    delay: reduceMotion ? 0 : 0.3 + index * 0.12,
+                    times: [0, 0.35, 0.76, 1],
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                >
+                  {fragment}
+                </motion.span>
+              );
+            })}
+          </div>
+
           <motion.div
             className={`passport-portrait passport-portrait--v2${hasStartedMission ? " passport-portrait--has-started" : ""}`}
             style={reduceMotion ? segmentStyles : {
@@ -251,11 +260,20 @@ export function PassportScreen({
             </div>
           </motion.div>
 
+          <motion.p
+            className="passport-story-caption"
+            initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: reduceMotion ? 0.12 : 0.42, delay: reduceMotion ? 0 : 1.2 }}
+          >
+            {animal.shortDescription}
+          </motion.p>
+
           <motion.div
             className="passport-identity"
             initial={{ opacity: 0, y: reduceMotion ? 0 : 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduceMotion ? 0.12 : 0.52, delay: reduceMotion ? 0 : 0.32 }}
+            transition={{ duration: reduceMotion ? 0.12 : 0.52, delay: reduceMotion ? 0 : 1.05 }}
           >
             <h1>{animal.name}</h1>
             <p>Кажется, вы подходите друг другу</p>
@@ -266,8 +284,8 @@ export function PassportScreen({
           </motion.div>
 
           <div className="passport-routes-heading">
-            <p className="passport-routes-title">Четыре круга заботы</p>
-            <span>Пройдите их по порядку: от первого контакта до внимания к самочувствию.</span>
+            <p className="passport-routes-title">Выберите планету заботы</p>
+            <span>Каждая планета открывает отдельную мини-игру.</span>
           </div>
 
           <div className="passport-mission-nodes passport-mission-nodes--v2">
@@ -275,14 +293,19 @@ export function PassportScreen({
               const presentation = missionPresentation[mission.id];
               const status = getMissionStatus(
                 mission.id,
-                index,
-                firstIncompleteIndex,
                 startedMissionIds,
                 completedMissionIds,
               );
-              const recommended = index === firstIncompleteIndex && status === "available";
+              const recommended = mission.id === recommendedMissionId && status === "available";
               const actionLabel = getActionLabel(status, presentation.duration);
               const Icon = presentation.Icon;
+              const orbitStyle = {
+                "--node-progress": status === "completed"
+                  ? "1turn"
+                  : status === "started"
+                    ? "0.72turn"
+                    : "0.22turn",
+              } as CSSProperties;
               return (
                 <motion.button
                   key={mission.id}
@@ -292,14 +315,36 @@ export function PassportScreen({
                   data-mission-id={mission.id}
                   data-mission-status={status}
                   aria-label={`${presentation.title}. ${presentation.description}. ${actionLabel}`}
-                  disabled={status === "locked"}
                   onClick={() => onSelectMission(mission.id)}
+                  style={orbitStyle}
                   initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.92, y: reduceMotion ? 0 : 14 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  animate={{
+                    opacity: 1,
+                    scale: 1,
+                    x: reduceMotion ? 0 : [0, index % 2 === 0 ? -3 : 3, 0],
+                    y: reduceMotion ? 0 : [0, -4 - index, 1, 0],
+                  }}
                   transition={{
-                    duration: reduceMotion ? 0.12 : 0.46,
-                    delay: reduceMotion ? 0 : 0.44 + index * 0.09,
-                    ease: [0.22, 1, 0.36, 1],
+                    opacity: {
+                      duration: reduceMotion ? 0.12 : 0.46,
+                      delay: reduceMotion ? 0 : 1.38 + index * 0.1,
+                    },
+                    scale: {
+                      duration: reduceMotion ? 0.12 : 0.46,
+                      delay: reduceMotion ? 0 : 1.38 + index * 0.1,
+                    },
+                    x: reduceMotion ? { duration: 0.12 } : {
+                      duration: 5.4 + index * 0.55,
+                      delay: 1.5 + index * 0.18,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    },
+                    y: reduceMotion ? { duration: 0.12 } : {
+                      duration: 5.8 + index * 0.63,
+                      delay: 1.44 + index * 0.16,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    },
                   }}
                   whileHover={reduceMotion ? undefined : { scale: 1.025, y: -4 }}
                   whileTap={reduceMotion ? undefined : { scale: 0.975 }}
@@ -316,13 +361,28 @@ export function PassportScreen({
                   <span className="passport-mission-node__status">
                     {status === "completed" ? <CheckIcon /> : null}
                     <span>{actionLabel}</span>
-                    {status !== "completed" && status !== "locked" ? <span aria-hidden="true">→</span> : null}
-                    {status === "locked" ? <span aria-hidden="true">○</span> : null}
+                    {status !== "completed" ? <span aria-hidden="true">→</span> : null}
                   </span>
                 </motion.button>
               );
             })}
           </div>
+
+          <motion.button
+            type="button"
+            className="passport-guardianship-node"
+            onClick={onOpenGuardianship}
+            initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: reduceMotion ? 0.12 : 0.42, delay: reduceMotion ? 0 : 1.78 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.97 }}
+          >
+            <span aria-hidden="true"><HeartIcon /></span>
+            <span>
+              <strong>Как устроена опека</strong>
+              <small>Стоимость, визиты и команда до 5 человек</small>
+            </span>
+          </motion.button>
 
           {complete ? (
             <button
@@ -330,7 +390,7 @@ export function PassportScreen({
               className="passport-scroll-cue passport-scroll-cue--goal"
               onClick={onContinue}
             >
-              Узнать, как устроена опека <span aria-hidden="true">→</span>
+              Завершить орбиту <span aria-hidden="true">→</span>
             </button>
           ) : (
             <a className="passport-scroll-cue" href="#animal-passport">
@@ -404,13 +464,13 @@ export function PassportScreen({
             <h2 id="passport-goal-title">Быть рядом с {animal.name} регулярно</h2>
             <span>
               {complete
-                ? "Вы познакомились со всеми направлениями заботы. Теперь можно узнать, как присоединиться к команде опекунов."
-                : `Пройдите ещё ${missions.length - completedMissionIds.length} из ${missions.length} кругов — каждый следующий откроется по порядку.`}
+                ? "Все четыре направления пройдены. Можно завершить путь или открыть справку об опеке."
+                : `Пройдите ещё ${missions.length - completedMissionIds.length} из ${missions.length} кругов в любом удобном порядке.`}
             </span>
           </div>
           {complete ? (
             <Button className="button--orange passport-goal__action" onClick={onContinue}>
-              Узнать, как устроена опека
+              Завершить орбиту
             </Button>
           ) : (
             <button

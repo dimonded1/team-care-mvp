@@ -1,62 +1,129 @@
-import { bitrixSecrets } from './private.mjs'
+import { bitrixSecrets } from "./private.mjs";
 
-const PLACEHOLDER = '<SET_IN_SERVER_ENV>'
+const PLACEHOLDER = "<SET_IN_SERVER_ENV>";
 
 function asBoolean(value) {
-  return String(value).toLowerCase() === 'true'
+  return String(value).toLowerCase() === "true";
 }
 
 function valueOrPlaceholder(value) {
-  return value || PLACEHOLDER
+  return value || PLACEHOLDER;
+}
+
+function collectMissing(entries) {
+  return Object.entries(entries)
+    .filter(([, value]) => !value || value === PLACEHOLDER)
+    .map(([name]) => name);
+}
+
+function requireNumeric(errors, label, value) {
+  if (!/^\d+$/.test(String(value))) errors.push(`${label} must be a numeric ID`);
 }
 
 /**
- * Loads only server environment values. The returned config deliberately does
- * not expose BITRIX_WEBHOOK_SECRET; sender.mjs reads it from private storage.
+ * Reads server-only environment values. The actual integration secret is kept
+ * in a WeakMap and cannot be serialized with this public config object.
  */
 export function createBitrixConfig(env = process.env) {
   const config = Object.freeze({
     enabled: asBoolean(env.BITRIX_ENABLED),
     webhookUrl: valueOrPlaceholder(env.BITRIX_WEBHOOK_URL),
     hasSecret: Boolean(env.BITRIX_WEBHOOK_SECRET),
-    entityTypeId: valueOrPlaceholder(env.BITRIX_CARE_EVENT_ENTITY_TYPE_ID),
-    formId: valueOrPlaceholder(env.BITRIX_GUARDIANSHIP_FORM_ID),
-    fields: Object.freeze({
-      guardianName: valueOrPlaceholder(env.BITRIX_FIELD_GUARDIAN_NAME),
-      guardianEmail: valueOrPlaceholder(env.BITRIX_FIELD_GUARDIAN_EMAIL),
-      guardianPhone: valueOrPlaceholder(env.BITRIX_FIELD_GUARDIAN_PHONE),
-      animalId: valueOrPlaceholder(env.BITRIX_FIELD_ANIMAL_ID),
-      animalName: valueOrPlaceholder(env.BITRIX_FIELD_ANIMAL_NAME),
-      consent: valueOrPlaceholder(env.BITRIX_FIELD_CONSENT),
-      careType: valueOrPlaceholder(env.BITRIX_FIELD_CARE_TYPE),
-      occurredAt: valueOrPlaceholder(env.BITRIX_FIELD_OCCURRED_AT),
+    features: Object.freeze({
+      animalSync: asBoolean(env.BITRIX_ANIMAL_SYNC_ENABLED),
+      guardianshipLeads: asBoolean(env.BITRIX_GUARDIANSHIP_LEADS_ENABLED),
+      careEvents: asBoolean(env.BITRIX_CARE_EVENTS_ENABLED),
     }),
-  })
+    animal: Object.freeze({
+      categoryId: valueOrPlaceholder(env.BITRIX_ANIMAL_CATEGORY_ID),
+      fields: Object.freeze({
+        id: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_ID),
+        name: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_NAME),
+        species: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_SPECIES),
+        sex: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_SEX),
+        birthDate: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_BIRTH_DATE),
+        mainPhoto: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_MAIN_PHOTO),
+        extraPhotos: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_EXTRA_PHOTOS),
+        story: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_STORY),
+        description: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_DESCRIPTION),
+        character: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_CHARACTER),
+        behavior: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_BEHAVIOR),
+        profileUrl: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_PROFILE_URL),
+        published: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_PUBLISHED),
+        blockFromSite: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_BLOCK_FROM_SITE),
+        notForGuardianship: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_NOT_FOR_GUARDIANSHIP),
+        siteId: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_SITE_ID),
+      }),
+      enums: Object.freeze({
+        speciesCat: valueOrPlaceholder(env.BITRIX_ANIMAL_ENUM_SPECIES_CAT),
+        speciesDog: valueOrPlaceholder(env.BITRIX_ANIMAL_ENUM_SPECIES_DOG),
+        sexFemale: valueOrPlaceholder(env.BITRIX_ANIMAL_ENUM_SEX_FEMALE),
+        sexMale: valueOrPlaceholder(env.BITRIX_ANIMAL_ENUM_SEX_MALE),
+      }),
+    }),
+    guardianship: Object.freeze({
+      formId: valueOrPlaceholder(env.BITRIX_GUARDIANSHIP_FORM_ID),
+      fields: Object.freeze({
+        guardianName: valueOrPlaceholder(env.BITRIX_FIELD_GUARDIAN_NAME),
+        guardianEmail: valueOrPlaceholder(env.BITRIX_FIELD_GUARDIAN_EMAIL),
+        guardianPhone: valueOrPlaceholder(env.BITRIX_FIELD_GUARDIAN_PHONE),
+        animalId: valueOrPlaceholder(env.BITRIX_FIELD_ANIMAL_ID),
+        animalName: valueOrPlaceholder(env.BITRIX_FIELD_ANIMAL_NAME),
+        consent: valueOrPlaceholder(env.BITRIX_FIELD_CONSENT),
+      }),
+    }),
+    care: Object.freeze({
+      entityTypeId: valueOrPlaceholder(env.BITRIX_CARE_EVENT_ENTITY_TYPE_ID),
+      fields: Object.freeze({
+        animalId: valueOrPlaceholder(env.BITRIX_FIELD_ANIMAL_ID),
+        careType: valueOrPlaceholder(env.BITRIX_FIELD_CARE_TYPE),
+        occurredAt: valueOrPlaceholder(env.BITRIX_FIELD_OCCURRED_AT),
+      }),
+    }),
+  });
 
-  bitrixSecrets.set(config, env.BITRIX_WEBHOOK_SECRET || '')
-  return config
+  bitrixSecrets.set(config, env.BITRIX_WEBHOOK_SECRET || "");
+  return config;
 }
 
-export function validateBitrixConfig(config) {
-  const errors = []
-  let parsedUrl
+export function validateBitrixConfig(config, feature = null) {
+  const errors = [];
+  let parsedUrl;
 
   try {
-    parsedUrl = new URL(config.webhookUrl)
+    parsedUrl = new URL(config.webhookUrl);
   } catch {
-    errors.push('BITRIX_WEBHOOK_URL must be a valid HTTPS URL')
+    errors.push("BITRIX_WEBHOOK_URL must be a valid HTTPS URL");
   }
-  if (parsedUrl && parsedUrl.protocol !== 'https:') errors.push('BITRIX_WEBHOOK_URL must use HTTPS')
-  if (!bitrixSecrets.get(config)) errors.push('BITRIX_WEBHOOK_SECRET is required')
-  if (!/^\d+$/.test(String(config.entityTypeId))) {
-    errors.push('BITRIX_CARE_EVENT_ENTITY_TYPE_ID must be a numeric ID')
+  if (parsedUrl && parsedUrl.protocol !== "https:") {
+    errors.push("BITRIX_WEBHOOK_URL must use HTTPS");
   }
-  if (!/^\d+$/.test(String(config.formId))) {
-    errors.push('BITRIX_GUARDIANSHIP_FORM_ID must be a numeric ID')
-  }
-  if (Object.values(config.fields).some((field) => field === PLACEHOLDER)) {
-    errors.push('All BITRIX_FIELD_* IDs must be configured')
+  if (!bitrixSecrets.get(config)) errors.push("BITRIX_WEBHOOK_SECRET is required");
+
+  if (feature === "animalSync") {
+    requireNumeric(errors, "BITRIX_ANIMAL_CATEGORY_ID", config.animal.categoryId);
+    const missing = [
+      ...collectMissing(config.animal.fields),
+      ...collectMissing(config.animal.enums),
+    ];
+    if (missing.length) errors.push(`Animal field map is incomplete: ${missing.join(", ")}`);
   }
 
-  if (errors.length) throw new Error(`Invalid Bitrix configuration: ${errors.join('; ')}`)
+  if (feature === "guardianshipLeads") {
+    requireNumeric(errors, "BITRIX_GUARDIANSHIP_FORM_ID", config.guardianship.formId);
+    const missing = collectMissing(config.guardianship.fields);
+    if (missing.length) errors.push(`Guardianship field map is incomplete: ${missing.join(", ")}`);
+  }
+
+  if (feature === "careEvents") {
+    requireNumeric(errors, "BITRIX_CARE_EVENT_ENTITY_TYPE_ID", config.care.entityTypeId);
+    const missing = collectMissing(config.care.fields);
+    if (missing.length) errors.push(`Care-event field map is incomplete: ${missing.join(", ")}`);
+  }
+
+  if (errors.length) throw new Error(`Invalid Bitrix configuration: ${errors.join("; ")}`);
+}
+
+export function isBitrixFeatureEnabled(config, feature) {
+  return config.enabled && config.features[feature] === true;
 }

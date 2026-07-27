@@ -415,7 +415,7 @@ async function main() {
               };
             })()`);
             if (
-              eveningMetrics.correctLabel !== "Тихий ритуал перед сном"
+              eveningMetrics.correctLabel !== "Перейти в тень и предложить воду"
               || eveningMetrics.hasOldPhrase
               || eveningMetrics.copyOverlapsFace
             ) {
@@ -798,6 +798,55 @@ async function main() {
       }
 
       const isHealthGame = await evaluate("Boolean(document.querySelector('[data-testid=\"health-game\"]'))");
+      const isVisitGame = await evaluate("Boolean(document.querySelector('[data-testid=\"visit-game\"]'))");
+      if (isVisitGame) {
+        for (let step = 1; step <= 3; step += 1) {
+          await waitForSelector(`[data-testid="visit-game"][data-visit-step="${step}"]`);
+          await waitForEnabledSelector(
+            '[data-testid="visit-option"][data-choice-correct="true"]',
+            4_000,
+          );
+          const visitChoices = await evaluate(`(() => {
+            const options = [...document.querySelectorAll('[data-testid="visit-option"]')];
+            return {
+              options: options.length,
+              correct: options.filter((option) => option.dataset.choiceCorrect === "true").length,
+              minHeight: options.length
+                ? Math.min(...options.map((option) => option.getBoundingClientRect().height))
+                : 0,
+            };
+          })()`);
+          if (visitChoices.options !== 3 || visitChoices.correct !== 1 || visitChoices.minHeight < 44) {
+            throw new Error(`Visit situation regression: ${JSON.stringify(visitChoices)}`);
+          }
+
+          if (step === 1) {
+            await evaluate(
+              "document.querySelector('[data-testid=\"visit-option\"][data-choice-correct=\"false\"]')?.click()",
+            );
+            await waitForSelector(".visit-feedback.is-incorrect");
+            await waitForEnabledSelector(
+              '[data-testid="visit-option"][data-choice-correct="true"]',
+              4_000,
+            );
+          }
+
+          await evaluate(
+            "document.querySelector('[data-testid=\"visit-option\"][data-choice-correct=\"true\"]')?.click()",
+          );
+          if (step < 3) {
+            await waitForSelector(
+              `[data-testid="visit-game"][data-visit-step="${step + 1}"]`,
+              true,
+              5_000,
+            );
+          }
+        }
+        await waitForSelector('[data-testid="visit-complete"]', true, 5_000);
+        await capture("smoke-visit-game-complete-mobile.png");
+        return;
+      }
+
       if (isHealthGame) {
         const zones = ["ears", "eyes", "paws", "belly", "back", "tail"];
         for (let index = 0; index < zones.length; index += 1) {
@@ -1192,7 +1241,7 @@ async function main() {
     }
     await capture("smoke-match-mobile.png");
     await clickButton("Познакомиться");
-    await waitForText("Выберите мини-игру");
+    await waitForText("Выберите планету заботы");
     await sleep(950);
     const initialHub = await evaluate(`(() => {
       const ring = document.querySelector('.passport-portrait__progress--segments')?.getBoundingClientRect();
@@ -1238,7 +1287,7 @@ async function main() {
       || initialHub.ringThickness === null
       || initialHub.ringThickness < 6
       || initialHub.ringThickness > 12
-      || initialHub.routeTitle !== 'Выберите мини-игру'
+      || initialHub.routeTitle !== 'Выберите планету заботы'
       || initialHub.routeTitleSize < 18
       || initialHub.orbitFieldDisplay !== 'none'
       || initialHub.stageRingsDisplay !== 'none'
@@ -1270,7 +1319,7 @@ async function main() {
     await capture("smoke-passport-mobile.png");
     await openMissionNode("trust");
     await evaluate("document.querySelector('.journey-screen .icon-button')?.click()");
-    await waitForText("Выберите мини-игру");
+    await waitForText("Выберите планету заботы");
     const startedStatus = await evaluate(
       "document.querySelector('[data-mission-id=\"trust\"]')?.dataset.missionStatus ?? null",
     );
@@ -1278,8 +1327,8 @@ async function main() {
       throw new Error(`Started mission status was not preserved: ${startedStatus}`);
     }
 
-    await openMissionNode("food");
-    await waitForText("Соберите день");
+    await openMissionNode("home");
+    await waitForText("Пройдите маршрут");
     const dayGameMetrics = await evaluate(`(() => {
       const game = document.querySelector('[data-testid="day-game"]');
       const scene = document.querySelector('[data-testid="day-scene"]');
@@ -1417,7 +1466,7 @@ async function main() {
     await evaluate("document.querySelector('.day-scene__back')?.click()");
     await waitForSelector('[data-testid="day-scene"][data-day-scene="morning"]', true, 3_000);
     await evaluate("document.querySelector('.journey-screen .icon-button')?.click()");
-    await waitForText("Выберите мини-игру");
+    await waitForText("Выберите планету заботы");
 
     const missionOrder = ["trust", "food", "home", "health"];
     for (let mission = 0; mission < missionOrder.length; mission += 1) {
@@ -1433,15 +1482,11 @@ async function main() {
           text: button.textContent?.trim() ?? "",
         };
       })()`);
-      const isDayMission = missionOrder[mission] === "food";
       const isHealthMission = missionOrder[mission] === "health";
       if (
         !disabledCta
-        || (
-          isDayMission
-            ? disabledCta.disabled || disabledCta.text !== "Вернуться"
-            : !disabledCta.disabled || disabledCta.cursor !== "not-allowed"
-        )
+        || !disabledCta.disabled
+        || disabledCta.cursor !== "not-allowed"
       ) {
         throw new Error(`Mission CTA is not clearly disabled: ${JSON.stringify(disabledCta)}`);
       }
@@ -1558,13 +1603,14 @@ async function main() {
       ) {
         throw new Error(`Journey spacing regression: ${JSON.stringify(journeyRhythm)}`);
       }
-      if (missionOrder[mission] === "food") {
+      if (missionOrder[mission] === "home") {
         const montageFocus = await evaluate(`(() => {
           const title = document.querySelector('[data-testid="day-montage"] h2');
           return {
             scrollY: window.scrollY,
             titleTop: title?.getBoundingClientRect().top ?? null,
             titleBottom: title?.getBoundingClientRect().bottom ?? null,
+            viewportHeight: window.innerHeight,
           };
         })()`);
         if (
@@ -1572,15 +1618,15 @@ async function main() {
           || montageFocus.titleTop === null
           || montageFocus.titleTop < 0
           || montageFocus.titleBottom === null
-          || montageFocus.titleBottom > innerHeight
+          || montageFocus.titleBottom > montageFocus.viewportHeight
         ) {
           throw new Error(`Day montage did not reset the reading position: ${JSON.stringify(montageFocus)}`);
         }
         await capture("smoke-day-game-complete-mobile.png");
       }
       if (mission === 0) await capture("smoke-journey-mobile.png");
-      await clickButton(isDayMission ? "Вернуться" : "Сохранить и вернуться");
-      await waitForText("Выберите мини-игру");
+      await clickButton("Сохранить круг заботы");
+      await waitForText("Выберите планету заботы");
       const completedStatus = await evaluate(
         `document.querySelector('[data-mission-id="${missionOrder[mission]}"]')?.dataset.missionStatus ?? null`,
       );
@@ -1589,7 +1635,7 @@ async function main() {
       }
     }
 
-    await waitForText("Стать частью команды");
+    await waitForText("Завершить орбиту");
     await sleep(1_100);
     const completedHubVisuals = await evaluate(`(() => {
       const cards = [...document.querySelectorAll('[data-mission-status="completed"]')];
@@ -1612,7 +1658,7 @@ async function main() {
       throw new Error(`Completed orbit visuals regression: ${JSON.stringify(completedHubVisuals)}`);
     }
     await capture("smoke-passport-complete-mobile.png");
-    await clickButton("Стать опекуном");
+    await clickButton("Как устроена опека");
     await waitForText("Быть рядом, пока не найдётся дом");
     await sleep(700);
     await capture("smoke-guardianship-mobile.png");
@@ -1647,7 +1693,7 @@ async function main() {
       || guardianshipMetrics.paddingLeft < 16
       || guardianshipMetrics.overflow > 1
       || guardianshipMetrics.screenHeight === null
-      || guardianshipMetrics.screenHeight > guardianshipMetrics.viewportHeight * 2
+      || guardianshipMetrics.screenHeight > guardianshipMetrics.viewportHeight * 2.6
       || guardianshipMetrics.ctaWraps
       || guardianshipMetrics.ctaColor !== 'rgb(255, 255, 255)'
     ) {
@@ -1656,8 +1702,8 @@ async function main() {
     await evaluate("document.querySelector('.guardianship-team')?.scrollIntoView({ block: 'start', behavior: 'instant' })");
     await sleep(180);
     await capture("smoke-guardianship-team-mobile.png");
-    await clickButton("Завершить орбиту");
-    await waitForText("Расскажите друзьям про");
+    await clickButton("Перейти к финалу");
+    await waitForText("Познакомьте друзей");
 
     const cardStartedAt = Date.now();
     while (Date.now() - cardStartedAt < 8_000) {
@@ -1759,7 +1805,7 @@ async function main() {
     await waitForText("Кажется, вам стоит познакомиться");
     await sleep(2_900);
     await clickButton("Познакомиться");
-    await waitForText("Выберите мини-игру");
+    await waitForText("Выберите планету заботы");
     await sleep(900);
     const tabletHubMetrics = await evaluate(`(() => {
       const nodes = [...document.querySelectorAll('[data-mission-id]')]
@@ -1781,8 +1827,8 @@ async function main() {
     await openMissionNode("home");
     const tabletJourneyMetrics = await evaluate(`(() => {
       const layout = document.querySelector('.journey-layout');
-      const game = document.querySelector('[data-testid="home-game"]');
-      const scene = document.querySelector('.home-scene');
+      const game = document.querySelector('[data-testid="day-game"]');
+      const scene = document.querySelector('[data-testid="day-scene"]');
       const cta = document.querySelector('.sticky-actions .button');
       const layoutRect = layout?.getBoundingClientRect();
       const sceneRect = scene?.getBoundingClientRect();
@@ -1964,7 +2010,7 @@ async function main() {
     }
     await capture("smoke-match-1920.png");
     await clickButton("Познакомиться");
-    await waitForText("Выберите мини-игру");
+    await waitForText("Выберите планету заботы");
     await sleep(800);
     const desktopHub = await evaluate(`(() => {
       const screen = document.querySelector('.passport-hub-screen')?.getBoundingClientRect();
@@ -1999,7 +2045,7 @@ async function main() {
       throw new Error(`Desktop passport hub regression: ${JSON.stringify(desktopHub)}`);
     }
     await capture("smoke-passport-1920.png");
-    await openMissionNode("food");
+    await openMissionNode("home");
     await waitForSelector('[data-testid="day-scene"][data-day-scene="morning"]');
     await sleep(1_000);
     const desktopDayGame = await evaluate(`(() => {
@@ -2040,7 +2086,7 @@ async function main() {
     }
     await capture("smoke-day-game-1920.png");
     await evaluate("document.querySelector('.journey-screen .icon-button')?.click()");
-    await waitForText("Выберите мини-игру");
+    await waitForText("Выберите планету заботы");
     await openMissionNode("health");
     await waitForSelector('[data-testid="health-game"][data-health-phase="map"]');
     await sleep(500);

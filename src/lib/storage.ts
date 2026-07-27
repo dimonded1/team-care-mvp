@@ -5,7 +5,6 @@ const missionIds: Mission["id"][] = ["food", "health", "trust", "home"];
 const restorableStages: StoredSession["stage"][] = [
   "welcome",
   "quiz",
-  "care-intro",
   "passport",
   "journey",
   "guardianship",
@@ -14,7 +13,7 @@ const restorableStages: StoredSession["stage"][] = [
 
 interface LegacyStoredSession {
   version: 1;
-  stage: StoredSession["stage"];
+  stage: StoredSession["stage"] | "care-intro";
   answers: boolean[];
   animalId: string | null;
   missionIndex: number;
@@ -36,13 +35,19 @@ function isStoredStage(value: unknown): value is StoredSession["stage"] {
 }
 
 function normalizeCommon(value: Record<string, unknown>) {
-  if (!isStoredStage(value.stage) || !Array.isArray(value.answers)) return null;
+  if (!Array.isArray(value.answers)) return null;
+  const stage = value.stage === "care-intro"
+    ? "passport"
+    : isStoredStage(value.stage)
+      ? value.stage
+      : null;
+  if (!stage) return null;
   const answers = value.answers.filter((answer): answer is boolean => typeof answer === "boolean");
   const animalId = typeof value.animalId === "string" ? value.animalId : null;
   const updatedAt = typeof value.updatedAt === "string"
     ? value.updatedAt
     : new Date().toISOString();
-  return { stage: value.stage, answers, animalId, updatedAt };
+  return { stage, answers, animalId, updatedAt };
 }
 
 export function loadSession(): StoredSession | null {
