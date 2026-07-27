@@ -9590,6 +9590,10 @@ p {
     max-width: min(86%, 360px);
   }
 
+  .day-scene--evening .day-scene__copy {
+    max-width: min(54%, 210px);
+  }
+
   .day-scene__copy h2 {
     font-size: clamp(31px, 9.4vw, 45px);
   }
@@ -14713,5 +14717,873 @@ p {
 @media (prefers-reduced-motion: reduce) {
   .passport-mission-node--v2::before {
     transition: none;
+  }
+}
+
+/* Solar orbit hub: the animal is the sun, planets are the only game navigation. */
+
+.screen.passport-hub-screen {
+  width: 100%;
+  max-width: none;
+  min-height: 100svh;
+  padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
+  overflow-x: clip;
+  color: #fffdf8;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(247, 109, 49, 0.16), transparent 24rem),
+    linear-gradient(155deg, #12351f 0%, #082519 58%, #0e3020 100%);
+}
+
+.passport-hub-screen .app-header,
+.passport-hub--solar {
+  width: min(100%, 1180px);
+  margin-inline: auto;
+}
+
+.passport-hub--solar {
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+.care-orbit {
+  position: relative;
+  min-height: calc(100svh - 88px);
+  padding: 4px 0 18px;
+  display: grid;
+  grid-template-rows: auto minmax(510px, 1fr) auto;
+  align-items: start;
+  isolation: isolate;
+}
+
+.care-orbit__background {
+  position: absolute;
+  z-index: -2;
+  inset: -90px -12vw 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 25% 24%, rgba(255, 181, 181, 0.14), transparent 22rem),
+    radial-gradient(circle at 70% 42%, rgba(247, 109, 49, 0.11), transparent 24rem),
+    radial-gradient(circle, rgba(255, 255, 255, 0.68) 0 1px, transparent 1.4px) 0 0 / 68px 68px,
+    radial-gradient(circle, rgba(255, 183, 151, 0.45) 0 1px, transparent 1.5px) 21px 34px / 104px 104px;
+  opacity: 0.55;
+  mask-image: linear-gradient(#000 0 82%, transparent);
+}
+
+.care-orbit__heading {
+  z-index: 30;
+  width: min(100%, 600px);
+  margin-inline: auto;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.care-orbit__heading p,
+.care-orbit__heading h1,
+.care-orbit__heading span {
+  margin: 0;
+}
+
+.care-orbit__heading p {
+  color: #ff9f78;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.care-orbit__heading h1 {
+  color: #fffdf8;
+  font-size: clamp(25px, 3.2vw, 42px);
+  line-height: 1;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.care-orbit__heading span {
+  color: rgba(255, 253, 248, 0.63);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.care-orbit__scene {
+  position: relative;
+  width: min(100%, 880px);
+  min-height: 510px;
+  margin-inline: auto;
+  overflow: visible;
+  touch-action: manipulation;
+}
+
+.care-orbit__paths,
+.care-orbit__planets {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.care-orbit__paths {
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.care-orbit__paths ellipse {
+  fill: none;
+  stroke: rgba(255, 229, 211, 0.34);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 8px rgba(247, 109, 49, 0.18));
+}
+
+.care-orbit__sun {
+  position: absolute;
+  z-index: 9;
+  top: 50%;
+  left: 50%;
+  width: clamp(158px, 23vw, 238px);
+  display: grid;
+  justify-items: center;
+  translate: -50% -50%;
+  transform-origin: center;
+}
+
+.care-orbit__sun-glow {
+  position: absolute;
+  z-index: -1;
+  inset: -22%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 196, 123, 0.72), rgba(247, 109, 49, 0.18) 48%, transparent 72%);
+  filter: blur(10px);
+  opacity: 0.8;
+}
+
+.care-orbit--complete .care-orbit__sun-glow {
+  background: radial-gradient(circle, rgba(181, 235, 169, 0.76), rgba(120, 187, 120, 0.22) 48%, transparent 72%);
+  animation: care-orbit-complete-breathe 4.8s ease-in-out infinite;
+}
+
+.care-orbit__sun img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 5px solid #fff7df;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 7px rgba(247, 109, 49, 0.2),
+    0 0 54px rgba(247, 109, 49, 0.34),
+    0 24px 48px rgba(3, 20, 11, 0.34);
+}
+
+.care-orbit__sun strong {
+  min-height: 34px;
+  margin-top: -15px;
+  padding: 8px 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #fffaf0;
+  box-shadow: 0 12px 30px rgba(2, 20, 10, 0.26);
+  color: #14371f;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.care-orbit__sun small {
+  max-width: 245px;
+  margin-top: 7px;
+  color: rgba(255, 253, 248, 0.72);
+  font-size: 10px;
+  line-height: 1.3;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.care-orbit__planets {
+  z-index: 12;
+  pointer-events: none;
+}
+
+.care-planet-anchor {
+  --orbit-x: 0px;
+  --orbit-y: 0px;
+  --orbit-scale: 1;
+  --orbit-opacity: 1;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1px;
+  height: 1px;
+  opacity: var(--orbit-opacity);
+  transform: translate3d(
+      calc(-50% + var(--orbit-x)),
+      calc(-50% + var(--orbit-y)),
+      0
+    )
+    scale(var(--orbit-scale));
+  transform-origin: center;
+  will-change: transform, opacity;
+  pointer-events: auto;
+  transition:
+    opacity 280ms ease,
+    filter 280ms ease;
+}
+
+.care-planet-anchor.is-selected {
+  z-index: 34 !important;
+  opacity: 1;
+  transform: translate3d(-50%, -50%, 0) scale(1);
+  transition:
+    transform 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms ease;
+}
+
+.care-planet-anchor.is-dimmed {
+  filter: saturate(0.55);
+  pointer-events: none;
+}
+
+.care-planet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 82px;
+  min-height: 100px;
+  padding: 0;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 6px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #fffdf8;
+  cursor: pointer;
+  translate: -50% -50%;
+  transform-origin: 50% 38%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.care-planet:focus-visible .care-planet__body {
+  outline: 3px solid #fffdf8;
+  outline-offset: 4px;
+}
+
+.care-planet__body {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.48), transparent 22%),
+    linear-gradient(145deg, #ffaf87, #f76d31);
+  box-shadow:
+    inset -8px -8px 18px rgba(67, 28, 13, 0.16),
+    0 12px 28px rgba(2, 20, 10, 0.34),
+    0 0 22px rgba(247, 109, 49, 0.24);
+}
+
+.care-planet--trust .care-planet__body {
+  color: #173c25;
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.7), transparent 24%),
+    linear-gradient(145deg, #eff8e8, #bcd8bc);
+}
+
+.care-planet--food .care-planet__body {
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.55), transparent 24%),
+    linear-gradient(145deg, #ffb3a9, #ff7b62);
+}
+
+.care-planet--home .care-planet__body {
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.5), transparent 24%),
+    linear-gradient(145deg, #ffc99c, #f57c42);
+}
+
+.care-planet--health .care-planet__body {
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.58), transparent 24%),
+    linear-gradient(145deg, #ffbec8, #ef829e);
+}
+
+.care-planet__body > svg {
+  width: 27px;
+  height: 27px;
+}
+
+.care-planet__body > i {
+  position: absolute;
+  right: -4px;
+  bottom: -2px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #fffdf8;
+  border-radius: 50%;
+  background: #68aa6f;
+  color: #fff;
+}
+
+.care-planet__body > i svg {
+  width: 12px;
+  height: 12px;
+}
+
+.care-planet__label {
+  min-width: max-content;
+  padding: 5px 9px 6px;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  background: rgba(7, 33, 21, 0.88);
+  box-shadow: 0 8px 20px rgba(2, 20, 10, 0.24);
+  backdrop-filter: blur(10px);
+}
+
+.care-planet__label strong {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.care-planet__label small {
+  color: rgba(255, 253, 248, 0.57);
+  font-size: 8px;
+}
+
+.care-planet__trail {
+  position: absolute;
+  z-index: -1;
+  top: 25px;
+  right: 58px;
+  width: 38px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, transparent, rgba(247, 109, 49, 0.4));
+  filter: blur(4px);
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.care-planet--completed .care-planet__body {
+  border-color: rgba(210, 255, 203, 0.9);
+  box-shadow:
+    inset -8px -8px 18px rgba(24, 72, 31, 0.14),
+    0 0 0 5px rgba(120, 187, 120, 0.15),
+    0 0 30px rgba(120, 187, 120, 0.56),
+    0 14px 28px rgba(2, 20, 10, 0.34);
+}
+
+.care-planet--recommended .care-planet__label::after {
+  content: "Начните здесь";
+  position: absolute;
+  margin-top: 38px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #fffaf0;
+  color: #e66029;
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.care-orbit__focus-panel {
+  position: absolute;
+  z-index: 42;
+  right: 50%;
+  bottom: 14px;
+  width: min(92%, 480px);
+  padding: 14px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  translate: 50% 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 80% 10%, rgba(247, 109, 49, 0.14), transparent 42%),
+    rgba(8, 35, 23, 0.94);
+  box-shadow: 0 22px 54px rgba(2, 20, 10, 0.38);
+  backdrop-filter: blur(18px);
+}
+
+.care-orbit__focus-back,
+.care-orbit__open {
+  min-height: 44px;
+  border: 0;
+  border-radius: 15px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.care-orbit__focus-back {
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 253, 248, 0.8);
+  font-size: 10px;
+}
+
+.care-orbit__focus-copy {
+  min-width: 0;
+}
+
+.care-orbit__focus-copy > span {
+  color: #ff9d75;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.care-orbit__focus-copy h2,
+.care-orbit__focus-copy p {
+  margin: 0;
+}
+
+.care-orbit__focus-copy h2 {
+  margin-top: 2px;
+  color: #fffdf8;
+  font-size: 21px;
+  line-height: 1;
+}
+
+.care-orbit__focus-copy p {
+  margin-top: 3px;
+  color: rgba(255, 253, 248, 0.64);
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.care-orbit__focus-copy > div {
+  margin-top: 5px;
+  display: flex;
+  gap: 5px;
+}
+
+.care-orbit__focus-copy small {
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 253, 248, 0.78);
+  font-size: 8px;
+}
+
+.care-orbit__open {
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f76d31;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.care-orbit__footer {
+  z-index: 25;
+  width: min(100%, 760px);
+  margin: -6px auto 0;
+  display: grid;
+  grid-template-columns: minmax(0, 0.65fr) minmax(0, 1.35fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.care-orbit__progress,
+.care-orbit__guardianship,
+.care-orbit__complete-action {
+  min-height: 52px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.055);
+  color: #fffdf8;
+}
+
+.care-orbit__progress {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.care-orbit__progress > span {
+  color: #ff9f78;
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.care-orbit__progress p {
+  margin: 0;
+  color: rgba(255, 253, 248, 0.6);
+  font-size: 9px;
+  line-height: 1.25;
+}
+
+.care-orbit__guardianship {
+  padding: 7px 11px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.care-orbit__guardianship > svg {
+  width: 22px;
+  height: 22px;
+  color: #ffb5b5;
+}
+
+.care-orbit__guardianship > span {
+  display: grid;
+  gap: 2px;
+}
+
+.care-orbit__guardianship strong {
+  font-size: 11px;
+}
+
+.care-orbit__guardianship small {
+  color: rgba(255, 253, 248, 0.55);
+  font-size: 8px;
+}
+
+.care-orbit__guardianship i {
+  color: #ff9f78;
+  font-style: normal;
+}
+
+.care-orbit__complete-action {
+  grid-column: 1 / -1;
+  border-color: rgba(120, 187, 120, 0.48);
+  background: rgba(120, 187, 120, 0.15);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+/* Visit now shares the dark game shell and does not fake the ward portrait. */
+
+.journey-screen--visit-game .journey-content {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.visit-game__pet {
+  display: none;
+}
+
+.visit-game__pet-marker {
+  position: absolute;
+  z-index: 4;
+  right: clamp(24px, 6vw, 76px);
+  bottom: 72px;
+  min-height: 58px;
+  padding: 9px 13px;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 18px;
+  background: rgba(8, 37, 24, 0.78);
+  box-shadow: 0 16px 34px rgba(2, 20, 10, 0.3);
+  color: #fffdf8;
+  backdrop-filter: blur(12px);
+}
+
+.visit-game__pet-marker > span {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ff9870;
+  color: #fff;
+  font-size: 22px;
+}
+
+.visit-game__pet-marker > div {
+  display: grid;
+  gap: 2px;
+}
+
+.visit-game__pet-marker strong {
+  font-size: 12px;
+}
+
+.visit-game__pet-marker small {
+  color: rgba(255, 253, 248, 0.64);
+  font-size: 9px;
+}
+
+@keyframes care-orbit-complete-breathe {
+  50% { opacity: 1; transform: scale(1.035); }
+}
+
+@media (max-width: 620px) {
+  .screen.passport-hub-screen {
+    padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+  }
+
+  .passport-hub-screen .app-header {
+    min-height: 58px;
+    padding-top: max(4px, env(safe-area-inset-top));
+  }
+
+  .passport-hub--solar {
+    padding-bottom: 14px;
+  }
+
+  .care-orbit {
+    min-height: 0;
+    padding: 0;
+    grid-template-rows: auto 475px auto;
+  }
+
+  .care-orbit__heading {
+    gap: 2px;
+  }
+
+  .care-orbit__heading h1 {
+    font-size: clamp(23px, 6.5vw, 28px);
+  }
+
+  .care-orbit__heading span {
+    font-size: 9px;
+  }
+
+  .care-orbit__scene {
+    min-height: 475px;
+    margin-top: -4px;
+  }
+
+  .care-orbit__paths {
+    inset: 5% -8%;
+    width: 116%;
+    height: 90%;
+  }
+
+  .care-orbit__sun {
+    width: min(39vw, 154px);
+  }
+
+  .care-orbit__sun img {
+    border-width: 4px;
+  }
+
+  .care-orbit__sun strong {
+    min-height: 29px;
+    margin-top: -12px;
+    padding: 7px 13px;
+    font-size: 12px;
+  }
+
+  .care-orbit__sun small {
+    max-width: 170px;
+    margin-top: 5px;
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 8px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .care-planet {
+    width: 70px;
+    min-height: 88px;
+  }
+
+  .care-planet__body {
+    width: 52px;
+    height: 52px;
+  }
+
+  .care-planet__body > svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .care-planet__label {
+    padding: 5px 7px;
+  }
+
+  .care-planet__label strong {
+    font-size: 10px;
+  }
+
+  .care-planet__label small {
+    font-size: 7px;
+  }
+
+  .care-planet--recommended .care-planet__label::after {
+    display: none;
+  }
+
+  .care-orbit__focus-panel {
+    bottom: 6px;
+    width: calc(100% - 12px);
+    padding: 10px;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 8px;
+    border-radius: 20px;
+  }
+
+  .care-orbit__focus-back {
+    width: 40px;
+    padding: 0;
+    overflow: hidden;
+    font-size: 0;
+  }
+
+  .care-orbit__focus-back span {
+    font-size: 18px;
+  }
+
+  .care-orbit__focus-copy h2 {
+    font-size: 18px;
+  }
+
+  .care-orbit__focus-copy p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .care-orbit__open {
+    min-width: 92px;
+    padding: 0 10px;
+    justify-content: center;
+    font-size: 10px;
+  }
+
+  .care-orbit__footer {
+    margin-top: -5px;
+    gap: 6px;
+  }
+
+  .care-orbit__progress,
+  .care-orbit__guardianship {
+    min-height: 46px;
+    border-radius: 15px;
+  }
+
+  .care-orbit__progress {
+    padding: 6px 9px;
+  }
+
+  .care-orbit__progress > span {
+    font-size: 14px;
+  }
+
+  .care-orbit__progress p {
+    font-size: 8px;
+  }
+
+  .care-orbit__guardianship {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    padding: 6px 8px;
+  }
+
+  .care-orbit__guardianship > svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .care-orbit__guardianship strong {
+    font-size: 10px;
+  }
+
+  .care-orbit__guardianship small {
+    display: none;
+  }
+
+  .passport-panels {
+    margin-top: 18px;
+  }
+
+  .visit-game__header {
+    gap: 5px;
+  }
+
+  .visit-game__header h1 {
+    font-size: clamp(34px, 10vw, 46px);
+  }
+
+  .visit-game__scene {
+    min-height: 292px;
+  }
+
+  .visit-game__pet-marker {
+    right: 12px;
+    bottom: 58px;
+    min-height: 48px;
+    padding: 7px 9px;
+    grid-template-columns: 30px minmax(0, 1fr);
+    border-radius: 15px;
+  }
+
+  .visit-game__pet-marker > span {
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 380px) and (max-height: 830px) {
+  .care-orbit {
+    grid-template-rows: auto 430px auto;
+  }
+
+  .care-orbit__scene {
+    min-height: 430px;
+  }
+
+  .care-orbit__sun {
+    width: min(36vw, 140px);
+  }
+
+  .care-planet__body {
+    width: 48px;
+    height: 48px;
+  }
+
+  .care-orbit__footer {
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .care-orbit--complete .care-orbit__sun-glow {
+    animation: none;
+  }
+
+  .care-planet-anchor,
+  .care-planet-anchor.is-selected {
+    transition-duration: 80ms;
+  }
+
+  .care-planet__trail {
+    display: none;
   }
 }

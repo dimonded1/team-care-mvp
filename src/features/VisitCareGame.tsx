@@ -82,17 +82,12 @@ export function VisitCareGame({ animal, onReadyChange }: VisitCareGameProps) {
         />
         <span className="visit-game__shade" aria-hidden="true" />
 
-        <div className="visit-game__pet">
-          <span className="visit-game__pet-orbit" aria-hidden="true" />
-          <img
-            src={assetUrl(`assets/care-planets/${animal.species}-guide.jpg`)}
-            alt={`Мультяшный образ: ${animal.species === "cat" ? "кот" : "собака"}`}
-            width="1200"
-            height="1200"
-            draggable={false}
-          />
-          <strong>{animal.name}</strong>
-          <small>{complete ? "следующая встреча уже ближе" : "выбирает свой темп"}</small>
+        <div className="visit-game__pet-marker" aria-label={`${animal.name} находится рядом`}>
+          <span aria-hidden="true">♡</span>
+          <div>
+            <strong>{animal.name}</strong>
+            <small>{complete ? "следующая встреча уже ближе" : "выбирает свой темп"}</small>
+          </div>
         </div>
 
         <ol className="visit-game__progress" aria-label="Три шага визита">

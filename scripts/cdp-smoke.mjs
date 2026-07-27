@@ -324,13 +324,23 @@ async function main() {
     };
 
     const openMissionNode = async (missionId) => {
-      const opened = await evaluate(`(() => {
+      await waitForSelector('[data-orbit-state="orbiting"]', true, 6_000);
+      const focused = await evaluate(`(() => {
         const node = document.querySelector('[data-mission-id="${missionId}"]');
         if (!node) return false;
         node.click();
         return true;
       })()`);
-      if (!opened) throw new Error(`Mission node not found: ${missionId}`);
+      if (!focused) throw new Error(`Mission node not found: ${missionId}`);
+      await waitForSelector(".care-orbit__focus-panel");
+      await waitForEnabledSelector(".care-orbit__open", 2_000);
+      const opened = await evaluate(`(() => {
+        const button = document.querySelector('.care-orbit__open');
+        if (!button) return false;
+        button.click();
+        return true;
+      })()`);
+      if (!opened) throw new Error(`Mission focus action not found: ${missionId}`);
       await waitForSelector(".journey-screen");
     };
 
@@ -802,29 +812,31 @@ async function main() {
       if (isVisitGame) {
         const visitVisual = await evaluate(`(() => {
           const scene = document.querySelector('.visit-game__scene');
-          const pet = document.querySelector('.visit-game__pet img');
           const background = document.querySelector('.visit-game__background');
+          const marker = document.querySelector('.visit-game__pet-marker');
+          const content = document.querySelector('.journey-screen--visit-game .journey-content');
           const sceneRect = scene?.getBoundingClientRect();
-          const petRect = pet?.getBoundingClientRect();
+          const markerRect = marker?.getBoundingClientRect();
           return {
-            backgroundSource: background instanceof HTMLImageElement ? background.currentSrc : '',
-            petSource: pet instanceof HTMLImageElement ? pet.currentSrc : '',
-            petInsideScene: Boolean(
-              sceneRect && petRect
-              && petRect.left >= sceneRect.left - 1
-              && petRect.right <= sceneRect.right + 1
-              && petRect.top >= sceneRect.top - 1
-              && petRect.bottom <= sceneRect.bottom + 1
+            backgroundSource: background instanceof HTMLImageElement
+              ? background.currentSrc || background.getAttribute('src') || ''
+              : '',
+            fakeGuideImages: document.querySelectorAll('.visit-game img[src*="-guide.jpg"]').length,
+            markerInsideScene: Boolean(
+              sceneRect && markerRect
+              && markerRect.left >= sceneRect.left - 1
+              && markerRect.right <= sceneRect.right + 1
+              && markerRect.top >= sceneRect.top - 1
+              && markerRect.bottom <= sceneRect.bottom + 1
             ),
-            petRatio: petRect ? petRect.width / petRect.height : null,
+            contentBackground: content ? getComputedStyle(content).backgroundColor : null,
           };
         })()`);
         if (
           !visitVisual.backgroundSource.endsWith('care-planets/visit-world.jpg')
-          || !/care-planets\/(?:dog|cat)-guide\.jpg$/u.test(visitVisual.petSource)
-          || !visitVisual.petInsideScene
-          || visitVisual.petRatio === null
-          || Math.abs(visitVisual.petRatio - 1) > 0.02
+          || visitVisual.fakeGuideImages !== 0
+          || !visitVisual.markerInsideScene
+          || visitVisual.contentBackground !== 'rgba(0, 0, 0, 0)'
         ) {
           throw new Error(`Visit visual regression: ${JSON.stringify(visitVisual)}`);
         }
@@ -1270,30 +1282,31 @@ async function main() {
     await capture("smoke-match-mobile.png");
     await clickButton("Познакомиться");
     await waitForText("Выберите планету заботы");
-    await sleep(950);
+    await sleep(2_700);
     const initialHub = await evaluate(`(() => {
-      const ring = document.querySelector('.passport-portrait__progress--segments')?.getBoundingClientRect();
-      const photo = document.querySelector('.passport-portrait__photo')?.getBoundingClientRect();
-      const routeTitle = document.querySelector('.passport-routes-title');
-      const orbitField = document.querySelector('.orbit-field--passport');
-      const stageRings = document.querySelector('.passport-orbit-stage__rings');
-      const cards = [...document.querySelectorAll('[data-mission-id]')];
-      const cardRects = cards.map((card) => card.getBoundingClientRect());
+      const scene = document.querySelector('.care-orbit__scene')?.getBoundingClientRect();
+      const sun = document.querySelector('.care-orbit__sun')?.getBoundingClientRect();
+      const photo = document.querySelector('.care-orbit__sun img');
+      const planets = [...document.querySelectorAll('[data-mission-id]')];
+      const planetRects = planets.map((planet) => planet.getBoundingClientRect());
       return ({
-      nodes: document.querySelectorAll('[data-mission-id]').length,
+      nodes: planets.length,
       available: document.querySelectorAll('[data-mission-status="available"]').length,
-      atmospheres: document.querySelectorAll('.mission-atmosphere').length,
-      animatedIcons: cards.filter((card) => {
-        const icon = card.querySelector('.passport-mission-node__planet');
-        return icon && getComputedStyle(icon).animationName !== 'none';
-      }).length,
-      progressDots: document.querySelectorAll('.passport-orbit-progress__dot').length,
-      ringThickness: ring && photo ? (ring.width - photo.width) / 2 : null,
-      routeTitle: routeTitle?.textContent?.trim() ?? '',
-      routeTitleSize: routeTitle ? Number.parseFloat(getComputedStyle(routeTitle).fontSize) : 0,
-      orbitFieldDisplay: orbitField ? getComputedStyle(orbitField).display : null,
-      stageRingsDisplay: stageRings ? getComputedStyle(stageRings).display : null,
-      cardsBottom: cardRects.length ? Math.max(...cardRects.map((rect) => rect.bottom)) : null,
+      realAnimalPhoto: photo instanceof HTMLImageElement && photo.currentSrc.includes('/assets/animals/'),
+      orbitPaths: document.querySelectorAll('.care-orbit__paths ellipse').length,
+      state: document.querySelector('.care-orbit')?.dataset.orbitState ?? null,
+      sceneTop: scene?.top ?? null,
+      sceneBottom: scene?.bottom ?? null,
+      sunCenterDistance: scene && sun
+        ? Math.hypot(
+            (sun.left + sun.width / 2) - (scene.left + scene.width / 2),
+            (sun.top + sun.height / 2) - (scene.top + scene.height / 2)
+          )
+        : null,
+      distinctPlanetPositions: new Set(planetRects.map((rect) => Math.round(rect.x) + ':' + Math.round(rect.y))).size,
+      minTouch: planetRects.length ? Math.min(...planetRects.map((rect) => Math.min(rect.width, rect.height))) : 0,
+      cards: document.querySelectorAll('.passport-mission-node--v2').length,
+      segmentedRings: document.querySelectorAll('.passport-portrait__progress--segments').length,
       goalSections: document.querySelectorAll('.passport-goal').length,
       goalJumps: document.querySelectorAll('.passport-goal__jump').length,
       legacyTeamPanels: document.querySelectorAll('.passport-panel--team').length,
@@ -1309,18 +1322,15 @@ async function main() {
     if (
       initialHub.nodes !== 4
       || initialHub.available !== 4
-      || initialHub.atmospheres !== 4
-      || initialHub.animatedIcons !== 4
-      || initialHub.progressDots !== 4
-      || initialHub.ringThickness === null
-      || initialHub.ringThickness < 6
-      || initialHub.ringThickness > 12
-      || initialHub.routeTitle !== 'Выберите планету заботы'
-      || initialHub.routeTitleSize < 18
-      || initialHub.orbitFieldDisplay !== 'none'
-      || initialHub.stageRingsDisplay !== 'none'
-      || initialHub.cardsBottom === null
-      || initialHub.cardsBottom > initialHub.viewportHeight + 40
+      || !initialHub.realAnimalPhoto
+      || initialHub.orbitPaths !== 4
+      || initialHub.state !== 'orbiting'
+      || initialHub.sunCenterDistance === null
+      || initialHub.sunCenterDistance > 8
+      || initialHub.distinctPlanetPositions !== 4
+      || initialHub.minTouch < 44
+      || initialHub.cards !== 0
+      || initialHub.segmentedRings !== 0
       || initialHub.goalSections !== 1
       || initialHub.goalJumps !== 1
       || initialHub.legacyTeamPanels !== 0
@@ -1339,7 +1349,7 @@ async function main() {
     await evaluate("document.querySelector('.passport-goal__jump')?.click()");
     await sleep(520);
     const missionJumpTop = await evaluate(
-      "document.querySelector('#care-mini-games')?.getBoundingClientRect().top ?? null",
+      "document.querySelector('.care-orbit')?.getBoundingClientRect().top ?? null",
     );
     if (missionJumpTop === null || missionJumpTop > 110) {
       throw new Error(`Goal card did not return to mini-games: ${missionJumpTop}`);
@@ -1666,21 +1676,23 @@ async function main() {
     await waitForText("Завершить орбиту");
     await sleep(1_100);
     const completedHubVisuals = await evaluate(`(() => {
-      const cards = [...document.querySelectorAll('[data-mission-status="completed"]')];
-      const dots = [...document.querySelectorAll('.passport-orbit-progress__dot--completed')];
+      const planets = [...document.querySelectorAll('[data-mission-status="completed"]')];
       return {
-        cards: cards.length,
-        greenCardBorders: cards.filter((card) => getComputedStyle(card).borderColor.includes('120, 187, 120')).length,
-        dots: dots.length,
-        greenDots: dots.filter((dot) => getComputedStyle(dot).backgroundColor === 'rgb(120, 187, 120)').length,
+        planets: planets.length,
+        completionMarks: document.querySelectorAll('.care-planet--completed .care-planet__body > i').length,
+        glowingPlanets: planets.filter((planet) => {
+          const body = planet.querySelector('.care-planet__body');
+          return body && getComputedStyle(body).boxShadow.includes('120, 187, 120');
+        }).length,
+        systemComplete: document.querySelector('.care-orbit')?.classList.contains('care-orbit--complete') ?? false,
         orbitHeading: document.querySelector('.passport-panels__heading p')?.textContent?.trim() ?? '',
       };
     })()`);
     if (
-      completedHubVisuals.cards !== 4
-      || completedHubVisuals.greenCardBorders !== 4
-      || completedHubVisuals.dots !== 4
-      || completedHubVisuals.greenDots !== 4
+      completedHubVisuals.planets !== 4
+      || completedHubVisuals.completionMarks !== 4
+      || completedHubVisuals.glowingPlanets !== 4
+      || !completedHubVisuals.systemComplete
       || completedHubVisuals.orbitHeading !== 'Орбита подопечного'
     ) {
       throw new Error(`Completed orbit visuals regression: ${JSON.stringify(completedHubVisuals)}`);
@@ -1787,7 +1799,8 @@ async function main() {
     await sleep(120);
     const contactCaptureState = await evaluate(`(async () => {
       const response = await fetch('/api/public-config');
-      const config = response.ok ? await response.json() : {};
+      const isJson = response.headers.get('content-type')?.includes('application/json');
+      const config = response.ok && isJson ? await response.json() : {};
       return {
         configured: config.contactCaptureEnabled === true,
         rendered: Boolean(document.querySelector('.contact-capture')),
@@ -1877,7 +1890,7 @@ async function main() {
     await sleep(2_900);
     await clickButton("Познакомиться");
     await waitForText("Выберите планету заботы");
-    await sleep(900);
+    await waitForSelector('[data-orbit-state="orbiting"]', true, 6_000);
     const tabletHubMetrics = await evaluate(`(() => {
       const nodes = [...document.querySelectorAll('[data-mission-id]')]
         .map((node) => node.getBoundingClientRect());
@@ -2086,7 +2099,7 @@ async function main() {
     const desktopHub = await evaluate(`(() => {
       const screen = document.querySelector('.passport-hub-screen')?.getBoundingClientRect();
       const hub = document.querySelector('.passport-hub')?.getBoundingClientRect();
-      const portrait = document.querySelector('.passport-portrait')?.getBoundingClientRect();
+      const portrait = document.querySelector('.care-orbit__sun')?.getBoundingClientRect();
       const nodes = [...document.querySelectorAll('[data-mission-id]')]
         .map((node) => node.getBoundingClientRect());
       return {
@@ -2108,7 +2121,7 @@ async function main() {
       || desktopHub.hubWidth === null
       || desktopHub.hubWidth < 1100
       || desktopHub.portraitWidth === null
-      || desktopHub.portraitWidth < 270
+      || desktopHub.portraitWidth < 190
       || desktopHub.nodeCount !== 4
       || desktopHub.distinctNodePositions !== 4
       || desktopHub.overflow > 1
