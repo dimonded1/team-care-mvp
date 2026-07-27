@@ -166,7 +166,7 @@ export function TrustCareGame({ animal, onReadyChange }: TrustCareGameProps) {
         <div ref={stageRef} className={`trust-stage trust-stage--${reaction ?? phase}`}>
           <img
             className="trust-stage__room"
-            src={assetUrl("assets/trust/trust-living-room.webp")}
+            src={assetUrl("assets/care-planets/trust-world.jpg")}
             alt=""
             aria-hidden="true"
             draggable={false}

@@ -40,6 +40,32 @@ function enumValue(value) {
   return value ?? null;
 }
 
+function cleanSingleLine(value, name, maxLength) {
+  const normalized = stripMarkup(requireValue(value, name));
+  if (!normalized || normalized.length > maxLength) {
+    throw new TypeError(`${name} must contain 1-${maxLength} characters`);
+  }
+  return normalized;
+}
+
+function normalizeEmail(value) {
+  const email = String(requireValue(value, "email")).trim().toLowerCase();
+  if (
+    email.length > 254
+    || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/u.test(email)
+    || /[\r\n]/u.test(email)
+  ) {
+    throw new TypeError("email must be a valid address");
+  }
+  return email;
+}
+
+export const contactInterestLabels = Object.freeze({
+  guardianship: "Хочу узнать об опеке",
+  visits: "Хочу узнать о визитах и помощи",
+  updates: "Хочу получать новости о подопечном",
+});
+
 /** Creates the read request for published animal deals. */
 export function buildAnimalListRequest(config, { start = 0 } = {}) {
   const fields = config.animal.fields;
@@ -122,6 +148,57 @@ export function mapGuardianshipLead(input, config) {
         [fields.animalName]: input.animalName,
         [fields.consent]: true,
       },
+      params: { REGISTER_SONET_EVENT: "N" },
+    },
+  };
+}
+
+/**
+ * Maps a lightweight, explicitly consented follow-up request to crm.contact.add.
+ * The human-readable interest is always kept in COMMENTS; a configured Bitrix
+ * enumeration value is added only when its ID has been confirmed by an admin.
+ */
+export function mapContactCapture(input, config, { now = new Date() } = {}) {
+  if (input.consent !== true) {
+    throw new TypeError("Explicit personal-data consent is required");
+  }
+
+  const name = cleanSingleLine(input.name, "name", 80);
+  const email = normalizeEmail(input.email);
+  const animalId = cleanSingleLine(input.animalId, "animalId", 80);
+  const animalName = cleanSingleLine(input.animalName, "animalName", 80);
+  const interest = String(requireValue(input.interest, "interest"));
+  const interestLabel = contactInterestLabels[interest];
+  if (!interestLabel) throw new TypeError("interest is not allowed");
+
+  const fields = config.contacts.fields;
+  const enumId = config.contacts.interestEnums[interest];
+  const date = now instanceof Date && !Number.isNaN(now.valueOf())
+    ? now.toISOString().slice(0, 10)
+    : new Date().toISOString().slice(0, 10);
+
+  const contactFields = {
+    NAME: name,
+    EMAIL: [{ VALUE: email, VALUE_TYPE: "WORK" }],
+    COMMENTS: `${interestLabel}. Подопечный: ${animalName} (${animalId}).`,
+    [fields.consent]: true,
+    [fields.consentAt]: date,
+    [fields.submittedAt]: date,
+  };
+
+  if (config.contacts.sourceId && config.contacts.sourceId !== "<SET_IN_SERVER_ENV>") {
+    contactFields.SOURCE_ID = config.contacts.sourceId;
+  }
+  if (enumId && enumId !== "<SET_IN_SERVER_ENV>") {
+    contactFields[fields.interest] = enumId;
+  }
+
+  return {
+    feature: "contacts",
+    method: "crm.contact.add",
+    responseMode: "json",
+    payload: {
+      fields: contactFields,
       params: { REGISTER_SONET_EVENT: "N" },
     },
   };

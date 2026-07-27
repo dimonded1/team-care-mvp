@@ -1,0 +1,109 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import {
+  createContactCaptureService,
+  createSlidingWindowRateLimiter,
+  isAllowedOrigin,
+  parseAllowedOrigins,
+} from "./contact-capture.mjs";
+
+const env = {
+  BITRIX_ENABLED: "true",
+  BITRIX_CONTACTS_ENABLED: "true",
+  BITRIX_WEBHOOK_URL: "https://example.bitrix24.ru/rest/1/token",
+  BITRIX_WEBHOOK_SECRET: "server-only-secret",
+  BITRIX_CONTACT_SOURCE_ID: "WEB",
+  BITRIX_CONTACT_FIELD_INTEREST: "UF_CRM_INTEREST",
+  BITRIX_CONTACT_FIELD_CONSENT: "UF_CRM_CONSENT",
+  BITRIX_CONTACT_FIELD_CONSENT_AT: "UF_CRM_CONSENT_AT",
+  BITRIX_CONTACT_FIELD_SUBMITTED_AT: "UF_CRM_SUBMITTED_AT",
+  BITRIX_CONTACT_INTEREST_GUARDIANSHIP_ENUM_ID: "501",
+  BITRIX_CONTACT_INTEREST_VISITS_ENUM_ID: "502",
+  BITRIX_CONTACT_INTEREST_UPDATES_ENUM_ID: "503",
+};
+
+const validPayload = {
+  name: "Анна",
+  email: "anna@example.org",
+  interest: "visits",
+  animalId: "mira",
+  animalName: "Мира",
+  consent: true,
+};
+
+test("contact service sends only a validated mapped request", async () => {
+  let call;
+  const service = createContactCaptureService({
+    env,
+    now: () => new Date("2026-07-27T12:00:00.000Z"),
+    fetch: async (url, options) => {
+      call = { url, options };
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ result: 123 }),
+      };
+    },
+  });
+
+  const result = await service.submit(validPayload);
+  assert.equal(service.isEnabled(), true);
+  assert.deepEqual(result, { contactId: 123 });
+  assert.match(call.url, /crm\.contact\.add\.json$/);
+  assert.equal(JSON.stringify(call).includes("server-only-secret"), false);
+  assert.equal(JSON.parse(call.options.body).fields.NAME, "Анна");
+});
+
+test("disabled contact service never calls Bitrix", async () => {
+  const service = createContactCaptureService({
+    env: { ...env, BITRIX_CONTACTS_ENABLED: "false" },
+    fetch: () => assert.fail("fetch must not be called"),
+  });
+
+  assert.equal(service.isEnabled(), false);
+  await assert.rejects(service.submit(validPayload), /disabled/i);
+});
+
+test("rate limiter uses a bounded sliding window", () => {
+  let timestamp = 1_000;
+  const limiter = createSlidingWindowRateLimiter({
+    limit: 2,
+    windowMs: 1_000,
+    now: () => timestamp,
+  });
+
+  assert.equal(limiter.consume("ip"), true);
+  assert.equal(limiter.consume("ip"), true);
+  assert.equal(limiter.consume("ip"), false);
+  timestamp += 1_001;
+  assert.equal(limiter.consume("ip"), true);
+});
+
+test("origin validation allows same-origin and configured production origin", () => {
+  const allowed = parseAllowedOrigins("https://care.fond-nika.ru, invalid");
+
+  assert.equal(isAllowedOrigin("https://care.fond-nika.ru", "http://localhost:8080", allowed), true);
+  assert.equal(isAllowedOrigin("http://localhost:8080", "http://localhost:8080", allowed), false);
+  assert.equal(isAllowedOrigin("https://attacker.example", "http://localhost:8080", allowed), false);
+  assert.equal(isAllowedOrigin("http://localhost:8080", "http://localhost:8080", new Set()), true);
+});
+
+test("contact service distinguishes invalid input from an upstream failure", async () => {
+  const invalidService = createContactCaptureService({ env, fetch: () => assert.fail("not called") });
+  await assert.rejects(
+    invalidService.submit({ ...validPayload, consent: false }),
+    (error) => error.status === 400,
+  );
+
+  const failedService = createContactCaptureService({
+    env,
+    fetch: async () => {
+      throw new TypeError("network unavailable");
+    },
+  });
+  await assert.rejects(
+    failedService.submit(validPayload),
+    (error) => error.status === 502,
+  );
+});

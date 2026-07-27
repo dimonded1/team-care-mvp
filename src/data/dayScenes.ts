@@ -36,7 +36,7 @@ export const dayScenes: DaySceneDefinition[] = [
     time: "Шаг 1",
     title: "За воротами ждёт маршрут",
     prompt: "Перед выходом питомец возбуждённо кружится у двери. С чего начать?",
-    image: assetUrl("assets/day-game/courtyard-morning.webp"),
+    image: assetUrl("assets/care-planets/walk-world.jpg"),
     irisOrigin: "82% 18%",
     choices: [
       {
@@ -75,7 +75,7 @@ export const dayScenes: DaySceneDefinition[] = [
     time: "Шаг 2",
     title: "У калитки стало шумно",
     prompt: "Рядом проходит группа людей, а питомец остановился и смотрит назад. Как продолжить?",
-    image: assetUrl("assets/day-game/courtyard-day.webp"),
+    image: assetUrl("assets/care-planets/walk-world.jpg"),
     irisOrigin: "64% 14%",
     choices: [
       {
@@ -114,7 +114,7 @@ export const dayScenes: DaySceneDefinition[] = [
     time: "Шаг 3",
     title: "Солнце стало жарче",
     prompt: "Питомец замедлился и чаще оглядывается на вас. Что сделать на маршруте?",
-    image: assetUrl("assets/day-game/courtyard-evening.webp"),
+    image: assetUrl("assets/care-planets/walk-world.jpg"),
     irisOrigin: "34% 22%",
     choices: [
       {
@@ -153,7 +153,7 @@ export const dayScenes: DaySceneDefinition[] = [
     time: "Шаг 4",
     title: "Знакомая калитка уже рядом",
     prompt: "Питомец спокойно возвращается в приют. Как завершить прогулку?",
-    image: assetUrl("assets/day-game/courtyard-night.webp"),
+    image: assetUrl("assets/care-planets/walk-world.jpg"),
     irisOrigin: "82% 10%",
     choices: [
       {

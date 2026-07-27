@@ -7,7 +7,9 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
+    "start": "node --env-file-if-exists=.env server/index.mjs",
     "test": "vitest run",
+    "test:server": "node --test integrations/bitrix/bitrix.node-test.mjs server/contact-capture.node-test.mjs",
     "test:watch": "vitest",
     "smoke": "node scripts/cdp-smoke.mjs"
   },

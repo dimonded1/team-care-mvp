@@ -1,6 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { AnimalPhoto } from "../components/AnimalPhoto";
 import { CheckIcon, CloseIcon } from "../components/Icons";
 import {
   visitSituations,
@@ -77,7 +76,7 @@ export function VisitCareGame({ animal, onReadyChange }: VisitCareGameProps) {
       <div className="visit-game__scene">
         <img
           className="visit-game__background"
-          src={assetUrl("assets/visit-game/shelter-visit.webp")}
+          src={assetUrl("assets/care-planets/visit-world.jpg")}
           alt=""
           aria-hidden="true"
         />
@@ -85,7 +84,13 @@ export function VisitCareGame({ animal, onReadyChange }: VisitCareGameProps) {
 
         <div className="visit-game__pet">
           <span className="visit-game__pet-orbit" aria-hidden="true" />
-          <AnimalPhoto src={animal.photo} name={animal.name} />
+          <img
+            src={assetUrl(`assets/care-planets/${animal.species}-guide.jpg`)}
+            alt={`Мультяшный образ: ${animal.species === "cat" ? "кот" : "собака"}`}
+            width="1200"
+            height="1200"
+            draggable={false}
+          />
           <strong>{animal.name}</strong>
           <small>{complete ? "следующая встреча уже ближе" : "выбирает свой темп"}</small>
         </div>

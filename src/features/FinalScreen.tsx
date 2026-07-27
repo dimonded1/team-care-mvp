@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AppHeader } from "../components/AppHeader";
 import { Button } from "../components/Button";
 import { CheckIcon, DownloadIcon, HeartIcon, ShareIcon } from "../components/Icons";
+import { ContactCaptureForm } from "../components/ContactCaptureForm";
 import { createResultCard } from "../lib/card";
 import type { Animal } from "../types/app";
 
@@ -119,6 +120,7 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
           <a className="button button--orange button--full" href={animal.profileUrl} target="_blank" rel="noreferrer">
             Стать опекуном {animal.name}
           </a>
+          <ContactCaptureForm animal={animal} />
           <div className="final-action-row">
             <Button
               variant="ghost"

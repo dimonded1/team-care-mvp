@@ -661,7 +661,7 @@ async function main() {
               !approachMetrics.petLoaded
               || !approachMetrics.petSource.endsWith('.webp')
               || !approachMetrics.roomLoaded
-              || !approachMetrics.roomSource.endsWith('trust-living-room.webp')
+              || !approachMetrics.roomSource.endsWith('care-planets/trust-world.jpg')
               || approachMetrics.progressNodes !== 4
               || approachMetrics.realAnimalPhotos !== 0
               || approachMetrics.photoOverlays !== 0
@@ -800,6 +800,34 @@ async function main() {
       const isHealthGame = await evaluate("Boolean(document.querySelector('[data-testid=\"health-game\"]'))");
       const isVisitGame = await evaluate("Boolean(document.querySelector('[data-testid=\"visit-game\"]'))");
       if (isVisitGame) {
+        const visitVisual = await evaluate(`(() => {
+          const scene = document.querySelector('.visit-game__scene');
+          const pet = document.querySelector('.visit-game__pet img');
+          const background = document.querySelector('.visit-game__background');
+          const sceneRect = scene?.getBoundingClientRect();
+          const petRect = pet?.getBoundingClientRect();
+          return {
+            backgroundSource: background instanceof HTMLImageElement ? background.currentSrc : '',
+            petSource: pet instanceof HTMLImageElement ? pet.currentSrc : '',
+            petInsideScene: Boolean(
+              sceneRect && petRect
+              && petRect.left >= sceneRect.left - 1
+              && petRect.right <= sceneRect.right + 1
+              && petRect.top >= sceneRect.top - 1
+              && petRect.bottom <= sceneRect.bottom + 1
+            ),
+            petRatio: petRect ? petRect.width / petRect.height : null,
+          };
+        })()`);
+        if (
+          !visitVisual.backgroundSource.endsWith('care-planets/visit-world.jpg')
+          || !/care-planets\/(?:dog|cat)-guide\.jpg$/u.test(visitVisual.petSource)
+          || !visitVisual.petInsideScene
+          || visitVisual.petRatio === null
+          || Math.abs(visitVisual.petRatio - 1) > 0.02
+        ) {
+          throw new Error(`Visit visual regression: ${JSON.stringify(visitVisual)}`);
+        }
         for (let step = 1; step <= 3; step += 1) {
           await waitForSelector(`[data-testid="visit-game"][data-visit-step="${step}"]`);
           await waitForEnabledSelector(
@@ -1517,7 +1545,7 @@ async function main() {
           || healthMap.available !== 6
           || !healthMap.petLoaded
           || !healthMap.petSource.endsWith(".webp")
-          || !healthMap.clinicBackground.includes("health-clinic.webp")
+          || !healthMap.clinicBackground.includes("care-planets/health-world.jpg")
           || healthMap.markers.some((marker) => marker !== "!")
           || healthMap.hasZoneProgress
           || healthMap.photoOverlays !== 0
@@ -1757,6 +1785,49 @@ async function main() {
     await capture("smoke-final-mobile.png");
     await evaluate("window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })");
     await sleep(120);
+    const contactCaptureState = await evaluate(`(async () => {
+      const response = await fetch('/api/public-config');
+      const config = response.ok ? await response.json() : {};
+      return {
+        configured: config.contactCaptureEnabled === true,
+        rendered: Boolean(document.querySelector('.contact-capture')),
+      };
+    })()`);
+    if (contactCaptureState.configured && !contactCaptureState.rendered) {
+      throw new Error(`Enabled contact capture was not rendered: ${JSON.stringify(contactCaptureState)}`);
+    }
+    if (contactCaptureState.rendered) {
+      const contactMetrics = await evaluate(`(() => {
+        const form = document.querySelector('.contact-capture__form');
+        const privacy = document.querySelector('.contact-capture__consent a');
+        const submit = document.querySelector('.contact-capture__submit');
+        return {
+          inputs: form?.querySelectorAll('input[type="text"], input[type="email"]').length ?? 0,
+          interests: form?.querySelectorAll('input[type="radio"]').length ?? 0,
+          consent: form?.querySelectorAll('input[type="checkbox"][required]').length ?? 0,
+          privacyHref: privacy instanceof HTMLAnchorElement ? privacy.getAttribute('href') : null,
+          submitDisabled: submit instanceof HTMLButtonElement ? submit.disabled : null,
+          overflow: document.documentElement.scrollWidth - innerWidth,
+        };
+      })()`);
+      if (
+        contactMetrics.inputs !== 2
+        || contactMetrics.interests !== 3
+        || contactMetrics.consent !== 1
+        || contactMetrics.privacyHref !== '#legal/privacy'
+        || contactMetrics.submitDisabled !== true
+        || contactMetrics.overflow > 1
+      ) {
+        throw new Error(`Contact capture regression: ${JSON.stringify(contactMetrics)}`);
+      }
+      await evaluate(
+        "document.querySelector('.contact-capture')?.scrollIntoView({ block: 'start', behavior: 'instant' })",
+      );
+      await sleep(120);
+      await capture("smoke-contact-capture-mobile.png");
+      await evaluate("window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })");
+      await sleep(120);
+    }
     await capture("smoke-final-actions-mobile.png");
     const finalHeading = await evaluate("document.querySelector('.final-copy h1')?.innerText ?? ''");
 
@@ -2127,7 +2198,7 @@ async function main() {
       || !desktopHealthGame.petSource.endsWith(".webp")
       || desktopHealthGame.silhouetteWidth === null
       || desktopHealthGame.silhouetteWidth < 900
-      || !desktopHealthGame.clinicBackground.includes("health-clinic.webp")
+      || !desktopHealthGame.clinicBackground.includes("care-planets/health-world.jpg")
       || desktopHealthGame.panelWidth !== null
       || desktopHealthGame.zones !== 6
       || desktopHealthGame.markers.some((marker) => marker !== "!")

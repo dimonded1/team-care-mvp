@@ -33,6 +33,7 @@ export function createBitrixConfig(env = process.env) {
       animalSync: asBoolean(env.BITRIX_ANIMAL_SYNC_ENABLED),
       guardianshipLeads: asBoolean(env.BITRIX_GUARDIANSHIP_LEADS_ENABLED),
       careEvents: asBoolean(env.BITRIX_CARE_EVENTS_ENABLED),
+      contacts: asBoolean(env.BITRIX_CONTACTS_ENABLED),
     }),
     animal: Object.freeze({
       categoryId: valueOrPlaceholder(env.BITRIX_ANIMAL_CATEGORY_ID),
@@ -70,6 +71,20 @@ export function createBitrixConfig(env = process.env) {
         animalId: valueOrPlaceholder(env.BITRIX_FIELD_ANIMAL_ID),
         animalName: valueOrPlaceholder(env.BITRIX_FIELD_ANIMAL_NAME),
         consent: valueOrPlaceholder(env.BITRIX_FIELD_CONSENT),
+      }),
+    }),
+    contacts: Object.freeze({
+      sourceId: valueOrPlaceholder(env.BITRIX_CONTACT_SOURCE_ID),
+      fields: Object.freeze({
+        interest: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_INTEREST),
+        consent: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_CONSENT),
+        consentAt: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_CONSENT_AT),
+        submittedAt: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_SUBMITTED_AT),
+      }),
+      interestEnums: Object.freeze({
+        guardianship: valueOrPlaceholder(env.BITRIX_CONTACT_INTEREST_GUARDIANSHIP_ENUM_ID),
+        visits: valueOrPlaceholder(env.BITRIX_CONTACT_INTEREST_VISITS_ENUM_ID),
+        updates: valueOrPlaceholder(env.BITRIX_CONTACT_INTEREST_UPDATES_ENUM_ID),
       }),
     }),
     care: Object.freeze({
@@ -119,6 +134,11 @@ export function validateBitrixConfig(config, feature = null) {
     requireNumeric(errors, "BITRIX_CARE_EVENT_ENTITY_TYPE_ID", config.care.entityTypeId);
     const missing = collectMissing(config.care.fields);
     if (missing.length) errors.push(`Care-event field map is incomplete: ${missing.join(", ")}`);
+  }
+
+  if (feature === "contacts") {
+    const missing = collectMissing(config.contacts.fields);
+    if (missing.length) errors.push(`Contact field map is incomplete: ${missing.join(", ")}`);
   }
 
   if (errors.length) throw new Error(`Invalid Bitrix configuration: ${errors.join("; ")}`);

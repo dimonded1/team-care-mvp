@@ -8,6 +8,7 @@ import {
   loadAnimalsFromBitrix,
   mapBitrixAnimal,
   mapCareEvent,
+  mapContactCapture,
   mapGuardianshipLead,
   sendToBitrix,
 } from "./index.mjs";
@@ -17,6 +18,7 @@ const configuredEnv = {
   BITRIX_ANIMAL_SYNC_ENABLED: "true",
   BITRIX_GUARDIANSHIP_LEADS_ENABLED: "true",
   BITRIX_CARE_EVENTS_ENABLED: "true",
+  BITRIX_CONTACTS_ENABLED: "true",
   BITRIX_WEBHOOK_URL: "https://example.bitrix24.ru/rest/1/token",
   BITRIX_WEBHOOK_SECRET: "never-expose-this",
   BITRIX_ANIMAL_CATEGORY_ID: "17",
@@ -50,6 +52,14 @@ const configuredEnv = {
   BITRIX_FIELD_CONSENT: "UF_CRM_CONSENT",
   BITRIX_FIELD_CARE_TYPE: "UF_CRM_CARE_TYPE",
   BITRIX_FIELD_OCCURRED_AT: "UF_CRM_OCCURRED_AT",
+  BITRIX_CONTACT_SOURCE_ID: "WEB",
+  BITRIX_CONTACT_FIELD_INTEREST: "UF_CRM_1773242372621",
+  BITRIX_CONTACT_FIELD_CONSENT: "UF_CRM_1771837766068",
+  BITRIX_CONTACT_FIELD_CONSENT_AT: "UF_CRM_1771837777534",
+  BITRIX_CONTACT_FIELD_SUBMITTED_AT: "UF_CRM_1773673401962",
+  BITRIX_CONTACT_INTEREST_GUARDIANSHIP_ENUM_ID: "501",
+  BITRIX_CONTACT_INTEREST_VISITS_ENUM_ID: "502",
+  BITRIX_CONTACT_INTEREST_UPDATES_ENUM_ID: "503",
 };
 
 test("disabled adapter makes no network request and exposes no secret", async () => {
@@ -112,6 +122,49 @@ test("guardianship lead requires explicit consent", () => {
       ),
     /Explicit guardianship consent is required/,
   );
+});
+
+test("contact mapper creates a consented Bitrix contact with allowlisted interest", () => {
+  const config = createBitrixConfig(configuredEnv);
+  const request = mapContactCapture(
+    {
+      name: "  Анна   Иванова  ",
+      email: "ANNA@example.org",
+      interest: "guardianship",
+      animalId: "mira-42",
+      animalName: "Мира",
+      consent: true,
+    },
+    config,
+    { now: new Date("2026-07-27T10:30:00.000Z") },
+  );
+
+  assert.equal(request.method, "crm.contact.add");
+  assert.equal(request.payload.fields.NAME, "Анна Иванова");
+  assert.deepEqual(request.payload.fields.EMAIL, [
+    { VALUE: "anna@example.org", VALUE_TYPE: "WORK" },
+  ]);
+  assert.equal(request.payload.fields.UF_CRM_1773242372621, "501");
+  assert.equal(request.payload.fields.UF_CRM_1771837766068, true);
+  assert.equal(request.payload.fields.UF_CRM_1771837777534, "2026-07-27");
+  assert.equal(request.payload.fields.UF_CRM_1773673401962, "2026-07-27");
+  assert.match(request.payload.fields.COMMENTS, /Мира \(mira-42\)/);
+});
+
+test("contact mapper rejects missing consent, invalid email and unknown interest", () => {
+  const config = createBitrixConfig(configuredEnv);
+  const base = {
+    name: "Анна",
+    email: "anna@example.org",
+    interest: "visits",
+    animalId: "mira",
+    animalName: "Мира",
+    consent: true,
+  };
+
+  assert.throws(() => mapContactCapture({ ...base, consent: false }, config), /consent/i);
+  assert.throws(() => mapContactCapture({ ...base, email: "not-an-email" }, config), /valid address/i);
+  assert.throws(() => mapContactCapture({ ...base, interest: "anything" }, config), /not allowed/i);
 });
 
 test("animal request selects only configured fields and mapper excludes medical free text", () => {

@@ -6,7 +6,6 @@ import {
   useTransform,
 } from "framer-motion";
 import type { CSSProperties, PointerEvent } from "react";
-import { AnimalPhoto } from "../components/AnimalPhoto";
 import { AppHeader } from "../components/AppHeader";
 import { Button } from "../components/Button";
 import { FoundationMenu } from "../components/FoundationMenu";
@@ -18,6 +17,7 @@ import {
   TrustIcon,
 } from "../components/Icons";
 import { OrbitField } from "../components/OrbitField";
+import { assetUrl } from "../lib/assets";
 import type { MatchResult, Mission } from "../types/app";
 import {
   getActionLabel,
@@ -248,7 +248,13 @@ export function PassportScreen({
           >
             <div className="passport-portrait__progress passport-portrait__progress--segments" aria-hidden="true" />
             <div className="passport-portrait__photo">
-              <AnimalPhoto src={animal.photo} name={animal.name} />
+              <img
+                src={assetUrl(`assets/care-planets/${animal.species}-guide.jpg`)}
+                alt={`Мультяшный образ подопечного: ${animal.name}`}
+                width="1200"
+                height="1200"
+                draggable={false}
+              />
             </div>
             <div className="passport-orbit-progress" aria-label={`Ваша орбита: ${completedMissionIds.length} из ${missions.length}`}>
               <strong>Ваша орбита · {completedMissionIds.length}/{missions.length}</strong>
