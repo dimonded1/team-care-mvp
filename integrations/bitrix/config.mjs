@@ -15,6 +15,17 @@ function valueOrPlaceholder(value) {
   return isPlaceholder(value) ? PLACEHOLDER : String(value).trim();
 }
 
+function optionalValue(value) {
+  return isPlaceholder(value) ? "" : String(value).trim();
+}
+
+function tagList(value) {
+  return String(isPlaceholder(value) ? "" : value)
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 function numericList(value, fallback) {
   const source = isPlaceholder(value) ? fallback : value;
   return String(source ?? "")
@@ -91,6 +102,7 @@ export function createBitrixConfig(env = process.env) {
     }),
     contacts: Object.freeze({
       sourceId: valueOrPlaceholder(env.BITRIX_CONTACT_SOURCE_ID),
+      sourceDescription: optionalValue(env.BITRIX_CONTACT_SOURCE_DESCRIPTION),
       fields: Object.freeze({
         telegram: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_TELEGRAM),
         about: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_ABOUT),
@@ -107,6 +119,10 @@ export function createBitrixConfig(env = process.env) {
       interestEnums: Object.freeze({
         guardianship: valueOrPlaceholder(env.BITRIX_CONTACT_INTEREST_GUARDIANSHIP_ENUM_ID),
       }),
+      // Optional on purpose: a stand without an event campaign must keep working,
+      // so these stay out of interestEnums and never reach validateBitrixConfig.
+      eventInterestEnumId: optionalValue(env.BITRIX_CONTACT_INTEREST_EVENT_ENUM_ID),
+      eventCampaigns: Object.freeze(tagList(env.BITRIX_CONTACT_EVENT_CAMPAIGNS)),
       workSphereEnums: Object.freeze({
         publicService: valueOrPlaceholder(env.BITRIX_CONTACT_WORK_PUBLIC_SERVICE_ENUM_ID),
         budgetOrganization: valueOrPlaceholder(env.BITRIX_CONTACT_WORK_BUDGET_ORGANIZATION_ENUM_ID),

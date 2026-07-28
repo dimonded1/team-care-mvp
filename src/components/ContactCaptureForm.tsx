@@ -2,6 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { FormEvent, useEffect, useState } from "react";
 import { CheckIcon } from "./Icons";
 import {
+  getCampaignTag,
   getContactCaptureMode,
   isValidContactEmail,
   isValidContactName,
@@ -99,6 +100,7 @@ export function ContactCaptureForm({ animal }: ContactCaptureFormProps) {
         maxMessenger: form.maxMessenger || undefined,
         animalId: animal.id,
         animalName: animal.name,
+        campaign: getCampaignTag() || undefined,
         consent: true,
       });
       setState("success");
