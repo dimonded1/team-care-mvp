@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import snapshots from "./bitrixAnimals.generated.json";
+import catalog from "../../integrations/bitrix/animalCatalog.generated.json";
 import { animals, formatAnimalAge } from "./animals";
 import { matchAxes } from "../lib/matching";
 
@@ -9,6 +10,19 @@ describe("Bitrix animal catalog", () => {
     expect(animals.filter((animal) => animal.source.categoryName === "Мокрый Нос")).toHaveLength(3);
     expect(animals.filter((animal) => animal.source.categoryName === "Малино")).toHaveLength(3);
     expect(new Set(animals.map((animal) => animal.species))).toEqual(new Set(["cat", "dog"]));
+  });
+
+  it("keeps the full Bitrix inventory separate from the reviewed matching pool", () => {
+    expect(catalog.summary.eligible).toBe(catalog.animals.length);
+    expect(catalog.summary.matchReady).toBe(animals.length);
+    expect(catalog.summary.awaitingEditorial).toBeGreaterThan(0);
+    expect(catalog.animals.every((animal) => (
+      animal.matchingStatus === "reviewed"
+      || animal.matchingStatus === "needsEditorialProfile"
+      || animal.matchingStatus === "incomplete"
+    ))).toBe(true);
+    expect(JSON.stringify(catalog)).not.toContain("urlMachine");
+    expect(JSON.stringify(catalog)).not.toContain("bitrix24.ru/rest/");
   });
 
   it("uses only stable Bitrix IDs and the generated photo namespace", () => {

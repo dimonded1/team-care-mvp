@@ -10,6 +10,6 @@ export {
   mapContactCapture,
   mapGuardianshipLead,
 } from "./mappers.mjs";
-export { loadAnimalsFromBitrix } from "./animals.mjs";
+export { loadAllAnimalsFromBitrix, loadAnimalsFromBitrix } from "./animals.mjs";
 export { sendToBitrix } from "./sender.mjs";
 export { authorizeIntegrationRequest } from "./private.mjs";

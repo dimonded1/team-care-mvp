@@ -1,30 +1,30 @@
 import { execFile } from "node:child_process";
-import { mkdir, readdir, stat, unlink, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  readFile,
+  readdir,
+  rename,
+  stat,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
 import { extname, join } from "node:path";
 import { promisify } from "node:util";
 
-import { createBitrixConfig, validateBitrixConfig } from "../integrations/bitrix/config.mjs";
-import { mapBitrixAnimal } from "../integrations/bitrix/mappers.mjs";
-import { sendToBitrix } from "../integrations/bitrix/sender.mjs";
+import {
+  createBitrixConfig,
+  loadAllAnimalsFromBitrix,
+  sendToBitrix,
+  validateBitrixConfig,
+} from "../integrations/bitrix/index.mjs";
 
 const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
 const OUTPUT_DATA = join(process.cwd(), "src/data/bitrixAnimals.generated.json");
+const OUTPUT_CATALOG = join(process.cwd(), "integrations/bitrix/animalCatalog.generated.json");
+const EDITORIAL_DATA = join(process.cwd(), "src/data/animalEditorial.json");
 const OUTPUT_PHOTOS = join(process.cwd(), "public/assets/animals/bitrix");
 const execFileAsync = promisify(execFile);
-
-const importPlan = [
-  { sourceId: "360911", expectedName: "Архыз", categoryId: 17, categoryName: "Мокрый Нос" },
-  { sourceId: "639547", expectedName: "Мальвина", categoryId: 17, categoryName: "Мокрый Нос" },
-  { sourceId: "431829", expectedName: "Перчинка", categoryId: 17, categoryName: "Мокрый Нос" },
-  { sourceId: "266241", expectedName: "Маркус", categoryId: 13, categoryName: "Малино" },
-  { sourceId: "266009", expectedName: "Юнити", categoryId: 13, categoryName: "Малино" },
-  { sourceId: "650827", expectedName: "Кепчук", categoryId: 13, categoryName: "Малино" },
-];
-
-function itemFieldKey(fieldId) {
-  return String(fieldId).replace(/^UF_CRM/u, "ufCrm");
-}
 
 function cleanText(value) {
   return String(value ?? "").replace(/\s+/gu, " ").trim();
@@ -39,6 +39,32 @@ function storyExcerpt(value, maxSentences = 3, maxLength = 560) {
   const clipped = excerpt.slice(0, maxLength + 1);
   const boundary = clipped.lastIndexOf(" ");
   return `${clipped.slice(0, boundary > maxLength * 0.65 ? boundary : maxLength).trim()}…`;
+}
+
+function categoryLabels(value) {
+  const labels = new Map([
+    [17, "Мокрый Нос"],
+    [13, "Малино"],
+  ]);
+  String(value ?? "")
+    .split("|")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .forEach((item) => {
+      const separator = item.indexOf(":");
+      if (separator < 1) throw new Error("BITRIX_ANIMAL_CATEGORY_LABELS has an invalid item");
+      const id = Number(item.slice(0, separator));
+      const label = cleanText(item.slice(separator + 1));
+      if (!Number.isInteger(id) || !label) {
+        throw new Error("BITRIX_ANIMAL_CATEGORY_LABELS must use id:label|id:label");
+      }
+      labels.set(id, label);
+    });
+  return labels;
+}
+
+function itemFieldKey(fieldId) {
+  return String(fieldId).replace(/^UF_CRM/u, "ufCrm");
 }
 
 function imageFormat(bytes, contentType) {
@@ -132,55 +158,71 @@ async function downloadPhoto(signedUrl, config, sourceId) {
   }
 
   return {
+    filename,
     photoPath: `assets/animals/bitrix/${filename}`,
     bytes: (await stat(outputPath)).size,
     mime: format.mime,
   };
 }
 
-async function fetchAnimal(plan, config, syncedAt) {
-  const dealResponse = await sendToBitrix({
-    feature: "animalSync",
-    method: "crm.deal.get",
-    responseMode: "json",
-    payload: { id: Number(plan.sourceId) },
-  }, config);
-  const rawDeal = dealResponse.data;
-  const animal = mapBitrixAnimal(rawDeal, config);
+async function writeJsonAtomic(path, value) {
+  const temporary = `${path}.tmp`;
+  await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o644 });
+  await rename(temporary, path);
+}
 
-  if (Number(rawDeal.CATEGORY_ID) !== plan.categoryId) {
-    throw new Error(`${plan.expectedName} moved out of the expected Bitrix funnel`);
-  }
-  if (animal.name !== plan.expectedName) {
-    throw new Error(`Bitrix animal ${plan.sourceId} changed name to ${animal.name}`);
-  }
-  if (!animal.published || animal.blockedFromSite || animal.notForGuardianship) {
-    throw new Error(`${animal.name} is no longer eligible for the public guardianship catalog`);
-  }
+function catalogRecord(animal, labels, reviewedIds) {
+  const complete = animal.species !== "unknown"
+    && animal.sex !== "unknown"
+    && Boolean(animal.birthDate)
+    && Boolean(storyExcerpt(animal.story || animal.shortDescription))
+    && animal.photoFileIds.length > 0;
+  return {
+    sourceId: animal.sourceId,
+    categoryId: animal.categoryId,
+    categoryName: labels.get(Number(animal.categoryId)) ?? `Категория ${animal.categoryId}`,
+    name: animal.name,
+    species: animal.species,
+    sex: animal.sex,
+    birthDate: animal.birthDate,
+    story: storyExcerpt(animal.story || animal.shortDescription),
+    character: storyExcerpt(animal.character, 2, 360),
+    behavior: storyExcerpt(animal.behavior, 2, 360),
+    profileUrl: animal.profileUrl,
+    mainPhotoAvailable: animal.photoFileIds.length > 0,
+    extraPhotoCount: Math.max(0, animal.photoFileIds.length - 1),
+    matchingStatus: !complete
+      ? "incomplete"
+      : reviewedIds.has(animal.sourceId)
+        ? "reviewed"
+        : "needsEditorialProfile",
+  };
+}
+
+async function createMatchSnapshot(animal, config, labels, syncedAt) {
   if (animal.species === "unknown" || animal.sex === "unknown" || !animal.birthDate) {
     throw new Error(`${animal.name} lacks species, sex or birth date`);
   }
+  const story = storyExcerpt(animal.story || animal.shortDescription);
+  if (!story) throw new Error(`${animal.name} has no public story text`);
 
   const itemResponse = await sendToBitrix({
     feature: "animalSync",
     method: "crm.item.get",
     responseMode: "json",
-    payload: { entityTypeId: 2, id: Number(plan.sourceId) },
+    payload: { entityTypeId: 2, id: Number(animal.sourceId) },
   }, config);
   const item = itemResponse.data?.item ?? itemResponse.data;
   const mainPhoto = item?.[itemFieldKey(config.animal.fields.mainPhoto)];
   const signedUrl = Array.isArray(mainPhoto) ? mainPhoto[0]?.urlMachine : mainPhoto?.urlMachine;
   if (!signedUrl) throw new Error(`${animal.name} has no server-downloadable main photo`);
-  const downloaded = await downloadPhoto(signedUrl, config, plan.sourceId);
-
-  const story = storyExcerpt(animal.story || animal.shortDescription);
-  if (!story) throw new Error(`${animal.name} has no public story text`);
+  const downloaded = await downloadPhoto(signedUrl, config, animal.sourceId);
 
   return {
     snapshot: {
       sourceId: animal.sourceId,
-      categoryId: plan.categoryId,
-      categoryName: plan.categoryName,
+      categoryId: Number(animal.categoryId),
+      categoryName: labels.get(Number(animal.categoryId)) ?? `Категория ${animal.categoryId}`,
       syncedAt,
       name: animal.name,
       species: animal.species,
@@ -189,8 +231,8 @@ async function fetchAnimal(plan, config, syncedAt) {
       photoPath: downloaded.photoPath,
       story,
       sourceFieldCoverage: {
-        story: Boolean(cleanText(rawDeal[config.animal.fields.story])),
-        description: Boolean(cleanText(rawDeal[config.animal.fields.description])),
+        story: Boolean(animal.story),
+        description: Boolean(animal.shortDescription),
         character: Boolean(animal.character),
         behavior: Boolean(animal.behavior),
         mainPhoto: true,
@@ -202,19 +244,11 @@ async function fetchAnimal(plan, config, syncedAt) {
     report: {
       id: animal.sourceId,
       name: animal.name,
-      funnel: plan.categoryName,
-      species: animal.species,
-      sex: animal.sex,
+      categoryId: Number(animal.categoryId),
       photo: downloaded.photoPath,
       photoBytes: downloaded.bytes,
-      fields: {
-        birthDate: Boolean(animal.birthDate),
-        story: Boolean(story),
-        character: Boolean(animal.character),
-        behavior: Boolean(animal.behavior),
-        profileUrl: Boolean(animal.profileUrl),
-      },
     },
+    filename: downloaded.filename,
   };
 }
 
@@ -226,26 +260,64 @@ async function main() {
   });
   validateBitrixConfig(config, "animalSync");
 
-  const configuredCategories = new Set(config.animal.categoryIds.map(Number));
-  for (const { categoryId } of importPlan) {
-    if (!configuredCategories.has(categoryId)) {
-      throw new Error(`Bitrix funnel ${categoryId} is missing from BITRIX_ANIMAL_CATEGORY_IDS`);
-    }
+  const editorial = JSON.parse(await readFile(EDITORIAL_DATA, "utf8"));
+  const reviewedIds = new Set(Object.keys(editorial));
+  const labels = categoryLabels(process.env.BITRIX_ANIMAL_CATEGORY_LABELS);
+  const syncedAt = new Date().toISOString();
+  const response = await loadAllAnimalsFromBitrix(config);
+  const candidates = response.animals;
+  const candidateById = new Map(candidates.map((animal) => [animal.sourceId, animal]));
+
+  const missingReviewed = [...reviewedIds].filter((sourceId) => !candidateById.has(sourceId));
+  if (missingReviewed.length > 0) {
+    throw new Error(`Reviewed animals are no longer eligible in Bitrix: ${missingReviewed.join(", ")}`);
   }
 
   await mkdir(OUTPUT_PHOTOS, { recursive: true });
-  const syncedAt = new Date().toISOString();
   const imported = [];
-  for (const plan of importPlan) {
-    imported.push(await fetchAnimal(plan, config, syncedAt));
+  for (const sourceId of reviewedIds) {
+    imported.push(await createMatchSnapshot(candidateById.get(sourceId), config, labels, syncedAt));
   }
 
-  const snapshots = imported.map((item) => item.snapshot);
-  await writeFile(OUTPUT_DATA, `${JSON.stringify(snapshots, null, 2)}\n`, { mode: 0o644 });
+  const snapshots = imported
+    .map((item) => item.snapshot)
+    .toSorted((a, b) => a.sourceId.localeCompare(b.sourceId, "ru", { numeric: true }));
+  const catalog = candidates.map((animal) => catalogRecord(animal, labels, reviewedIds));
+
+  await writeJsonAtomic(OUTPUT_DATA, snapshots);
+  await writeJsonAtomic(OUTPUT_CATALOG, {
+    syncedAt,
+    source: "Bitrix24",
+    categories: config.animal.categoryIds.map((id) => ({
+      id: Number(id),
+      name: labels.get(Number(id)) ?? `Категория ${id}`,
+    })),
+    summary: {
+      eligible: catalog.length,
+      matchReady: catalog.filter((animal) => animal.matchingStatus === "reviewed").length,
+      awaitingEditorial: catalog.filter((animal) => animal.matchingStatus === "needsEditorialProfile").length,
+      incomplete: catalog.filter((animal) => animal.matchingStatus === "incomplete").length,
+    },
+    animals: catalog,
+  });
+
+  const activePhotos = new Set(imported.map((item) => item.filename));
+  for (const filename of await readdir(OUTPUT_PHOTOS)) {
+    if (
+      ["jpg", "jpeg", "png", "webp"].includes(extname(filename).slice(1).toLowerCase())
+      && !activePhotos.has(filename)
+    ) {
+      await unlink(join(OUTPUT_PHOTOS, filename));
+    }
+  }
 
   console.log(JSON.stringify({
     status: "synced",
-    animals: imported.map((item) => item.report),
+    eligibleAnimals: catalog.length,
+    matchReadyAnimals: snapshots.length,
+    awaitingEditorial: catalog.filter((animal) => animal.matchingStatus === "needsEditorialProfile").length,
+    incomplete: catalog.filter((animal) => animal.matchingStatus === "incomplete").length,
+    matchedAnimals: imported.map((item) => item.report),
   }, null, 2));
 }
 

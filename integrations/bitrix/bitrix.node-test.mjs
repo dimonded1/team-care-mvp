@@ -5,6 +5,7 @@ import {
   authorizeIntegrationRequest,
   buildAnimalListRequest,
   createBitrixConfig,
+  loadAllAnimalsFromBitrix,
   loadAnimalsFromBitrix,
   mapBitrixAnimal,
   mapCareEvent,
@@ -296,6 +297,47 @@ test("animal loader filters records blocked from the site or guardianship", asyn
 
   assert.equal(response.status, "sent");
   assert.deepEqual(response.animals.map((animal) => animal.name), ["Мира"]);
+});
+
+test("full animal loader paginates every configured category and deduplicates IDs", async () => {
+  const config = createBitrixConfig(configuredEnv);
+  const base = {
+    UF_SPECIES: 51,
+    UF_SEX: 45,
+    UF_PUBLISHED: 1,
+    UF_BLOCKED: 0,
+    UF_NOT_FOR_GUARDIANSHIP: 0,
+  };
+  const calls = [];
+  const response = await loadAllAnimalsFromBitrix(config, {
+    fetch: async (_url, options) => {
+      const body = JSON.parse(options.body);
+      const categoryId = Number(body.filter.CATEGORY_ID);
+      const start = Number(body.start);
+      calls.push({ categoryId, start });
+      const result = categoryId === 17 && start === 0
+        ? [{ ...base, ID: 1, TITLE: "Мира" }, { ...base, ID: 2, TITLE: "Тень" }]
+        : categoryId === 17
+          ? [{ ...base, ID: 3, TITLE: "Луч" }]
+          : [{ ...base, ID: 2, TITLE: "Тень" }, { ...base, ID: 4, TITLE: "Домино" }];
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          result,
+          next: categoryId === 17 && start === 0 ? 50 : undefined,
+        }),
+      };
+    },
+  });
+
+  assert.deepEqual(calls, [
+    { categoryId: 17, start: 0 },
+    { categoryId: 17, start: 50 },
+    { categoryId: 13, start: 0 },
+  ]);
+  assert.deepEqual(response.animals.map((animal) => animal.sourceId), ["2", "4", "1", "3"]);
+  assert.equal(response.animals.find((animal) => animal.sourceId === "2").categoryId, 13);
 });
 
 test("enabled adapter validates HTTPS and sends without exposing secret", async () => {

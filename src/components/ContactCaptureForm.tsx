@@ -119,8 +119,8 @@ export function ContactCaptureForm({ animal }: ContactCaptureFormProps) {
         <span>{mode === "preview" ? "Предпросмотр формы" : "Можно начать легче"}</span>
         <h2 id="contact-capture-title">Оставьте контакты — фонд расскажет о вариантах помощи</h2>
         <p>
-          Это не оформление опеки и не пожертвование. Данные попадут в контакт
-          Битрикс24, чтобы координатор мог связаться с вами по поводу {animal.name}.
+          Это не оформление опеки и не пожертвование. Можно спокойно рассказать
+          о себе и выбрать удобный способ продолжить знакомство с {animal.name}.
         </p>
         {mode === "preview" ? (
           <small className="contact-capture__preview-note">

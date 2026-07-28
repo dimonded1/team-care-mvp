@@ -7,11 +7,12 @@ Place it behind a server endpoint (or another trusted server runtime). **Never i
 `buildAnimalListRequest()` requests only the configured public animal fields. `mapBitrixAnimal()` strips markup, validates public HTTPS links and deliberately excludes medication/medical free text from the game model. It also marks every imported record as requiring an editorial `matchProfile`; the matching algorithm must never invent behavioural scores from CRM prose.
 
 The checked-in browser catalog is refreshed with `npm run sync:animals`. The
-script reads categories from `BITRIX_ANIMAL_CATEGORY_IDS`, verifies the selected
-published records, downloads the main image through the temporary server-only
-`crm.item.get` URL, validates the file and writes a sanitized snapshot to
-`src/data/bitrixAnimals.generated.json`. Signed file URLs are never persisted or
-returned to the browser.
+script paginates every category from `BITRIX_ANIMAL_CATEGORY_IDS` and writes a
+safe full inventory to `animalCatalog.generated.json`. Only animals with a
+reviewed profile in `src/data/animalEditorial.json` enter
+`src/data/bitrixAnimals.generated.json` and have their main image downloaded
+through the temporary server-only `crm.item.get` URL. Signed file URLs are never
+persisted or returned to the browser.
 
 `mapGuardianshipLead()` creates a standard CRM lead payload. `mapCareEvent()` creates a smart-process item payload. `mapContactCapture()` creates a Bitrix contact from the final-screen form and refuses requests without explicit personal-data consent. Configure all placeholder IDs in the server environment before enabling a feature; enabled mode rejects non-HTTPS webhook URLs and incomplete feature configuration.
 
