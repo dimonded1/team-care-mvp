@@ -38,15 +38,6 @@ type DayReaction = {
 const CORRECT_FEEDBACK_DURATION_MS = 2_100;
 const INCORRECT_FEEDBACK_LOCK_MS = 1_800;
 
-const animalNameGenitiveById: Record<string, string> = {
-  "pita-21": "Питы",
-  "dzhek-2": "Джека",
-  "lis-1": "Лиса",
-  "makfluri-40": "Макфлури",
-  "cunami-7": "Цунами",
-  "paskal-56": "Паскаля",
-};
-
 const activityIcons = {
   meal: FoodIcon,
   movement: MovementIcon,
@@ -85,17 +76,30 @@ function DayCharacter({
   const reduceMotion = useReducedMotion();
   const correctReaction = reaction?.correct === true;
   const incorrectReaction = reaction?.correct === false;
+  const stateByScene = animal.species === "cat"
+    ? {
+        morning: "calm",
+        day: "walking",
+        evening: "curious",
+        night: "relaxed",
+      }
+    : {
+        morning: "calm",
+        day: "walking",
+        evening: "leash-ready",
+        night: "relaxed",
+      };
+  const characterState = incorrectReaction ? "startled" : stateByScene[sceneId];
 
   return (
     <motion.div
       className={`day-character day-character--${animal.species} day-character--${sceneId}`}
       aria-label={`${animal.name} находится во дворе`}
       role="img"
-      initial={{ opacity: 0, y: reduceMotion ? 0 : 28, scale: reduceMotion ? 1 : 0.94 }}
+      initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.94 }}
       animate={correctReaction && !reduceMotion
         ? {
           opacity: 1,
-          y: [0, -10, 0],
           x: [0, -5, 2, 0],
           scale: [1, 1.045, 1.015],
           rotate: [0, -1.2, 0.6, 0],
@@ -103,26 +107,26 @@ function DayCharacter({
         : incorrectReaction && !reduceMotion
           ? {
             opacity: 1,
-            y: [0, 4, 1],
             x: [0, 7, 2],
             scale: [1, 0.975, 0.99],
             rotate: [0, 1.4, 0],
           }
         : {
           opacity: 1,
-          y: reduceMotion ? 0 : [0, -4, 0],
+          x: 0,
+          rotate: reduceMotion ? 0 : [0, -0.45, 0.35, 0],
           scale: reduceMotion ? 1 : [1, 1.012, 1],
         }}
       transition={reaction && !reduceMotion
         ? { duration: 0.62, ease: [0.23, 1, 0.32, 1] }
         : {
           opacity: { duration: 0.36 },
-          y: { duration: 4.8, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" },
+          rotate: { duration: 5.2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" },
           scale: { duration: 4.8, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" },
         }}
     >
       <img
-        src={assetUrl(`assets/day-game/${animal.species}-character.webp`)}
+        src={assetUrl(`assets/game-characters/${animal.species}/${characterState}.webp`)}
         alt=""
         draggable={false}
       />
@@ -250,7 +254,7 @@ function DayMontage({
         transition={{ delay: complete ? 0 : 0.36, duration: 0.42 }}
         aria-hidden="true"
       >
-        <img src={assetUrl(`assets/day-game/${animal.species}-character.webp`)} alt="" />
+        <img src={assetUrl(`assets/game-characters/${animal.species}/relaxed.webp`)} alt="" />
       </motion.div>
     </motion.section>
   );
@@ -270,7 +274,7 @@ export function DayBuilderGame({ animal, onReadyChange }: DayBuilderGameProps) {
   const reactionChoice = reaction
     ? currentScene.choices.find((choice) => choice.id === reaction.choiceId) ?? null
     : null;
-  const animalNameGenitive = animalNameGenitiveById[animal.id] ?? animal.name;
+  const animalNameGenitive = animal.nameGenitive;
 
   const sceneAnnouncement = useMemo(() => {
     if (phase === "complete") return `Маршрут ${animalNameGenitive} пройден.`;
@@ -286,10 +290,10 @@ export function DayBuilderGame({ animal, onReadyChange }: DayBuilderGameProps) {
       const image = new Image();
       image.src = scene.image;
     });
-    [
-      assetUrl("assets/day-game/dog-character.webp"),
-      assetUrl("assets/day-game/cat-character.webp"),
-    ]
+    (["dog", "cat"] as const)
+      .flatMap((species) => ["calm", "walking", "relaxed", "startled"].map(
+        (state) => assetUrl(`assets/game-characters/${species}/${state}.webp`),
+      ))
       .forEach((src) => {
         const image = new Image();
         image.src = src;

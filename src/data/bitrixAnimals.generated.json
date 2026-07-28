@@ -1,0 +1,134 @@
+[
+  {
+    "sourceId": "360911",
+    "categoryId": 17,
+    "categoryName": "Мокрый Нос",
+    "syncedAt": "2026-07-28T11:11:35.213Z",
+    "name": "Архыз",
+    "species": "dog",
+    "sex": "male",
+    "birthDate": "2023-01-01T03:00:00+03:00",
+    "photoPath": "assets/animals/bitrix/360911.jpg",
+    "story": "Чудесный Архыз ищет свою семью. Совсем молодой мальчишка Архыз получил свое имя не случайно. Он прибился к туристам в горном районе Архыз, и люди не смогли оставить его на улице.",
+    "sourceFieldCoverage": {
+      "story": false,
+      "description": true,
+      "character": true,
+      "behavior": true,
+      "mainPhoto": true,
+      "extraPhotoCount": 11,
+      "profileUrl": false
+    },
+    "profileUrl": null
+  },
+  {
+    "sourceId": "639547",
+    "categoryId": 17,
+    "categoryName": "Мокрый Нос",
+    "syncedAt": "2026-07-28T11:11:35.213Z",
+    "name": "Мальвина",
+    "species": "cat",
+    "sex": "female",
+    "birthDate": "2025-04-01T03:00:00+03:00",
+    "photoPath": "assets/animals/bitrix/639547.jpg",
+    "story": "Мальвина - совсем молоденькая кошечка трехцветного окраса. Очень милая, ласковая и нежная девочка. Обожает человека, всегда хочет быть рядом.",
+    "sourceFieldCoverage": {
+      "story": false,
+      "description": true,
+      "character": true,
+      "behavior": false,
+      "mainPhoto": true,
+      "extraPhotoCount": 10,
+      "profileUrl": false
+    },
+    "profileUrl": null
+  },
+  {
+    "sourceId": "431829",
+    "categoryId": 17,
+    "categoryName": "Мокрый Нос",
+    "syncedAt": "2026-07-28T11:11:35.213Z",
+    "name": "Перчинка",
+    "species": "cat",
+    "sex": "female",
+    "birthDate": "2024-04-01T03:00:00+03:00",
+    "photoPath": "assets/animals/bitrix/431829.jpg",
+    "story": "Перчинка — скромная и боязливая кошечка. Она попала к нам в приют с улицы, и мы подозреваем, что у неё была сложная жизнь, полная жестокости и обид. Несмотря на свой юный возраст, Перчинка нуждается в нашей помощи, и мы делаем всё возможное, чтобы поддержать её.",
+    "sourceFieldCoverage": {
+      "story": false,
+      "description": true,
+      "character": true,
+      "behavior": true,
+      "mainPhoto": true,
+      "extraPhotoCount": 9,
+      "profileUrl": false
+    },
+    "profileUrl": null
+  },
+  {
+    "sourceId": "266241",
+    "categoryId": 13,
+    "categoryName": "Малино",
+    "syncedAt": "2026-07-28T11:11:35.213Z",
+    "name": "Маркус",
+    "species": "dog",
+    "sex": "male",
+    "birthDate": "2018-01-01T03:00:00+03:00",
+    "photoPath": "assets/animals/bitrix/266241.jpg",
+    "story": "«Я тебя люблю! » - вот он, девиз нашего Маркуса. Парень готов повторять всеми нами любимую фразу на любом языке.",
+    "sourceFieldCoverage": {
+      "story": false,
+      "description": true,
+      "character": true,
+      "behavior": false,
+      "mainPhoto": true,
+      "extraPhotoCount": 11,
+      "profileUrl": false
+    },
+    "profileUrl": null
+  },
+  {
+    "sourceId": "266009",
+    "categoryId": 13,
+    "categoryName": "Малино",
+    "syncedAt": "2026-07-28T11:11:35.213Z",
+    "name": "Юнити",
+    "species": "dog",
+    "sex": "female",
+    "birthDate": "2020-02-01T03:00:00+03:00",
+    "photoPath": "assets/animals/bitrix/266009.jpg",
+    "story": "Откуда такая нежность? На первый взгляд, Юнити может показаться ничем не примечательной, но в этой девочке столько радости, доверчивости и любви. Юнити попала в приют по программе отлова, будучи совсем маленькой.",
+    "sourceFieldCoverage": {
+      "story": false,
+      "description": true,
+      "character": true,
+      "behavior": false,
+      "mainPhoto": true,
+      "extraPhotoCount": 11,
+      "profileUrl": false
+    },
+    "profileUrl": null
+  },
+  {
+    "sourceId": "650827",
+    "categoryId": 13,
+    "categoryName": "Малино",
+    "syncedAt": "2026-07-28T11:11:35.213Z",
+    "name": "Кепчук",
+    "species": "cat",
+    "sex": "male",
+    "birthDate": "2023-04-01T03:00:00+03:00",
+    "photoPath": "assets/animals/bitrix/650827.jpg",
+    "story": "Кепчук - молодой и очень ласковый котик. Мальчик очень милый, нежный и любвеобильный. Любит сидеть на ручках, бодается, ластится.",
+    "sourceFieldCoverage": {
+      "story": false,
+      "description": true,
+      "character": true,
+      "behavior": false,
+      "mainPhoto": true,
+      "extraPhotoCount": 9,
+      "profileUrl": false
+    },
+    "profileUrl": null
+  }
+]

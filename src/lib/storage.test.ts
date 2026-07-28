@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { loadSession, saveSession } from "./storage";
+import {
+  loadSession,
+  reconcileSessionWithAnimalCatalog,
+  saveSession,
+} from "./storage";
 
 const values = new Map<string, string>();
 
@@ -20,7 +24,7 @@ describe("session storage", () => {
       version: 1,
       stage: "journey",
       answers: [true, false],
-      animalId: "lis-1",
+      animalId: "legacy-animal",
       missionIndex: 2,
       completedMissionIds: ["food", "health"],
       updatedAt: "2026-07-16T00:00:00.000Z",
@@ -40,7 +44,7 @@ describe("session storage", () => {
       version: 2,
       stage: "passport",
       answers: [true],
-      animalId: "lis-1",
+      animalId: "bitrix-test-animal",
       activeMissionId: null,
       startedMissionIds: ["trust"],
       completedMissionIds: ["food"],
@@ -58,7 +62,7 @@ describe("session storage", () => {
       version: 2,
       stage: "care-intro",
       answers: [true],
-      animalId: "lis-1",
+      animalId: "legacy-animal",
       activeMissionId: null,
       startedMissionIds: [],
       completedMissionIds: [],
@@ -67,7 +71,28 @@ describe("session storage", () => {
 
     expect(loadSession()).toMatchObject({
       stage: "passport",
-      animalId: "lis-1",
+      animalId: "legacy-animal",
+    });
+  });
+
+  it("resets mission progress instead of moving it to a replacement animal", () => {
+    const reconciled = reconcileSessionWithAnimalCatalog({
+      version: 2,
+      stage: "final",
+      answers: [true],
+      animalId: "removed-animal",
+      activeMissionId: null,
+      startedMissionIds: ["food", "health"],
+      completedMissionIds: ["food", "health"],
+      updatedAt: "2026-07-28T00:00:00.000Z",
+    }, ["bitrix-360911"], "bitrix-360911");
+
+    expect(reconciled).toMatchObject({
+      stage: "passport",
+      animalId: "bitrix-360911",
+      activeMissionId: null,
+      startedMissionIds: [],
+      completedMissionIds: [],
     });
   });
 });

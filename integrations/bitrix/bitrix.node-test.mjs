@@ -22,6 +22,7 @@ const configuredEnv = {
   BITRIX_WEBHOOK_URL: "https://example.bitrix24.ru/rest/1/token",
   BITRIX_WEBHOOK_SECRET: "never-expose-this",
   BITRIX_ANIMAL_CATEGORY_ID: "17",
+  BITRIX_ANIMAL_CATEGORY_IDS: "17,13",
   BITRIX_ANIMAL_FIELD_ID: "ID",
   BITRIX_ANIMAL_FIELD_NAME: "TITLE",
   BITRIX_ANIMAL_FIELD_SPECIES: "UF_SPECIES",
@@ -73,6 +74,28 @@ test("disabled adapter makes no network request and exposes no secret", async ()
   assert.deepEqual(result, { status: "disabled" });
   assert.equal(Object.hasOwn(config, "secret"), false);
   assert.equal(JSON.stringify(config).includes("secret"), false);
+});
+
+test("all angle-bracket env placeholders are normalized and never sent to Bitrix", () => {
+  const config = createBitrixConfig({
+    ...configuredEnv,
+    BITRIX_CONTACT_SOURCE_ID: "<SET_PRODUCTION_SOURCE>",
+    BITRIX_CONTACT_INTEREST_VISITS_ENUM_ID: "<SET_AFTER_ENUM_CONFIRMATION>",
+  });
+  const request = mapContactCapture(
+    {
+      name: "Анна",
+      email: "anna@example.org",
+      interest: "visits",
+      animalId: "mira",
+      animalName: "Мира",
+      consent: true,
+    },
+    config,
+  );
+
+  assert.equal(Object.hasOwn(request.payload.fields, "SOURCE_ID"), false);
+  assert.equal(Object.hasOwn(request.payload.fields, "UF_CRM_1773242372621"), false);
 });
 
 test("feature flags disable one contour without disabling the others", async () => {
@@ -193,6 +216,7 @@ test("animal request selects only configured fields and mapper excludes medical 
 
   assert.equal(request.method, "crm.deal.list");
   assert.equal(request.payload.filter.CATEGORY_ID, 17);
+  assert.deepEqual(config.animal.categoryIds, ["17", "13"]);
   assert.equal(request.payload.select.includes("UF_MEDICAL_NOT_SELECTED"), false);
   assert.equal(animal.species, "cat");
   assert.equal(animal.sex, "female");

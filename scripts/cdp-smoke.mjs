@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -75,6 +75,12 @@ async function connectCdp(webSocketUrl) {
 
 async function main() {
   await mkdir(artifactsDir, { recursive: true });
+  const animalSnapshots = JSON.parse(
+    await readFile(join(process.cwd(), "src/data/bitrixAnimals.generated.json"), "utf8"),
+  );
+  const smokeDog = animalSnapshots.find((animal) => animal.species === "dog");
+  if (!smokeDog) throw new Error("Smoke catalog must contain at least one dog");
+  const smokeDogId = `bitrix-${smokeDog.sourceId}`;
   const chrome = spawn(chromePath, [
     "--headless=new",
     "--no-sandbox",
@@ -169,6 +175,19 @@ async function main() {
         await sleep(80);
       }
       throw new Error(`Expected enabled selector ${selector}`);
+    };
+
+    const waitForLoadedImage = async (selector, timeoutMs = 6_000) => {
+      const startedAt = Date.now();
+      while (Date.now() - startedAt < timeoutMs) {
+        const loaded = await evaluate(`(() => {
+          const image = document.querySelector(${JSON.stringify(selector)});
+          return image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0;
+        })()`);
+        if (loaded) return;
+        await sleep(80);
+      }
+      throw new Error(`Expected loaded image ${selector}`);
     };
 
     const clickButton = async (label) => {
@@ -810,17 +829,41 @@ async function main() {
       const isHealthGame = await evaluate("Boolean(document.querySelector('[data-testid=\"health-game\"]'))");
       const isVisitGame = await evaluate("Boolean(document.querySelector('[data-testid=\"visit-game\"]'))");
       if (isVisitGame) {
+        await waitForLoadedImage('.visit-game__character img');
         const visitVisual = await evaluate(`(() => {
           const scene = document.querySelector('.visit-game__scene');
           const background = document.querySelector('.visit-game__background');
           const marker = document.querySelector('.visit-game__pet-marker');
+          const character = document.querySelector('.visit-game__character');
+          const characterImage = character?.querySelector('img');
+          const characterShadow = character?.querySelector('.visit-game__character-shadow');
           const content = document.querySelector('.journey-screen--visit-game .journey-content');
           const sceneRect = scene?.getBoundingClientRect();
           const markerRect = marker?.getBoundingClientRect();
+          const characterRect = character?.getBoundingClientRect();
+          const shadowRect = characterShadow?.getBoundingClientRect();
           return {
             backgroundSource: background instanceof HTMLImageElement
               ? background.currentSrc || background.getAttribute('src') || ''
               : '',
+            characterLoaded: characterImage instanceof HTMLImageElement
+              && characterImage.complete
+              && characterImage.naturalWidth > 0,
+            characterSource: characterImage instanceof HTMLImageElement
+              ? characterImage.currentSrc
+              : '',
+            characterInsideScene: Boolean(
+              sceneRect && characterRect
+              && characterRect.left >= sceneRect.left - 1
+              && characterRect.right <= sceneRect.right + 1
+              && characterRect.top >= sceneRect.top - 1
+              && characterRect.bottom <= sceneRect.bottom + 1
+            ),
+            characterGrounded: Boolean(
+              characterRect && shadowRect
+              && shadowRect.bottom <= characterRect.bottom + 1
+              && shadowRect.bottom >= characterRect.bottom - characterRect.height * .14
+            ),
             fakeGuideImages: document.querySelectorAll('.visit-game img[src*="-guide.jpg"]').length,
             markerInsideScene: Boolean(
               sceneRect && markerRect
@@ -834,13 +877,18 @@ async function main() {
         })()`);
         if (
           !visitVisual.backgroundSource.endsWith('care-planets/visit-world.jpg')
+          || !visitVisual.characterLoaded
+          || !visitVisual.characterSource.includes('/game-characters/')
+          || !visitVisual.characterSource.endsWith('/calm.webp')
+          || !visitVisual.characterInsideScene
+          || !visitVisual.characterGrounded
           || visitVisual.fakeGuideImages !== 0
           || !visitVisual.markerInsideScene
           || visitVisual.contentBackground !== 'rgba(0, 0, 0, 0)'
         ) {
           throw new Error(`Visit visual regression: ${JSON.stringify(visitVisual)}`);
         }
-        for (let step = 1; step <= 3; step += 1) {
+        for (let step = 1; step <= 5; step += 1) {
           await waitForSelector(`[data-testid="visit-game"][data-visit-step="${step}"]`);
           await waitForEnabledSelector(
             '[data-testid="visit-option"][data-choice-correct="true"]',
@@ -856,7 +904,7 @@ async function main() {
                 : 0,
             };
           })()`);
-          if (visitChoices.options !== 3 || visitChoices.correct !== 1 || visitChoices.minHeight < 44) {
+          if (visitChoices.options !== 4 || visitChoices.correct !== 1 || visitChoices.minHeight < 44) {
             throw new Error(`Visit situation regression: ${JSON.stringify(visitChoices)}`);
           }
 
@@ -874,7 +922,7 @@ async function main() {
           await evaluate(
             "document.querySelector('[data-testid=\"visit-option\"][data-choice-correct=\"true\"]')?.click()",
           );
-          if (step < 3) {
+          if (step < 5) {
             await waitForSelector(
               `[data-testid="visit-game"][data-visit-step="${step + 1}"]`,
               true,
@@ -2267,7 +2315,7 @@ async function main() {
       version: 2,
       stage: "journey",
       answers: [],
-      animalId: "pita-21",
+      animalId: "${smokeDogId}",
       activeMissionId: "health",
       startedMissionIds: ["health"],
       completedMissionIds: [],

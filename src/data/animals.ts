@@ -1,143 +1,85 @@
-import type { Animal } from "../types/app";
+import snapshots from "./bitrixAnimals.generated.json";
+import { animalEditorialBySourceId } from "./animalEditorial";
 import { assetUrl } from "../lib/assets";
+import type { Animal } from "../types/app";
 
-export const animals: Animal[] = [
-  {
-    id: "pita-21",
-    name: "Пита",
-    species: "dog",
-    sex: "девочка",
-    age: "3 года",
-    photo: assetUrl("assets/animals/pita.jpg"),
-    shortDescription: "Активная, ласковая и очень любознательная",
-    story:
-      "Пита любит движение, игры и понятные занятия. Она быстро включается в общение и охотно учится новому. Сейчас команда помогает ей сохранять здоровье и направлять энергию в полезные активности.",
-    traits: ["ласковая", "активная", "игривая", "обучаемая"],
-    careTags: ["движение", "режим", "здоровье"],
-    matchProfile: {
-      energy: 90,
-      sociability: 85,
-      initiative: 70,
-      patience: 45,
-      routine: 45,
-      spaceRespect: 35,
-      challenge: 35,
+interface BitrixAnimalSnapshot {
+  sourceId: string;
+  categoryId: number;
+  categoryName: string;
+  syncedAt: string;
+  name: string;
+  species: Animal["species"];
+  sex: "female" | "male";
+  birthDate: string;
+  photoPath: string;
+  story: string;
+  sourceFieldCoverage: {
+    story: boolean;
+    description: boolean;
+    character: boolean;
+    behavior: boolean;
+    mainPhoto: boolean;
+    extraPhotoCount: number;
+    profileUrl: boolean;
+  };
+  profileUrl: string | null;
+}
+
+function pluralize(value: number, one: string, few: string, many: string) {
+  const tens = value % 100;
+  const units = value % 10;
+  if (tens >= 11 && tens <= 14) return many;
+  if (units === 1) return one;
+  if (units >= 2 && units <= 4) return few;
+  return many;
+}
+
+export function formatAnimalAge(birthDate: string, now = new Date()): string {
+  const birth = new Date(birthDate);
+  if (Number.isNaN(birth.valueOf()) || birth > now) return "возраст уточняется";
+
+  let months = (now.getUTCFullYear() - birth.getUTCFullYear()) * 12;
+  months += now.getUTCMonth() - birth.getUTCMonth();
+  if (now.getUTCDate() < birth.getUTCDate()) months -= 1;
+  months = Math.max(0, months);
+
+  if (months < 12) {
+    const value = Math.max(1, months);
+    return `${value} ${pluralize(value, "месяц", "месяца", "месяцев")}`;
+  }
+
+  const years = Math.floor(months / 12);
+  return `${years} ${pluralize(years, "год", "года", "лет")}`;
+}
+
+export const animals: Animal[] = (snapshots as BitrixAnimalSnapshot[]).map((snapshot) => {
+  const editorial = animalEditorialBySourceId[snapshot.sourceId];
+  if (!editorial) {
+    throw new Error(`Missing editorial matching profile for Bitrix animal ${snapshot.sourceId}`);
+  }
+
+  return {
+    id: `bitrix-${snapshot.sourceId}`,
+    source: {
+      type: "bitrix",
+      id: snapshot.sourceId,
+      categoryId: snapshot.categoryId,
+      categoryName: snapshot.categoryName,
+      syncedAt: snapshot.syncedAt,
     },
-    profileUrl: "https://fond-nika.ru/ourpets/pita-424695/",
-  },
-  {
-    id: "dzhek-2",
-    name: "Джек",
-    species: "dog",
-    sex: "мальчик",
-    age: "15 лет",
-    photo: assetUrl("assets/animals/dzhek.jpg"),
-    shortDescription: "Спокойный и умный пёс, которому важно постоянство",
-    story:
-      "Джеку особенно нужны предсказуемый ритм, мягкий контакт и возможность самому выбирать дистанцию. Он пожилой, поэтому регулярное внимание к самочувствию для него особенно важно.",
-    traits: ["умный", "спокойный", "осторожный", "пожилой"],
-    careTags: ["здоровье", "доверие", "постоянство"],
-    matchProfile: {
-      energy: 20,
-      sociability: 25,
-      initiative: 25,
-      patience: 90,
-      routine: 90,
-      spaceRespect: 90,
-      challenge: 85,
-    },
-    profileUrl: "https://fond-nika.ru/ourpets/dzhek-266005/",
-  },
-  {
-    id: "lis-1",
-    name: "Лис",
-    species: "dog",
-    sex: "мальчик",
-    age: "1 год",
-    photo: assetUrl("assets/animals/lis.jpg"),
-    shortDescription: "Ласковый и игривый пёс на пути к восстановлению",
-    story:
-      "Лис проходит лечение и постепенно возвращает доверие к людям. Он остаётся ласковым, любит игры и внимательно присматривается к новым знакомым. Ему нужны движение, забота и бережный темп.",
-    traits: ["ласковый", "игривый", "чуткий", "молодой"],
-    careTags: ["здоровье", "движение", "доверие"],
-    matchProfile: {
-      energy: 70,
-      sociability: 70,
-      initiative: 50,
-      patience: 75,
-      routine: 70,
-      spaceRespect: 80,
-      challenge: 75,
-    },
-    profileUrl: "https://fond-nika.ru/ourpets/lis-647741/",
-  },
-  {
-    id: "makfluri-40",
-    name: "Макфлури",
-    species: "cat",
-    sex: "девочка",
-    age: "2 года",
-    photo: assetUrl("assets/animals/makfluri.jpg"),
-    shortDescription: "Ласковая любительница спокойных вечеров",
-    story:
-      "Макфлури тянется к людям и ценит мягкое внимание. Ей подходит спокойный, понятный ритм без давления: немного времени, знакомый голос и возможность самой сделать следующий шаг.",
-    traits: ["ласковая", "спокойная", "контактная", "нежная"],
-    careTags: ["доверие", "внимание", "режим"],
-    matchProfile: {
-      energy: 30,
-      sociability: 85,
-      initiative: 60,
-      patience: 55,
-      routine: 65,
-      spaceRespect: 50,
-      challenge: 40,
-    },
-    profileUrl: "https://fond-nika.ru/ourpets/makfluri-660439/",
-  },
-  {
-    id: "cunami-7",
-    name: "Цунами",
-    species: "cat",
-    sex: "девочка",
-    age: "1 год",
-    photo: assetUrl("assets/animals/cunami.jpg"),
-    shortDescription: "Яркая и осторожная кошка, которая учится доверять",
-    story:
-      "Когда Цунами тревожно, она старается защитить своё пространство. Спокойная дистанция, понятный ритм и постепенное знакомство помогают ей расслабляться и замечать, что рядом безопасно.",
-    traits: ["игривая", "осторожная", "самостоятельная", "чуткая"],
-    careTags: ["социализация", "доверие", "пространство"],
-    matchProfile: {
-      energy: 55,
-      sociability: 15,
-      initiative: 25,
-      patience: 100,
-      routine: 85,
-      spaceRespect: 100,
-      challenge: 100,
-    },
-    profileUrl: "https://fond-nika.ru/ourpets/tsunami-660429/",
-  },
-  {
-    id: "paskal-56",
-    name: "Паскаль",
-    species: "cat",
-    sex: "мальчик",
-    age: "10 месяцев",
-    photo: assetUrl("assets/animals/paskal.jpg"),
-    shortDescription: "Молодой исследователь, который любит играть и быть рядом",
-    story:
-      "Паскаль уже понял, что рядом с человеком может быть спокойно. Он любит игры, принимает ласку и продолжает учиться доверять. Ему подходят мягкое внимание, движение и понятные ежедневные ритуалы.",
-    traits: ["игривый", "спокойный", "ласковый", "любознательный"],
-    careTags: ["игра", "доверие", "внимание"],
-    matchProfile: {
-      energy: 65,
-      sociability: 70,
-      initiative: 55,
-      patience: 60,
-      routine: 55,
-      spaceRespect: 55,
-      challenge: 45,
-    },
-    profileUrl: "https://fond-nika.ru/ourpets/paskal-623785/",
-  },
-];
+    name: snapshot.name,
+    nameGenitive: editorial.nameGenitive,
+    species: snapshot.species,
+    sex: snapshot.sex === "female" ? "девочка" : "мальчик",
+    birthDate: snapshot.birthDate,
+    age: formatAnimalAge(snapshot.birthDate),
+    photo: assetUrl(snapshot.photoPath),
+    shortDescription: editorial.shortDescription,
+    story: snapshot.story,
+    traits: editorial.traits,
+    careTags: editorial.careTags,
+    matchProfile: editorial.matchProfile,
+    profileUrl: snapshot.profileUrl ?? "https://fond-nika.ru/ourpets/",
+  };
+});

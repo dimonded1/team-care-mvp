@@ -1,12 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  CheckIcon,
-  HealthIcon,
-  HeartIcon,
-  MovementIcon,
-  TrustIcon,
-} from "../../components/Icons";
+import { CheckIcon, HeartIcon } from "../../components/Icons";
+import { assetUrl } from "../../lib/assets";
 import type { Animal, Mission } from "../../types/app";
 import {
   getActionLabel,
@@ -38,41 +33,41 @@ const presentation = {
     title: "Знакомство",
     description: "Первый спокойный контакт без давления",
     duration: 3,
-    Icon: TrustIcon,
-    period: 31,
+    image: "assets/orbit-planets/trust.webp",
+    driftPeriod: 31,
     phase: -2.78,
-    radiusX: 36,
-    radiusY: 34,
+    radiusX: 30.5,
+    radiusY: 30.5,
   },
   food: {
     title: "Визит",
     description: "Приехать в приют и быть рядом бережно",
     duration: 2,
-    Icon: HeartIcon,
-    period: 37,
-    phase: -0.52,
-    radiusX: 36,
-    radiusY: 34,
+    image: "assets/orbit-planets/visit.webp",
+    driftPeriod: 37,
+    phase: -0.925,
+    radiusX: 33.5,
+    radiusY: 33.5,
   },
   home: {
     title: "Прогулка",
     description: "Собрать спокойный и понятный маршрут",
     duration: 3,
-    Icon: MovementIcon,
-    period: 27,
-    phase: 2.23,
-    radiusX: 36,
-    radiusY: 34,
+    image: "assets/orbit-planets/walk.webp",
+    driftPeriod: 27,
+    phase: 0.584,
+    radiusX: 36.5,
+    radiusY: 36.5,
   },
   health: {
     title: "Здоровье",
     description: "Заметить важное и передать команде",
     duration: 2,
-    Icon: HealthIcon,
-    period: 34,
-    phase: 0.85,
-    radiusX: 36,
-    radiusY: 34,
+    image: "assets/orbit-planets/health.webp",
+    driftPeriod: 34,
+    phase: 1.945,
+    radiusX: 39.5,
+    radiusY: 39.5,
   },
 } satisfies Record<
   Mission["id"],
@@ -80,8 +75,8 @@ const presentation = {
     title: string;
     description: string;
     duration: number;
-    Icon: typeof HeartIcon;
-    period: number;
+    image: string;
+    driftPeriod: number;
     phase: number;
     radiusX: number;
     radiusY: number;
@@ -117,7 +112,7 @@ export function OrbitExperience({
     () =>
       missions.map((mission) => ({
         id: mission.id,
-        period: presentation[mission.id].period,
+        driftPeriod: presentation[mission.id].driftPeriod,
         phase: presentation[mission.id].phase,
         radiusX: presentation[mission.id].radiusX,
         radiusY: presentation[mission.id].radiusY,
@@ -210,14 +205,19 @@ export function OrbitExperience({
       </header>
 
       <div className="care-orbit__scene">
-        <svg className="care-orbit__paths" viewBox="0 0 1000 760" aria-hidden="true">
-          {[0, 1, 2, 3].map((index) => (
+        <svg
+          className="care-orbit__paths"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          {configs.map((config, index) => (
             <motion.ellipse
-              key={index}
-              cx="500"
-              cy="380"
-              rx={335 + index * 23}
-              ry={218 + index * 20}
+              key={config.id}
+              cx="50"
+              cy="50"
+              rx={config.radiusX}
+              ry={config.radiusY}
               initial={previouslyVisited || reduceMotion ? false : { pathLength: 0, opacity: 0 }}
               animate={{
                 pathLength: 1,
@@ -254,7 +254,6 @@ export function OrbitExperience({
             const selected = mission.id === selectedPlanetId;
             const dimmed = selectedPlanetId !== null && !selected;
             const recommended = mission.id === recommendedId && status === "available";
-            const Icon = planet.Icon;
             const entranceDelay = 0.76 + index * 0.16;
             const entryX = -Math.cos(planet.phase) * 118;
             const entryY = -Math.sin(planet.phase) * 82;
@@ -316,7 +315,7 @@ export function OrbitExperience({
                 >
                   <span className="care-planet__trail" aria-hidden="true" />
                   <span className="care-planet__body" aria-hidden="true">
-                    <Icon />
+                    <img src={assetUrl(planet.image)} alt="" draggable={false} />
                     {status === "completed" ? <i><CheckIcon /></i> : null}
                   </span>
                   <span className="care-planet__label">

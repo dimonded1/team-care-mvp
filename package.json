@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
+    "sync:animals": "node --env-file=.env scripts/sync-bitrix-animals.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "start": "node --env-file-if-exists=.env server/index.mjs",
     "test": "vitest run",

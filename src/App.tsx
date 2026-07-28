@@ -21,7 +21,12 @@ import { JourneyScreen } from "./features/JourneyScreen";
 import { PassportScreen } from "./features/PassportScreen";
 import { RevealScreen } from "./features/RevealScreen";
 import { WelcomeScreen } from "./features/WelcomeScreen";
-import { clearSession, loadSession, saveSession } from "./lib/storage";
+import {
+  clearSession,
+  loadSession,
+  reconcileSessionWithAnimalCatalog,
+  saveSession,
+} from "./lib/storage";
 import { createMatchResult, findMatch } from "./lib/matching";
 import { assetUrl } from "./lib/assets";
 import type { Mission, Stage, StoredSession } from "./types/app";
@@ -96,12 +101,21 @@ export default function App() {
     Promise.all([minimumBoot, assets]).then(() => {
       if (!active) return;
       if (saved && restorableStages.has(saved.stage)) {
-        setAnswers(saved.answers.slice(0, questions.length));
-        setAnimalId(saved.animalId);
-        setActiveMissionId(saved.activeMissionId);
-        setStartedMissionIds(saved.startedMissionIds);
-        setCompletedMissionIds(saved.completedMissionIds);
-        setStage(saved.stage);
+        const restoredAnswers = saved.answers.slice(0, questions.length);
+        const rematchedAnimalId = restoredAnswers.length === questions.length
+          ? findMatch(animals, questions, restoredAnswers).animal.id
+          : null;
+        const restored = reconcileSessionWithAnimalCatalog(
+          { ...saved, answers: restoredAnswers },
+          animals.map((animal) => animal.id),
+          rematchedAnimalId,
+        );
+        setAnswers(restored.answers);
+        setAnimalId(restored.animalId);
+        setActiveMissionId(restored.activeMissionId);
+        setStartedMissionIds(restored.startedMissionIds);
+        setCompletedMissionIds(restored.completedMissionIds);
+        setStage(restored.stage);
       } else {
         setStage("welcome");
       }

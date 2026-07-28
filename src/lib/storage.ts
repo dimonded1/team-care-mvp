@@ -100,6 +100,30 @@ export function loadSession(): StoredSession | null {
   }
 }
 
+export function reconcileSessionWithAnimalCatalog(
+  session: StoredSession,
+  availableAnimalIds: Iterable<string>,
+  rematchedAnimalId: string | null,
+): StoredSession {
+  const available = new Set(availableAnimalIds);
+  if (!session.animalId || available.has(session.animalId)) return session;
+
+  const stage = session.stage === "welcome" || session.stage === "quiz"
+    ? session.stage
+    : rematchedAnimalId
+      ? "passport"
+      : "quiz";
+
+  return {
+    ...session,
+    stage,
+    animalId: rematchedAnimalId,
+    activeMissionId: null,
+    startedMissionIds: [],
+    completedMissionIds: [],
+  };
+}
+
 export function saveSession(session: StoredSession): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session));

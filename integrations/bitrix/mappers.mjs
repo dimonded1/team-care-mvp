@@ -67,7 +67,7 @@ export const contactInterestLabels = Object.freeze({
 });
 
 /** Creates the read request for published animal deals. */
-export function buildAnimalListRequest(config, { start = 0 } = {}) {
+export function buildAnimalListRequest(config, { start = 0, categoryId = config.animal.categoryId } = {}) {
   const fields = config.animal.fields;
   return {
     feature: "animalSync",
@@ -76,7 +76,7 @@ export function buildAnimalListRequest(config, { start = 0 } = {}) {
     payload: {
       order: { ID: "ASC" },
       filter: {
-        CATEGORY_ID: Number(config.animal.categoryId),
+        CATEGORY_ID: Number(categoryId),
         [fields.published]: 1,
       },
       select: [...new Set(Object.values(fields))],

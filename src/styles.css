@@ -9392,7 +9392,7 @@ p {
   position: absolute;
   z-index: 1;
   right: clamp(-10px, 1vw, 22px);
-  top: clamp(12px, 2vw, 24px);
+  bottom: clamp(8px, 1.5vw, 18px);
   width: clamp(120px, 15vw, 210px);
   opacity: 0.14;
   pointer-events: none;
@@ -9713,8 +9713,9 @@ p {
 
   .day-montage__character {
     z-index: 3;
-    top: 150px;
+    top: auto;
     right: 14px;
+    bottom: 12px;
     width: 88px;
     opacity: 0.72;
   }
@@ -9954,6 +9955,18 @@ p {
     radial-gradient(circle at 50% 48%, rgba(255, 235, 207, 0.32), transparent 52%),
     radial-gradient(circle at 50% 68%, rgba(247, 109, 49, 0.18), transparent 58%);
   filter: blur(8px);
+}
+
+.health-silhouette__ground {
+  position: absolute;
+  z-index: -1;
+  right: 16%;
+  bottom: 3.5%;
+  left: 16%;
+  height: 7%;
+  border-radius: 50%;
+  background: rgba(2, 18, 11, 0.36);
+  filter: blur(9px);
 }
 
 .health-silhouette__pet {
@@ -14741,6 +14754,7 @@ p {
 }
 
 .passport-hub--solar {
+  display: block;
   padding-bottom: max(24px, env(safe-area-inset-bottom));
 }
 
@@ -14762,11 +14776,44 @@ p {
   pointer-events: none;
   background:
     radial-gradient(circle at 25% 24%, rgba(255, 181, 181, 0.14), transparent 22rem),
-    radial-gradient(circle at 70% 42%, rgba(247, 109, 49, 0.11), transparent 24rem),
-    radial-gradient(circle, rgba(255, 255, 255, 0.68) 0 1px, transparent 1.4px) 0 0 / 68px 68px,
-    radial-gradient(circle, rgba(255, 183, 151, 0.45) 0 1px, transparent 1.5px) 21px 34px / 104px 104px;
+    radial-gradient(circle at 70% 42%, rgba(247, 109, 49, 0.11), transparent 24rem);
   opacity: 0.55;
   mask-image: linear-gradient(#000 0 82%, transparent);
+}
+
+.care-orbit__background::before,
+.care-orbit__background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  will-change: opacity, transform;
+}
+
+.care-orbit__background::before {
+  background-image:
+    radial-gradient(circle at 7% 18%, rgba(255, 255, 255, 0.8) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 19% 67%, rgba(255, 201, 175, 0.66) 0 1.2px, transparent 2px),
+    radial-gradient(circle at 31% 34%, rgba(255, 255, 255, 0.55) 0 0.8px, transparent 1.6px),
+    radial-gradient(circle at 44% 82%, rgba(255, 184, 151, 0.62) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 57% 11%, rgba(255, 255, 255, 0.68) 0 1.1px, transparent 1.9px),
+    radial-gradient(circle at 68% 58%, rgba(255, 218, 196, 0.72) 0 0.9px, transparent 1.7px),
+    radial-gradient(circle at 81% 29%, rgba(255, 255, 255, 0.62) 0 1.2px, transparent 2px),
+    radial-gradient(circle at 94% 74%, rgba(255, 181, 153, 0.58) 0 1px, transparent 1.8px);
+  animation: care-orbit-stars-a 3.7s ease-in-out infinite alternate;
+}
+
+.care-orbit__background::after {
+  background-image:
+    radial-gradient(circle at 11% 48%, rgba(255, 255, 255, 0.58) 0 0.7px, transparent 1.5px),
+    radial-gradient(circle at 24% 9%, rgba(255, 185, 160, 0.68) 0 1px, transparent 1.9px),
+    radial-gradient(circle at 38% 61%, rgba(255, 255, 255, 0.7) 0 1.1px, transparent 2px),
+    radial-gradient(circle at 52% 42%, rgba(255, 210, 188, 0.5) 0 0.8px, transparent 1.6px),
+    radial-gradient(circle at 63% 89%, rgba(255, 255, 255, 0.66) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 73% 17%, rgba(255, 186, 156, 0.62) 0 0.9px, transparent 1.7px),
+    radial-gradient(circle at 87% 54%, rgba(255, 255, 255, 0.72) 0 1.1px, transparent 2px),
+    radial-gradient(circle at 97% 23%, rgba(255, 209, 186, 0.56) 0 0.8px, transparent 1.6px);
+  animation: care-orbit-stars-b 5.3s ease-in-out infinite alternate;
 }
 
 .care-orbit__heading {
@@ -14833,7 +14880,7 @@ p {
 .care-orbit__paths ellipse {
   fill: none;
   stroke: rgba(255, 229, 211, 0.34);
-  stroke-width: 1.2;
+  stroke-width: 0.16;
   vector-effect: non-scaling-stroke;
   filter: drop-shadow(0 0 8px rgba(247, 109, 49, 0.18));
 }
@@ -14914,15 +14961,10 @@ p {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 1px;
-  height: 1px;
+  width: 0;
+  height: 0;
   opacity: var(--orbit-opacity);
-  transform: translate3d(
-      calc(-50% + var(--orbit-x)),
-      calc(-50% + var(--orbit-y)),
-      0
-    )
-    scale(var(--orbit-scale));
+  transform: translate3d(var(--orbit-x), var(--orbit-y), 0) scale(var(--orbit-scale));
   transform-origin: center;
   will-change: transform, opacity;
   pointer-events: auto;
@@ -14934,7 +14976,7 @@ p {
 .care-planet-anchor.is-selected {
   z-index: 34 !important;
   opacity: 1;
-  transform: translate3d(-50%, -50%, 0) scale(1);
+  transform: translate3d(0, 0, 0) scale(1);
   transition:
     transform 560ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 220ms ease;
@@ -14973,49 +15015,22 @@ p {
 
 .care-planet__body {
   position: relative;
-  width: 62px;
-  height: 62px;
+  width: 76px;
+  height: 76px;
   display: grid;
   place-items: center;
-  border: 2px solid rgba(255, 255, 255, 0.5);
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.48), transparent 22%),
-    linear-gradient(145deg, #ffaf87, #f76d31);
   box-shadow:
-    inset -8px -8px 18px rgba(67, 28, 13, 0.16),
     0 12px 28px rgba(2, 20, 10, 0.34),
     0 0 22px rgba(247, 109, 49, 0.24);
 }
 
-.care-planet--trust .care-planet__body {
-  color: #173c25;
-  background:
-    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.7), transparent 24%),
-    linear-gradient(145deg, #eff8e8, #bcd8bc);
-}
-
-.care-planet--food .care-planet__body {
-  background:
-    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.55), transparent 24%),
-    linear-gradient(145deg, #ffb3a9, #ff7b62);
-}
-
-.care-planet--home .care-planet__body {
-  background:
-    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.5), transparent 24%),
-    linear-gradient(145deg, #ffc99c, #f57c42);
-}
-
-.care-planet--health .care-planet__body {
-  background:
-    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.58), transparent 24%),
-    linear-gradient(145deg, #ffbec8, #ef829e);
-}
-
-.care-planet__body > svg {
-  width: 27px;
-  height: 27px;
+.care-planet__body > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 12px rgba(2, 20, 10, 0.28));
+  user-select: none;
 }
 
 .care-planet__body > i {
@@ -15075,9 +15090,8 @@ p {
 }
 
 .care-planet--completed .care-planet__body {
-  border-color: rgba(210, 255, 203, 0.9);
   box-shadow:
-    inset -8px -8px 18px rgba(24, 72, 31, 0.14),
+    0 0 0 3px rgba(210, 255, 203, 0.72),
     0 0 0 5px rgba(120, 187, 120, 0.15),
     0 0 30px rgba(120, 187, 120, 0.56),
     0 14px 28px rgba(2, 20, 10, 0.34);
@@ -15277,7 +15291,7 @@ p {
   cursor: pointer;
 }
 
-/* Visit now shares the dark game shell and does not fake the ward portrait. */
+/* Visit shares the dark game shell and uses a grounded illustrated ward. */
 
 .journey-screen--visit-game .journey-content {
   width: 100%;
@@ -15288,38 +15302,52 @@ p {
   box-shadow: none;
 }
 
-.visit-game__pet {
-  display: none;
+.visit-game__character {
+  position: absolute;
+  z-index: 3;
+  right: clamp(22px, 8vw, 112px);
+  bottom: 48px;
+  width: clamp(178px, 25vw, 282px);
+  transform-origin: 50% 100%;
+  pointer-events: none;
+}
+
+.visit-game__character img {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 20px 20px rgba(2, 20, 10, 0.26));
+}
+
+.visit-game__character-shadow {
+  position: absolute;
+  z-index: 1;
+  right: 12%;
+  bottom: 2%;
+  left: 12%;
+  height: 8%;
+  border-radius: 50%;
+  background: rgba(2, 20, 10, 0.38);
+  filter: blur(9px);
 }
 
 .visit-game__pet-marker {
   position: absolute;
   z-index: 4;
-  right: clamp(24px, 6vw, 76px);
-  bottom: 72px;
-  min-height: 58px;
-  padding: 9px 13px;
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr);
+  right: clamp(18px, 4vw, 58px);
+  bottom: 242px;
+  min-height: 46px;
+  padding: 8px 12px;
+  display: block;
   align-items: center;
-  gap: 9px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 18px;
   background: rgba(8, 37, 24, 0.78);
   box-shadow: 0 16px 34px rgba(2, 20, 10, 0.3);
   color: #fffdf8;
   backdrop-filter: blur(12px);
-}
-
-.visit-game__pet-marker > span {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #ff9870;
-  color: #fff;
-  font-size: 22px;
 }
 
 .visit-game__pet-marker > div {
@@ -15336,8 +15364,26 @@ p {
   font-size: 9px;
 }
 
+.visit-game__progress {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.visit-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 @keyframes care-orbit-complete-breathe {
   50% { opacity: 1; transform: scale(1.035); }
+}
+
+@keyframes care-orbit-stars-a {
+  from { opacity: 0.42; transform: translate3d(-1px, 1px, 0); }
+  to { opacity: 0.9; transform: translate3d(1px, -1px, 0); }
+}
+
+@keyframes care-orbit-stars-b {
+  from { opacity: 0.76; transform: translate3d(1px, 0, 0); }
+  to { opacity: 0.32; transform: translate3d(-1px, 1px, 0); }
 }
 
 @media (max-width: 620px) {
@@ -15377,12 +15423,6 @@ p {
     margin-top: -4px;
   }
 
-  .care-orbit__paths {
-    inset: 5% -8%;
-    width: 116%;
-    height: 90%;
-  }
-
   .care-orbit__sun {
     width: min(39vw, 154px);
   }
@@ -15414,13 +15454,8 @@ p {
   }
 
   .care-planet__body {
-    width: 52px;
-    height: 52px;
-  }
-
-  .care-planet__body > svg {
-    width: 22px;
-    height: 22px;
+    width: 62px;
+    height: 62px;
   }
 
   .care-planet__label {
@@ -15531,22 +15566,35 @@ p {
   }
 
   .visit-game__scene {
-    min-height: 292px;
+    min-height: 310px;
+  }
+
+  .visit-game__character {
+    right: 4px;
+    bottom: 43px;
+    width: min(49vw, 184px);
   }
 
   .visit-game__pet-marker {
     right: 12px;
-    bottom: 58px;
-    min-height: 48px;
+    bottom: 196px;
+    min-height: 42px;
     padding: 7px 9px;
-    grid-template-columns: 30px minmax(0, 1fr);
     border-radius: 15px;
   }
 
-  .visit-game__pet-marker > span {
-    width: 30px;
-    height: 30px;
-    font-size: 18px;
+  .visit-game__progress {
+    right: 10px;
+    left: 10px;
+  }
+
+  .visit-game__progress li > span {
+    width: 25px;
+    height: 25px;
+  }
+
+  .visit-actions {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -15564,8 +15612,8 @@ p {
   }
 
   .care-planet__body {
-    width: 48px;
-    height: 48px;
+    width: 58px;
+    height: 58px;
   }
 
   .care-orbit__footer {
@@ -15574,6 +15622,11 @@ p {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .care-orbit__background::before,
+  .care-orbit__background::after {
+    animation: none;
+  }
+
   .care-orbit--complete .care-orbit__sun-glow {
     animation: none;
   }
@@ -15585,5 +15638,10 @@ p {
 
   .care-planet__trail {
     display: none;
+  }
+
+  .visit-game__character,
+  .day-character {
+    will-change: auto;
   }
 }

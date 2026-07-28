@@ -11,9 +11,18 @@ export type MatchProfile = Record<MatchAxis, number>;
 
 export interface Animal {
   id: string;
+  source: {
+    type: "bitrix";
+    id: string;
+    categoryId: number;
+    categoryName: string;
+    syncedAt: string;
+  };
   name: string;
+  nameGenitive: string;
   species: "cat" | "dog";
   sex: string;
+  birthDate: string;
   age: string;
   photo: string;
   shortDescription: string;

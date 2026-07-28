@@ -38,7 +38,7 @@
 ## Verification
 
 - Complete user flow was exercised in the in-app browser at 390 × 844 through all four mini-games, guardianship, final screen, and story export.
-- Export action produced `/Users/ds/Downloads/nika-lis-1-care-story-9x16.png` at exactly 1080 × 1920 px.
+- Export action produced a `nika-<animal-id>-care-story-9x16.png` file at exactly 1080 × 1920 px.
 - No horizontal overflow or clipped primary controls were observed in the reviewed states.
 - `npm test`: 40/40 passing.
 - `npm run build`: passing.

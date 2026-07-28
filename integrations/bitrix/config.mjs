@@ -6,13 +6,26 @@ function asBoolean(value) {
   return String(value).toLowerCase() === "true";
 }
 
+function isPlaceholder(value) {
+  const normalized = String(value ?? "").trim();
+  return !normalized || /^<[^>]+>$/u.test(normalized);
+}
+
 function valueOrPlaceholder(value) {
-  return value || PLACEHOLDER;
+  return isPlaceholder(value) ? PLACEHOLDER : String(value).trim();
+}
+
+function numericList(value, fallback) {
+  const source = isPlaceholder(value) ? fallback : value;
+  return String(source ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function collectMissing(entries) {
   return Object.entries(entries)
-    .filter(([, value]) => !value || value === PLACEHOLDER)
+    .filter(([, value]) => isPlaceholder(value))
     .map(([name]) => name);
 }
 
@@ -37,6 +50,9 @@ export function createBitrixConfig(env = process.env) {
     }),
     animal: Object.freeze({
       categoryId: valueOrPlaceholder(env.BITRIX_ANIMAL_CATEGORY_ID),
+      categoryIds: Object.freeze(
+        numericList(env.BITRIX_ANIMAL_CATEGORY_IDS, env.BITRIX_ANIMAL_CATEGORY_ID),
+      ),
       fields: Object.freeze({
         id: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_ID),
         name: valueOrPlaceholder(env.BITRIX_ANIMAL_FIELD_NAME),
@@ -117,6 +133,12 @@ export function validateBitrixConfig(config, feature = null) {
 
   if (feature === "animalSync") {
     requireNumeric(errors, "BITRIX_ANIMAL_CATEGORY_ID", config.animal.categoryId);
+    config.animal.categoryIds.forEach((categoryId) => {
+      requireNumeric(errors, "BITRIX_ANIMAL_CATEGORY_IDS", categoryId);
+    });
+    if (config.animal.categoryIds.length === 0) {
+      errors.push("BITRIX_ANIMAL_CATEGORY_IDS must contain at least one numeric ID");
+    }
     const missing = [
       ...collectMissing(config.animal.fields),
       ...collectMissing(config.animal.enums),

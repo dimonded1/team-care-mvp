@@ -33,7 +33,7 @@ describe("passport orbit model", () => {
     const fragments = getOrbitStoryFragments(animals[0]);
 
     expect(fragments).toHaveLength(3);
-    expect(fragments[0]).toContain("ласковая");
+    expect(fragments[0]).toBe(animals[0].traits.slice(0, 2).join(" · "));
     expect(fragments[2]).toContain("Важно:");
   });
 });

@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 
 export interface OrbitPlanetConfig {
   id: string;
-  period: number;
+  driftPeriod: number;
   phase: number;
   radiusX: number;
   radiusY: number;
@@ -84,11 +84,12 @@ export function useOrbitAnimation({
       }
 
       for (const config of configs) {
+        const baseAngle = (elapsedRef.current / 32) * Math.PI * 2;
         const angle = reducedMotion
           ? config.phase
           : config.phase
-            + (elapsedRef.current / 32) * Math.PI * 2
-            + Math.sin((elapsedRef.current / config.period) * Math.PI * 2 + config.phase) * 0.08;
+            + baseAngle
+            + Math.sin(baseAngle * (32 / config.driftPeriod) + config.phase) * 0.05;
         const depth = (Math.sin(angle) + 1) / 2;
         const position = {
           x: Math.cos(angle) * orbitSize.width * (config.radiusX / 100),

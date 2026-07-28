@@ -13,7 +13,8 @@ interface VisitCareGameProps {
   onReadyChange: (ready: boolean) => void;
 }
 
-const FEEDBACK_MS = 1_850;
+const CORRECT_FEEDBACK_MS = 1_950;
+const LEARNING_FEEDBACK_MS = 2_450;
 
 function VisitActionIcon({ id }: { id: VisitActionIconId }) {
   if (id === "calendar") {
@@ -24,6 +25,15 @@ function VisitActionIcon({ id }: { id: VisitActionIconId }) {
   }
   if (id === "rush") {
     return <svg viewBox="0 0 24 24"><path d="M4 12h13M13 7l5 5-5 5M4 7h4M4 17h4" /></svg>;
+  }
+  if (id === "leash") {
+    return <svg viewBox="0 0 24 24"><path d="M6 5a3 3 0 1 0 0 6c5 0 2 8 8 8h3" /><path d="M17 16v6M14 19h6" /></svg>;
+  }
+  if (id === "gate") {
+    return <svg viewBox="0 0 24 24"><path d="M5 21V5h14v16M5 9h14M9 5v16M15 5v16" /></svg>;
+  }
+  if (id === "report") {
+    return <svg viewBox="0 0 24 24"><path d="M7 3h10v18H7zM9 8h6M9 12h6M9 16h4" /></svg>;
   }
   return <svg viewBox="0 0 24 24"><path d="M7 8v8M12 6v12M17 8v8" /><path d="M4 20h16" /></svg>;
 }
@@ -37,6 +47,12 @@ export function VisitCareGame({ animal, onReadyChange }: VisitCareGameProps) {
   const situation = visitSituations[Math.min(step, visitSituations.length - 1)];
   const selected = situation.actions.find((action) => action.id === selectedId) ?? null;
   const complete = step >= visitSituations.length;
+  const petState = complete
+    ? "relaxed"
+    : selected && !selected.correct
+      ? "startled"
+      : situation.petState[animal.species];
+  const petImage = assetUrl(`assets/game-characters/${animal.species}/${petState}.webp`);
 
   useEffect(() => {
     onReadyChange(complete);
@@ -57,7 +73,7 @@ export function VisitCareGame({ animal, onReadyChange }: VisitCareGameProps) {
       setSelectedId(null);
       setLocked(false);
       if (action.correct) setStep((current) => current + 1);
-    }, FEEDBACK_MS);
+    }, action.correct ? CORRECT_FEEDBACK_MS : LEARNING_FEEDBACK_MS);
   };
 
   return (
@@ -70,7 +86,7 @@ export function VisitCareGame({ animal, onReadyChange }: VisitCareGameProps) {
       <header className="visit-game__header">
         <p className="section-number">Круг заботы · 02</p>
         <h1 id="visit-game-title">Навестите {animal.name}</h1>
-        <p>Спокойное присутствие — уже забота. Пройдите встречу от договорённости до следующего визита.</p>
+        <p>Пройдите визит от входа до возвращения. В приюте всегда следуйте подсказкам сотрудника.</p>
       </header>
 
       <div className="visit-game__scene">
@@ -82,15 +98,30 @@ export function VisitCareGame({ animal, onReadyChange }: VisitCareGameProps) {
         />
         <span className="visit-game__shade" aria-hidden="true" />
 
+        <motion.div
+          className="visit-game__character"
+          data-pet-state={petState}
+          role="img"
+          aria-label={`${animal.name}: ${complete ? "спокойно отдыхает после встречи" : "находится рядом"}`}
+          animate={selected && !reduceMotion
+            ? selected.correct
+              ? { scale: [1, 1.035, 1], rotate: [0, -0.8, 0] }
+              : { x: [0, 8, 2], scale: [1, 0.96, 0.985], rotate: [0, 1.4, 0] }
+            : { scale: 1, rotate: 0, x: 0 }}
+          transition={{ duration: reduceMotion ? 0.1 : 0.58, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <img src={petImage} alt="" draggable={false} />
+          <span className="visit-game__character-shadow" aria-hidden="true" />
+        </motion.div>
+
         <div className="visit-game__pet-marker" aria-label={`${animal.name} находится рядом`}>
-          <span aria-hidden="true">♡</span>
           <div>
             <strong>{animal.name}</strong>
-            <small>{complete ? "следующая встреча уже ближе" : "выбирает свой темп"}</small>
+            <small>{complete ? "следующая встреча уже ближе" : selected && !selected.correct ? "нужна спокойная пауза" : "выбирает свой темп"}</small>
           </div>
         </div>
 
-        <ol className="visit-game__progress" aria-label="Три шага визита">
+        <ol className="visit-game__progress" aria-label="Пять шагов визита">
           {visitSituations.map((item, index) => (
             <li
               key={item.id}
@@ -115,7 +146,7 @@ export function VisitCareGame({ animal, onReadyChange }: VisitCareGameProps) {
             <span aria-hidden="true"><CheckIcon /></span>
             <div>
               <h2>Визит стал частью орбиты</h2>
-              <p>Вы договорились о встрече, сохранили спокойную дистанцию и передали наблюдение команде.</p>
+              <p>Вы прошли путь от входа до возвращения, сохранили безопасную дистанцию и передали наблюдения команде.</p>
             </div>
           </motion.div>
         ) : (

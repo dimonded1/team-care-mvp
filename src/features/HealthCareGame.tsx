@@ -76,6 +76,7 @@ function HealthPetSilhouette({
           : { duration: 0.42, type: "spring", stiffness: 180, damping: 22 }}
       >
         <div className="health-silhouette__aura" aria-hidden="true" />
+        <span className="health-silhouette__ground" aria-hidden="true" />
         <img
           className="health-silhouette__pet"
           src={petImage}
