@@ -1,13 +1,9 @@
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckIcon, HeartIcon } from "../../components/Icons";
 import { assetUrl } from "../../lib/assets";
 import type { Animal, Mission } from "../../types/app";
-import {
-  getActionLabel,
-  getMissionStatus,
-  getRecommendedMissionId,
-} from "../passportModel";
+import { getMissionStatus, getRecommendedMissionId } from "../passportModel";
 import { hasOrbitBeenVisited, markOrbitVisited, useOrbitAnimation } from "./useOrbitAnimation";
 
 interface OrbitExperienceProps {
@@ -23,8 +19,6 @@ interface OrbitExperienceProps {
 type OrbitUiState =
   | "entering"
   | "orbiting"
-  | "focusing"
-  | "focused"
   | "openingGame"
   | "returning";
 
@@ -145,44 +139,11 @@ export function OrbitExperience({
 
   const selectPlanet = (missionId: Mission["id"]) => {
     if (isTransitioning || uiState === "entering") return;
-    if (selectedPlanetId === missionId && uiState === "focused") {
-      openPlanet(missionId);
-      return;
-    }
     setIsTransitioning(true);
     setSelectedPlanetId(missionId);
-    setUiState(reduceMotion ? "focused" : "focusing");
-    window.setTimeout(() => {
-      setUiState("focused");
-      setIsTransitioning(false);
-      document.querySelector<HTMLButtonElement>(`[data-orbit-planet="${missionId}"]`)?.focus();
-    }, reduceMotion ? 80 : 560);
-  };
-
-  const closeFocus = () => {
-    if (isTransitioning || selectedPlanetId === null) return;
-    setIsTransitioning(true);
-    setUiState("returning");
-    setSelectedPlanetId(null);
-    window.setTimeout(() => {
-      setUiState("orbiting");
-      setIsTransitioning(false);
-    }, reduceMotion ? 80 : 440);
-  };
-
-  const openPlanet = (missionId: Mission["id"]) => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
     setUiState("openingGame");
-    window.setTimeout(() => onSelectMission(missionId), reduceMotion ? 80 : 520);
+    window.setTimeout(() => onSelectMission(missionId), reduceMotion ? 80 : 360);
   };
-
-  const selectedMission = selectedPlanetId
-    ? missions.find((mission) => mission.id === selectedPlanetId) ?? null
-    : null;
-  const selectedStatus = selectedMission
-    ? getMissionStatus(selectedMission.id, startedMissionIds, completedMissionIds)
-    : null;
 
   return (
     <section
@@ -201,7 +162,7 @@ export function OrbitExperience({
       <header className="care-orbit__heading">
         <p>Орбита подопечного</p>
         <h1 id="care-orbit-title">Выберите планету заботы</h1>
-        <span>Коснитесь планеты, чтобы узнать о ней больше</span>
+        <span>Коснитесь планеты, чтобы открыть мини-игру</span>
       </header>
 
       <div className="care-orbit__scene">
@@ -328,40 +289,6 @@ export function OrbitExperience({
           })}
         </div>
 
-        <AnimatePresence>
-          {selectedMission && selectedStatus ? (
-            <motion.aside
-              className="care-orbit__focus-panel"
-              role="dialog"
-              aria-label={`Планета ${presentation[selectedMission.id].title}`}
-              initial={{ opacity: 0, y: reduceMotion ? 0 : 24, scale: reduceMotion ? 1 : 0.96 }}
-              animate={{ opacity: uiState === "focusing" ? 0 : 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: reduceMotion ? 0 : 16 }}
-            >
-              <button type="button" className="care-orbit__focus-back" onClick={closeFocus}>
-                <span aria-hidden="true">←</span> К орбите
-              </button>
-              <div className="care-orbit__focus-copy">
-                <span>Этап {missions.findIndex((item) => item.id === selectedMission.id) + 1} из {missions.length}</span>
-                <h2>{presentation[selectedMission.id].title}</h2>
-                <p>{presentation[selectedMission.id].description}</p>
-                <div>
-                  <small>{presentation[selectedMission.id].duration} мин</small>
-                  <small>{stateLabel[selectedStatus]}</small>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="care-orbit__open"
-                onClick={() => openPlanet(selectedMission.id)}
-                disabled={isTransitioning}
-              >
-                {selectedStatus === "started" ? "Продолжить" : selectedStatus === "completed" ? "Пройти ещё раз" : "Начать игру"}
-                <span aria-hidden="true">→</span>
-              </button>
-            </motion.aside>
-          ) : null}
-        </AnimatePresence>
       </div>
 
       <div className="care-orbit__footer">

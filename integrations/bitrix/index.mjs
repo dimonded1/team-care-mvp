@@ -9,7 +9,6 @@ export {
   mapCareEvent,
   mapContactCapture,
   mapGuardianshipLead,
-  contactInterestLabels,
 } from "./mappers.mjs";
 export { loadAnimalsFromBitrix } from "./animals.mjs";
 export { sendToBitrix } from "./sender.mjs";

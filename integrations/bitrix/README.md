@@ -13,16 +13,29 @@ published records, downloads the main image through the temporary server-only
 `src/data/bitrixAnimals.generated.json`. Signed file URLs are never persisted or
 returned to the browser.
 
-`mapGuardianshipLead()` creates a standard CRM lead payload. `mapCareEvent()` creates a smart-process item payload. `mapContactCapture()` creates a Bitrix contact from the lightweight final-screen form and refuses requests without explicit personal-data consent. Configure all placeholder IDs in the server environment before enabling a feature; enabled mode rejects non-HTTPS webhook URLs and incomplete feature configuration.
+`mapGuardianshipLead()` creates a standard CRM lead payload. `mapCareEvent()` creates a smart-process item payload. `mapContactCapture()` creates a Bitrix contact from the final-screen form and refuses requests without explicit personal-data consent. Configure all placeholder IDs in the server environment before enabling a feature; enabled mode rejects non-HTTPS webhook URLs and incomplete feature configuration.
 
-For the contact form, the supplied workbook confirmed the standard `NAME` and `EMAIL` fields and these custom field IDs:
+For the contact form, the supplied workbook confirmed the standard `NAME`,
+`LAST_NAME`, `SECOND_NAME`, `PHONE`, `EMAIL`, `BIRTHDATE` and `ADDRESS` fields,
+plus these custom fields:
 
+- Telegram: `UF_CRM_1682596086758`;
+- about: `UF_CRM_1704894991128`;
+- work sphere: `UF_CRM_1715684248494`;
+- hobbies: `UF_CRM_1715684330391`;
+- pets: `UF_CRM_1715684359389`;
+- preferred contact method: `UF_CRM_1715684447761`;
 - interest: `UF_CRM_1773242372621`;
 - consent: `UF_CRM_1771837766068`;
 - consent date: `UF_CRM_1771837777534`;
-- submission date: `UF_CRM_1773673401962`.
+- submission date: `UF_CRM_1773673401962`;
+- MAX handle: `UF_CRM_1781700742387`.
 
-The workbook did not include the enumeration item IDs for the interest field. Until an administrator confirms them, the adapter keeps the selected interest in `COMMENTS` and omits the enum field. Do not guess enum values.
+The exact enum IDs were verified against `crm.contact.fields`: ten work-sphere
+values (`1749`–`1767`), preferred contact values (`1769`, `1771`, `1773`,
+`1775`, `3377`) and guardianship program interest `2957`. They live only in
+server environment variables so the mapping can be changed without rebuilding
+the client.
 
 The sender accepts an injected `fetch` implementation to make server tests independent of the network. It returns only status metadata and never returns, logs or forwards the integration secret.
 
@@ -32,9 +45,8 @@ The sender accepts an injected `fetch` implementation to make server tests indep
 2. Copy `.env.example` to `.env` on the server, replace placeholders, and keep the file outside the image/repository with mode `0600`.
 3. Set `APP_ALLOWED_ORIGINS` to the public HTTPS origin. Set `APP_TRUST_PROXY=true` only behind a trusted proxy that overwrites forwarded headers.
 4. Keep `BITRIX_ENABLED=false` and `BITRIX_CONTACTS_ENABLED=false` during setup, then run `npm run test:server`.
-5. Confirm the contact-interest enumeration IDs through `crm.contact.userfield.list` (or the Bitrix admin UI). The human-readable fallback in `COMMENTS` is safe while they remain empty.
-6. Verify the field map and webhook against a non-production contact.
-7. Enable only `BITRIX_ENABLED=true` and `BITRIX_CONTACTS_ENABLED=true`; leave unrelated feature flags off.
+5. Verify the field map and webhook against a non-production contact.
+6. Enable only `BITRIX_ENABLED=true` and `BITRIX_CONTACTS_ENABLED=true`; leave unrelated feature flags off.
 
 GitHub Pages cannot execute this adapter or protect its credentials. Keep the current app on Pages in read-only demo mode until a trusted server endpoint is available.
 

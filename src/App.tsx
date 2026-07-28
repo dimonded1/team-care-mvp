@@ -285,7 +285,7 @@ export default function App() {
           <OrbitField variant="matching" showConstellation />
           <AppHeader
             onBack={goBackInQuiz}
-            right={<FoundationMenu />}
+            right={<FoundationMenu onRestart={restart} />}
             light
           />
           <Progress
@@ -322,6 +322,7 @@ export default function App() {
           onSelectMission={openMission}
           onOpenGuardianship={() => setStage("guardianship")}
           onContinue={() => setStage("final")}
+          onRestart={restart}
         />
       );
     }
@@ -337,6 +338,7 @@ export default function App() {
             setStage("passport");
           }}
           onCompleteMission={completeMission}
+          onRestart={restart}
         />
       );
     }

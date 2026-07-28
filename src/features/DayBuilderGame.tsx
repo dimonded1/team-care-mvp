@@ -22,6 +22,7 @@ import {
 } from "../data/dayScenes";
 import type { Animal } from "../types/app";
 import { assetUrl } from "../lib/assets";
+import { createShuffleSeed, shuffleBySeed } from "../lib/shuffle";
 
 interface DayBuilderGameProps {
   animal: Animal;
@@ -87,7 +88,7 @@ function DayCharacter({
         morning: "calm",
         day: "walking",
         evening: "leash-ready",
-        night: "relaxed",
+        night: "calm",
       };
   const characterState = incorrectReaction ? "startled" : stateByScene[sceneId];
 
@@ -254,7 +255,10 @@ function DayMontage({
         transition={{ delay: complete ? 0 : 0.36, duration: 0.42 }}
         aria-hidden="true"
       >
-        <img src={assetUrl(`assets/game-characters/${animal.species}/relaxed.webp`)} alt="" />
+        <img
+          src={assetUrl(`assets/game-characters/${animal.species}/${animal.species === "dog" ? "calm" : "relaxed"}.webp`)}
+          alt=""
+        />
       </motion.div>
     </motion.section>
   );
@@ -268,8 +272,13 @@ export function DayBuilderGame({ animal, onReadyChange }: DayBuilderGameProps) {
   const [reaction, setReaction] = useState<DayReaction | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const [montageIndex, setMontageIndex] = useState(-1);
+  const [shuffleSeed] = useState(createShuffleSeed);
   const advanceTimer = useRef<number | null>(null);
   const currentScene = dayScenes[sceneIndex];
+  const displayedChoices = useMemo(
+    () => shuffleBySeed(currentScene.choices, `${shuffleSeed}:${currentScene.id}`),
+    [currentScene.choices, currentScene.id, shuffleSeed],
+  );
   const currentSelection = selections[currentScene.id] ?? null;
   const reactionChoice = reaction
     ? currentScene.choices.find((choice) => choice.id === reaction.choiceId) ?? null
@@ -524,7 +533,7 @@ export function DayBuilderGame({ animal, onReadyChange }: DayBuilderGameProps) {
               </div>
 
               <div className="day-scene__choices" aria-label={`Действия на этапе «${currentScene.label}»`}>
-                {currentScene.choices.map((choice) => (
+                {displayedChoices.map((choice) => (
                   <ActivityChoice
                     key={choice.id}
                     choice={choice}

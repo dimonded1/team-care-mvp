@@ -60,11 +60,66 @@ function normalizeEmail(value) {
   return email;
 }
 
-export const contactInterestLabels = Object.freeze({
-  guardianship: "Хочу узнать об опеке",
-  visits: "Хочу узнать о визитах и помощи",
-  updates: "Хочу получать новости о подопечном",
-});
+const allowedWorkSpheres = new Set([
+  "publicService",
+  "budgetOrganization",
+  "media",
+  "research",
+  "socialEnterprise",
+  "selfEmployed",
+  "russianBusiness",
+  "internationalBusiness",
+  "socialNonprofit",
+  "other",
+]);
+
+const allowedPreferredContacts = new Set(["whatsapp", "phone", "email", "telegram", "max"]);
+
+function optionalSingleLine(value, name, maxLength) {
+  if (value === undefined || value === null || String(value).trim() === "") return null;
+  return cleanSingleLine(value, name, maxLength);
+}
+
+function optionalText(value, name, maxLength) {
+  if (value === undefined || value === null || String(value).trim() === "") return null;
+  const normalized = stripMarkup(value);
+  if (!normalized || normalized.length > maxLength) {
+    throw new TypeError(`${name} must contain 1-${maxLength} characters`);
+  }
+  return normalized;
+}
+
+function normalizePhone(value) {
+  const phone = String(requireValue(value, "phone")).trim();
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 10 || digits.length > 15 || /[\r\n]/u.test(phone)) {
+    throw new TypeError("phone must contain 10-15 digits");
+  }
+  return phone;
+}
+
+function normalizeDate(value) {
+  if (!value) return null;
+  const date = String(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/u.test(date) || Number.isNaN(Date.parse(`${date}T00:00:00Z`))) {
+    throw new TypeError("birthDate must use YYYY-MM-DD");
+  }
+  if (date > new Date().toISOString().slice(0, 10)) {
+    throw new TypeError("birthDate cannot be in the future");
+  }
+  return date;
+}
+
+function normalizeTelegram(value) {
+  const input = optionalSingleLine(value, "telegram", 120);
+  if (!input) return null;
+  if (/^https:\/\/t\.me\/[a-zA-Z0-9_]{5,32}$/u.test(input)) return input;
+  const username = input.replace(/^@/u, "");
+  if (!/^[a-zA-Z0-9_]{5,32}$/u.test(username)) {
+    throw new TypeError("telegram must be a username or t.me link");
+  }
+  return `https://t.me/${username}`;
+}
 
 /** Creates the read request for published animal deals. */
 export function buildAnimalListRequest(config, { start = 0, categoryId = config.animal.categoryId } = {}) {
@@ -154,33 +209,50 @@ export function mapGuardianshipLead(input, config) {
 }
 
 /**
- * Maps a lightweight, explicitly consented follow-up request to crm.contact.add.
- * The human-readable interest is always kept in COMMENTS; a configured Bitrix
- * enumeration value is added only when its ID has been confirmed by an admin.
+ * Maps an explicitly consented follow-up request to crm.contact.add.
+ * All enumeration values are resolved through an allowlisted server-side map.
  */
 export function mapContactCapture(input, config, { now = new Date() } = {}) {
   if (input.consent !== true) {
     throw new TypeError("Explicit personal-data consent is required");
   }
 
-  const name = cleanSingleLine(input.name, "name", 80);
+  const firstName = cleanSingleLine(input.firstName, "firstName", 80);
+  const lastName = cleanSingleLine(input.lastName, "lastName", 80);
+  const middleName = cleanSingleLine(input.middleName, "middleName", 80);
+  const phone = normalizePhone(input.phone);
   const email = normalizeEmail(input.email);
+  const birthDate = normalizeDate(input.birthDate);
+  const address = optionalSingleLine(input.address, "address", 300);
+  const telegram = normalizeTelegram(input.telegram);
+  const about = optionalText(input.about, "about", 1500);
+  const hobbies = optionalText(input.hobbies, "hobbies", 500);
+  const pets = optionalText(input.pets, "pets", 500);
+  const maxMessenger = optionalSingleLine(input.maxMessenger, "maxMessenger", 120);
   const animalId = cleanSingleLine(input.animalId, "animalId", 80);
   const animalName = cleanSingleLine(input.animalName, "animalName", 80);
-  const interest = String(requireValue(input.interest, "interest"));
-  const interestLabel = contactInterestLabels[interest];
-  if (!interestLabel) throw new TypeError("interest is not allowed");
+  const workSphere = String(requireValue(input.workSphere, "workSphere"));
+  const preferredContact = String(requireValue(input.preferredContact, "preferredContact"));
+  if (!allowedWorkSpheres.has(workSphere)) throw new TypeError("workSphere is not allowed");
+  if (!allowedPreferredContacts.has(preferredContact)) throw new TypeError("preferredContact is not allowed");
 
   const fields = config.contacts.fields;
-  const enumId = config.contacts.interestEnums[interest];
+  const workSphereEnumId = config.contacts.workSphereEnums[workSphere];
+  const preferredContactEnumId = config.contacts.preferredContactEnums[preferredContact];
   const date = now instanceof Date && !Number.isNaN(now.valueOf())
     ? now.toISOString().slice(0, 10)
     : new Date().toISOString().slice(0, 10);
 
   const contactFields = {
-    NAME: name,
+    NAME: firstName,
+    LAST_NAME: lastName,
+    SECOND_NAME: middleName,
+    PHONE: [{ VALUE: phone, VALUE_TYPE: "MOBILE" }],
     EMAIL: [{ VALUE: email, VALUE_TYPE: "WORK" }],
-    COMMENTS: `${interestLabel}. Подопечный: ${animalName} (${animalId}).`,
+    COMMENTS: `Интерес к программе опеки. Подопечный: ${animalName} (${animalId}).`,
+    [fields.workSphere]: workSphereEnumId,
+    [fields.preferredContact]: preferredContactEnumId,
+    [fields.interest]: config.contacts.interestEnums.guardianship,
     [fields.consent]: true,
     [fields.consentAt]: date,
     [fields.submittedAt]: date,
@@ -189,9 +261,13 @@ export function mapContactCapture(input, config, { now = new Date() } = {}) {
   if (config.contacts.sourceId && config.contacts.sourceId !== "<SET_IN_SERVER_ENV>") {
     contactFields.SOURCE_ID = config.contacts.sourceId;
   }
-  if (enumId && enumId !== "<SET_IN_SERVER_ENV>") {
-    contactFields[fields.interest] = enumId;
-  }
+  if (birthDate) contactFields.BIRTHDATE = birthDate;
+  if (address) contactFields.ADDRESS = address;
+  if (telegram) contactFields[fields.telegram] = telegram;
+  if (about) contactFields[fields.about] = about;
+  if (hobbies) contactFields[fields.hobbies] = hobbies;
+  if (pets) contactFields[fields.pets] = pets;
+  if (maxMessenger) contactFields[fields.maxMessenger] = maxMessenger;
 
   return {
     feature: "contacts",

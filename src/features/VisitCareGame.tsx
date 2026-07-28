@@ -1,11 +1,12 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckIcon, CloseIcon } from "../components/Icons";
 import {
   visitSituations,
   type VisitActionIconId,
 } from "../data/visitSituations";
 import { assetUrl } from "../lib/assets";
+import { createShuffleSeed, shuffleBySeed } from "../lib/shuffle";
 import type { Animal } from "../types/app";
 
 interface VisitCareGameProps {
@@ -43,12 +44,17 @@ export function VisitCareGame({ animal, onReadyChange }: VisitCareGameProps) {
   const [step, setStep] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [locked, setLocked] = useState(false);
+  const [shuffleSeed] = useState(createShuffleSeed);
   const timerRef = useRef<number | null>(null);
   const situation = visitSituations[Math.min(step, visitSituations.length - 1)];
   const selected = situation.actions.find((action) => action.id === selectedId) ?? null;
+  const displayedActions = useMemo(
+    () => shuffleBySeed(situation.actions, `${shuffleSeed}:${situation.id}`),
+    [shuffleSeed, situation.actions, situation.id],
+  );
   const complete = step >= visitSituations.length;
   const petState = complete
-    ? "relaxed"
+    ? animal.species === "dog" ? "calm" : "relaxed"
     : selected && !selected.correct
       ? "startled"
       : situation.petState[animal.species];
@@ -163,7 +169,7 @@ export function VisitCareGame({ animal, onReadyChange }: VisitCareGameProps) {
             <span>{situation.prompt}</span>
 
             <div className="visit-actions" role="group" aria-label="Как поступить">
-              {situation.actions.map((action) => {
+              {displayedActions.map((action) => {
                 const chosen = action.id === selectedId;
                 return (
                   <motion.button

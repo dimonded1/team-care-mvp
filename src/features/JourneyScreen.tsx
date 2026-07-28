@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppHeader } from "../components/AppHeader";
 import { Button } from "../components/Button";
 import { FoundationMenu } from "../components/FoundationMenu";
@@ -7,6 +7,7 @@ import { CheckIcon } from "../components/Icons";
 import { JourneyPetScene } from "../components/JourneyPetScene";
 import { Progress } from "../components/Progress";
 import type { Animal, Mission } from "../types/app";
+import { createShuffleSeed, shuffleBySeed } from "../lib/shuffle";
 import { DayBuilderGame } from "./DayBuilderGame";
 import { HealthCareGame } from "./HealthCareGame";
 import { TrustCareGame } from "./TrustCareGame";
@@ -19,6 +20,7 @@ interface JourneyScreenProps {
   completedMissionIds: Mission["id"][];
   onBack: () => void;
   onCompleteMission: (mission: Mission) => void;
+  onRestart: () => void;
 }
 
 export function JourneyScreen({
@@ -28,6 +30,7 @@ export function JourneyScreen({
   completedMissionIds,
   onBack,
   onCompleteMission,
+  onRestart,
 }: JourneyScreenProps) {
   const mission = missions[missionIndex];
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -36,6 +39,11 @@ export function JourneyScreen({
   const [healthReady, setHealthReady] = useState(false);
   const [trustReady, setTrustReady] = useState(false);
   const reduceMotion = useReducedMotion();
+  const [shuffleSeed] = useState(createShuffleSeed);
+  const displayedOptions = useMemo(
+    () => shuffleBySeed(mission.options, `${shuffleSeed}:${mission.id}`),
+    [mission.id, mission.options, shuffleSeed],
+  );
 
   useEffect(() => {
     setSelectedId(null);
@@ -68,7 +76,7 @@ export function JourneyScreen({
     <main className={`screen journey-screen${isVisitGame ? " journey-screen--visit-game" : ""}${isWalkGame ? " journey-screen--day-game journey-screen--walk-game" : ""}${isHealthGame ? " journey-screen--health-game" : ""}${isTrustGame ? " journey-screen--trust-game" : ""}`}>
       <AppHeader
         onBack={onBack}
-        right={isVisitGame || isWalkGame || isHealthGame || isTrustGame ? <FoundationMenu /> : `Орбита: ${animal.name}`}
+        right={isVisitGame || isWalkGame || isHealthGame || isTrustGame ? <FoundationMenu onRestart={onRestart} /> : `Орбита: ${animal.name}`}
         light={isVisitGame || isWalkGame || isHealthGame || isTrustGame}
       />
       <div className="journey-layout">
@@ -100,7 +108,7 @@ export function JourneyScreen({
               <p className="mission-prompt">{mission.prompt}</p>
 
               <div className="mission-options">
-                {mission.options.map((option) => {
+                {displayedOptions.map((option) => {
                   const isSelected = selectedId === option.id;
                   const isCorrectSelection = isSelected && option.correct;
                   return (

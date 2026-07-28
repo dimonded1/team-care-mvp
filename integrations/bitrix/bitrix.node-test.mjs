@@ -54,13 +54,33 @@ const configuredEnv = {
   BITRIX_FIELD_CARE_TYPE: "UF_CRM_CARE_TYPE",
   BITRIX_FIELD_OCCURRED_AT: "UF_CRM_OCCURRED_AT",
   BITRIX_CONTACT_SOURCE_ID: "WEB",
+  BITRIX_CONTACT_FIELD_TELEGRAM: "UF_CRM_TELEGRAM",
+  BITRIX_CONTACT_FIELD_ABOUT: "UF_CRM_ABOUT",
+  BITRIX_CONTACT_FIELD_WORK_SPHERE: "UF_CRM_WORK",
+  BITRIX_CONTACT_FIELD_HOBBIES: "UF_CRM_HOBBIES",
+  BITRIX_CONTACT_FIELD_PETS: "UF_CRM_PETS",
+  BITRIX_CONTACT_FIELD_PREFERRED_CONTACT: "UF_CRM_PREFERRED",
+  BITRIX_CONTACT_FIELD_MAX: "UF_CRM_MAX",
   BITRIX_CONTACT_FIELD_INTEREST: "UF_CRM_1773242372621",
   BITRIX_CONTACT_FIELD_CONSENT: "UF_CRM_1771837766068",
   BITRIX_CONTACT_FIELD_CONSENT_AT: "UF_CRM_1771837777534",
   BITRIX_CONTACT_FIELD_SUBMITTED_AT: "UF_CRM_1773673401962",
   BITRIX_CONTACT_INTEREST_GUARDIANSHIP_ENUM_ID: "501",
-  BITRIX_CONTACT_INTEREST_VISITS_ENUM_ID: "502",
-  BITRIX_CONTACT_INTEREST_UPDATES_ENUM_ID: "503",
+  BITRIX_CONTACT_WORK_PUBLIC_SERVICE_ENUM_ID: "601",
+  BITRIX_CONTACT_WORK_BUDGET_ORGANIZATION_ENUM_ID: "602",
+  BITRIX_CONTACT_WORK_MEDIA_ENUM_ID: "603",
+  BITRIX_CONTACT_WORK_RESEARCH_ENUM_ID: "604",
+  BITRIX_CONTACT_WORK_SOCIAL_ENTERPRISE_ENUM_ID: "605",
+  BITRIX_CONTACT_WORK_SELF_EMPLOYED_ENUM_ID: "606",
+  BITRIX_CONTACT_WORK_RUSSIAN_BUSINESS_ENUM_ID: "607",
+  BITRIX_CONTACT_WORK_INTERNATIONAL_BUSINESS_ENUM_ID: "608",
+  BITRIX_CONTACT_WORK_SOCIAL_NONPROFIT_ENUM_ID: "609",
+  BITRIX_CONTACT_WORK_OTHER_ENUM_ID: "610",
+  BITRIX_CONTACT_PREFERRED_WHATSAPP_ENUM_ID: "701",
+  BITRIX_CONTACT_PREFERRED_PHONE_ENUM_ID: "702",
+  BITRIX_CONTACT_PREFERRED_EMAIL_ENUM_ID: "703",
+  BITRIX_CONTACT_PREFERRED_TELEGRAM_ENUM_ID: "704",
+  BITRIX_CONTACT_PREFERRED_MAX_ENUM_ID: "705",
 };
 
 test("disabled adapter makes no network request and exposes no secret", async () => {
@@ -80,13 +100,16 @@ test("all angle-bracket env placeholders are normalized and never sent to Bitrix
   const config = createBitrixConfig({
     ...configuredEnv,
     BITRIX_CONTACT_SOURCE_ID: "<SET_PRODUCTION_SOURCE>",
-    BITRIX_CONTACT_INTEREST_VISITS_ENUM_ID: "<SET_AFTER_ENUM_CONFIRMATION>",
   });
   const request = mapContactCapture(
     {
-      name: "Анна",
+      firstName: "Анна",
+      lastName: "Иванова",
+      middleName: "Сергеевна",
+      phone: "+7 900 000-00-00",
       email: "anna@example.org",
-      interest: "visits",
+      workSphere: "media",
+      preferredContact: "telegram",
       animalId: "mira",
       animalName: "Мира",
       consent: true,
@@ -95,7 +118,7 @@ test("all angle-bracket env placeholders are normalized and never sent to Bitrix
   );
 
   assert.equal(Object.hasOwn(request.payload.fields, "SOURCE_ID"), false);
-  assert.equal(Object.hasOwn(request.payload.fields, "UF_CRM_1773242372621"), false);
+  assert.equal(request.payload.fields.UF_CRM_1773242372621, "501");
 });
 
 test("feature flags disable one contour without disabling the others", async () => {
@@ -147,13 +170,23 @@ test("guardianship lead requires explicit consent", () => {
   );
 });
 
-test("contact mapper creates a consented Bitrix contact with allowlisted interest", () => {
+test("contact mapper creates a consented Bitrix contact with allowlisted profile fields", () => {
   const config = createBitrixConfig(configuredEnv);
   const request = mapContactCapture(
     {
-      name: "  Анна   Иванова  ",
+      firstName: "  Анна  ",
+      lastName: "Иванова",
+      middleName: "Сергеевна",
+      phone: "+7 900 000-00-00",
       email: "ANNA@example.org",
-      interest: "guardianship",
+      birthDate: "1990-05-10",
+      workSphere: "media",
+      preferredContact: "telegram",
+      telegram: "@anna_nika",
+      about: "Люблю животных",
+      hobbies: "Фотография",
+      pets: "Кот",
+      maxMessenger: "anna-max",
       animalId: "mira-42",
       animalName: "Мира",
       consent: true,
@@ -163,23 +196,36 @@ test("contact mapper creates a consented Bitrix contact with allowlisted interes
   );
 
   assert.equal(request.method, "crm.contact.add");
-  assert.equal(request.payload.fields.NAME, "Анна Иванова");
+  assert.equal(request.payload.fields.NAME, "Анна");
+  assert.equal(request.payload.fields.LAST_NAME, "Иванова");
+  assert.equal(request.payload.fields.SECOND_NAME, "Сергеевна");
+  assert.deepEqual(request.payload.fields.PHONE, [
+    { VALUE: "+7 900 000-00-00", VALUE_TYPE: "MOBILE" },
+  ]);
   assert.deepEqual(request.payload.fields.EMAIL, [
     { VALUE: "anna@example.org", VALUE_TYPE: "WORK" },
   ]);
   assert.equal(request.payload.fields.UF_CRM_1773242372621, "501");
+  assert.equal(request.payload.fields.UF_CRM_WORK, "603");
+  assert.equal(request.payload.fields.UF_CRM_PREFERRED, "704");
+  assert.equal(request.payload.fields.UF_CRM_TELEGRAM, "https://t.me/anna_nika");
+  assert.equal(request.payload.fields.BIRTHDATE, "1990-05-10");
   assert.equal(request.payload.fields.UF_CRM_1771837766068, true);
   assert.equal(request.payload.fields.UF_CRM_1771837777534, "2026-07-27");
   assert.equal(request.payload.fields.UF_CRM_1773673401962, "2026-07-27");
   assert.match(request.payload.fields.COMMENTS, /Мира \(mira-42\)/);
 });
 
-test("contact mapper rejects missing consent, invalid email and unknown interest", () => {
+test("contact mapper rejects missing consent and invalid allowlisted data", () => {
   const config = createBitrixConfig(configuredEnv);
   const base = {
-    name: "Анна",
+    firstName: "Анна",
+    lastName: "Иванова",
+    middleName: "Сергеевна",
+    phone: "+7 900 000-00-00",
     email: "anna@example.org",
-    interest: "visits",
+    workSphere: "media",
+    preferredContact: "telegram",
     animalId: "mira",
     animalName: "Мира",
     consent: true,
@@ -187,7 +233,7 @@ test("contact mapper rejects missing consent, invalid email and unknown interest
 
   assert.throws(() => mapContactCapture({ ...base, consent: false }, config), /consent/i);
   assert.throws(() => mapContactCapture({ ...base, email: "not-an-email" }, config), /valid address/i);
-  assert.throws(() => mapContactCapture({ ...base, interest: "anything" }, config), /not allowed/i);
+  assert.throws(() => mapContactCapture({ ...base, workSphere: "anything" }, config), /not allowed/i);
 });
 
 test("animal request selects only configured fields and mapper excludes medical free text", () => {

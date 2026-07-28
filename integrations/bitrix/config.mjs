@@ -92,6 +92,13 @@ export function createBitrixConfig(env = process.env) {
     contacts: Object.freeze({
       sourceId: valueOrPlaceholder(env.BITRIX_CONTACT_SOURCE_ID),
       fields: Object.freeze({
+        telegram: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_TELEGRAM),
+        about: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_ABOUT),
+        workSphere: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_WORK_SPHERE),
+        hobbies: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_HOBBIES),
+        pets: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_PETS),
+        preferredContact: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_PREFERRED_CONTACT),
+        maxMessenger: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_MAX),
         interest: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_INTEREST),
         consent: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_CONSENT),
         consentAt: valueOrPlaceholder(env.BITRIX_CONTACT_FIELD_CONSENT_AT),
@@ -99,8 +106,25 @@ export function createBitrixConfig(env = process.env) {
       }),
       interestEnums: Object.freeze({
         guardianship: valueOrPlaceholder(env.BITRIX_CONTACT_INTEREST_GUARDIANSHIP_ENUM_ID),
-        visits: valueOrPlaceholder(env.BITRIX_CONTACT_INTEREST_VISITS_ENUM_ID),
-        updates: valueOrPlaceholder(env.BITRIX_CONTACT_INTEREST_UPDATES_ENUM_ID),
+      }),
+      workSphereEnums: Object.freeze({
+        publicService: valueOrPlaceholder(env.BITRIX_CONTACT_WORK_PUBLIC_SERVICE_ENUM_ID),
+        budgetOrganization: valueOrPlaceholder(env.BITRIX_CONTACT_WORK_BUDGET_ORGANIZATION_ENUM_ID),
+        media: valueOrPlaceholder(env.BITRIX_CONTACT_WORK_MEDIA_ENUM_ID),
+        research: valueOrPlaceholder(env.BITRIX_CONTACT_WORK_RESEARCH_ENUM_ID),
+        socialEnterprise: valueOrPlaceholder(env.BITRIX_CONTACT_WORK_SOCIAL_ENTERPRISE_ENUM_ID),
+        selfEmployed: valueOrPlaceholder(env.BITRIX_CONTACT_WORK_SELF_EMPLOYED_ENUM_ID),
+        russianBusiness: valueOrPlaceholder(env.BITRIX_CONTACT_WORK_RUSSIAN_BUSINESS_ENUM_ID),
+        internationalBusiness: valueOrPlaceholder(env.BITRIX_CONTACT_WORK_INTERNATIONAL_BUSINESS_ENUM_ID),
+        socialNonprofit: valueOrPlaceholder(env.BITRIX_CONTACT_WORK_SOCIAL_NONPROFIT_ENUM_ID),
+        other: valueOrPlaceholder(env.BITRIX_CONTACT_WORK_OTHER_ENUM_ID),
+      }),
+      preferredContactEnums: Object.freeze({
+        whatsapp: valueOrPlaceholder(env.BITRIX_CONTACT_PREFERRED_WHATSAPP_ENUM_ID),
+        phone: valueOrPlaceholder(env.BITRIX_CONTACT_PREFERRED_PHONE_ENUM_ID),
+        email: valueOrPlaceholder(env.BITRIX_CONTACT_PREFERRED_EMAIL_ENUM_ID),
+        telegram: valueOrPlaceholder(env.BITRIX_CONTACT_PREFERRED_TELEGRAM_ENUM_ID),
+        max: valueOrPlaceholder(env.BITRIX_CONTACT_PREFERRED_MAX_ENUM_ID),
       }),
     }),
     care: Object.freeze({
@@ -159,7 +183,12 @@ export function validateBitrixConfig(config, feature = null) {
   }
 
   if (feature === "contacts") {
-    const missing = collectMissing(config.contacts.fields);
+    const missing = [
+      ...collectMissing(config.contacts.fields),
+      ...collectMissing(config.contacts.interestEnums),
+      ...collectMissing(config.contacts.workSphereEnums),
+      ...collectMissing(config.contacts.preferredContactEnums),
+    ];
     if (missing.length) errors.push(`Contact field map is incomplete: ${missing.join(", ")}`);
   }
 

@@ -344,22 +344,13 @@ async function main() {
 
     const openMissionNode = async (missionId) => {
       await waitForSelector('[data-orbit-state="orbiting"]', true, 6_000);
-      const focused = await evaluate(`(() => {
+      const opened = await evaluate(`(() => {
         const node = document.querySelector('[data-mission-id="${missionId}"]');
         if (!node) return false;
         node.click();
         return true;
       })()`);
-      if (!focused) throw new Error(`Mission node not found: ${missionId}`);
-      await waitForSelector(".care-orbit__focus-panel");
-      await waitForEnabledSelector(".care-orbit__open", 2_000);
-      const opened = await evaluate(`(() => {
-        const button = document.querySelector('.care-orbit__open');
-        if (!button) return false;
-        button.click();
-        return true;
-      })()`);
-      if (!opened) throw new Error(`Mission focus action not found: ${missionId}`);
+      if (!opened) throw new Error(`Mission node not found: ${missionId}`);
       await waitForSelector(".journey-screen");
     };
 
@@ -1863,8 +1854,8 @@ async function main() {
         const privacy = document.querySelector('.contact-capture__consent a');
         const submit = document.querySelector('.contact-capture__submit');
         return {
-          inputs: form?.querySelectorAll('input[type="text"], input[type="email"]').length ?? 0,
-          interests: form?.querySelectorAll('input[type="radio"]').length ?? 0,
+          fields: form?.querySelectorAll('input:not([type="checkbox"]), select, textarea').length ?? 0,
+          selects: form?.querySelectorAll('select[required]').length ?? 0,
           consent: form?.querySelectorAll('input[type="checkbox"][required]').length ?? 0,
           privacyHref: privacy instanceof HTMLAnchorElement ? privacy.getAttribute('href') : null,
           submitDisabled: submit instanceof HTMLButtonElement ? submit.disabled : null,
@@ -1872,8 +1863,8 @@ async function main() {
         };
       })()`);
       if (
-        contactMetrics.inputs !== 2
-        || contactMetrics.interests !== 3
+        contactMetrics.fields !== 14
+        || contactMetrics.selects !== 2
         || contactMetrics.consent !== 1
         || contactMetrics.privacyHref !== '#legal/privacy'
         || contactMetrics.submitDisabled !== true

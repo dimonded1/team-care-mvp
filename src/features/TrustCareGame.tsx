@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckIcon, CloseIcon } from "../components/Icons";
 import {
   trustSituations,
@@ -7,6 +7,7 @@ import {
   type TrustSituationIllustrationId,
 } from "../data/trustSituations";
 import { assetUrl } from "../lib/assets";
+import { createShuffleSeed, shuffleBySeed } from "../lib/shuffle";
 import type { Animal } from "../types/app";
 
 interface TrustCareGameProps {
@@ -85,10 +86,15 @@ export function TrustCareGame({ animal, onReadyChange }: TrustCareGameProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reaction, setReaction] = useState<TrustReaction>(null);
   const [locked, setLocked] = useState(false);
+  const [shuffleSeed] = useState(createShuffleSeed);
   const timerRef = useRef<number | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const situationRef = useRef<HTMLElement | null>(null);
   const situation = trustSituations[Math.min(progress, trustSituations.length - 1)];
+  const displayedActions = useMemo(
+    () => shuffleBySeed(situation.actions, `${shuffleSeed}:${situation.id}`),
+    [shuffleSeed, situation.actions, situation.id],
+  );
   const selected = situation.actions.find((action) => action.id === selectedId) ?? null;
   const petLabel = animal.species === "cat" ? "кот" : "собака";
   const cautiousPet = assetUrl(`assets/trust/trust-${animal.species}-cautious.webp`);
@@ -264,7 +270,7 @@ export function TrustCareGame({ animal, onReadyChange }: TrustCareGameProps) {
                 <span>{situation.description}</span>
               </div>
               <div className="trust-actions" role="group" aria-label="Как поступить">
-                {situation.actions.map((action) => {
+                {displayedActions.map((action) => {
                   const chosen = action.id === selectedId;
                   const state = chosen ? (action.correct ? "correct" : "incorrect") : "idle";
                   return (

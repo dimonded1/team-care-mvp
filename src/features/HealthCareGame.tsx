@@ -22,6 +22,7 @@ import {
 } from "../data/healthSituations";
 import type { Animal } from "../types/app";
 import { assetUrl } from "../lib/assets";
+import { createShuffleSeed, shuffleBySeed } from "../lib/shuffle";
 
 interface HealthCareGameProps {
   animal: Animal;
@@ -143,15 +144,21 @@ function SituationPanel({
   selectedChoiceId,
   onSelectChoice,
   onContinue,
+  shuffleSeed,
 }: {
   situation: HealthSituation;
   selectedChoiceId: string | null;
   onSelectChoice: (choiceId: string) => void;
   onContinue: () => void;
+  shuffleSeed: string;
 }) {
   const reduceMotion = useReducedMotion();
   const selectedChoice = situation.options.find((option) => option.id === selectedChoiceId) ?? null;
   const correctChoice = situation.options.find((option) => option.correct);
+  const displayedOptions = useMemo(
+    () => shuffleBySeed(situation.options, `${shuffleSeed}:${situation.id}`),
+    [shuffleSeed, situation.id, situation.options],
+  );
 
   return (
     <motion.section
@@ -172,7 +179,7 @@ function SituationPanel({
       </div>
 
       <div className="health-actions" role="group" aria-label="Варианты первой заботы">
-        {situation.options.map((option) => {
+        {displayedOptions.map((option) => {
           const Icon = actionIcons[option.icon];
           const chosen = selectedChoiceId === option.id;
           const revealCorrect = Boolean(selectedChoiceId) && option.correct;
@@ -293,6 +300,7 @@ export function HealthCareGame({ animal, onReadyChange }: HealthCareGameProps) {
   const [activeZoneId, setActiveZoneId] = useState<HealthZoneId | null>(null);
   const [selectedChoiceId, setSelectedChoiceId] = useState<string | null>(null);
   const [completedZoneIds, setCompletedZoneIds] = useState<HealthZoneId[]>([]);
+  const [shuffleSeed] = useState(createShuffleSeed);
   const mapRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -395,6 +403,7 @@ export function HealthCareGame({ animal, onReadyChange }: HealthCareGameProps) {
                   selectedChoiceId={selectedChoiceId}
                   onSelectChoice={setSelectedChoiceId}
                   onContinue={continueJourney}
+                  shuffleSeed={shuffleSeed}
                 />
               ) : null}
             </AnimatePresence>

@@ -15,6 +15,7 @@ interface PassportScreenProps {
   onSelectMission: (missionId: Mission["id"]) => void;
   onOpenGuardianship: () => void;
   onContinue: () => void;
+  onRestart: () => void;
 }
 
 export function PassportScreen({
@@ -26,6 +27,7 @@ export function PassportScreen({
   onSelectMission,
   onOpenGuardianship,
   onContinue,
+  onRestart,
 }: PassportScreenProps) {
   const { animal, reasons, score } = result;
   const complete = completedMissionIds.length === missions.length && missions.length > 0;
@@ -44,7 +46,7 @@ export function PassportScreen({
 
   return (
     <main className="screen passport-screen passport-hub-screen">
-      <AppHeader onBack={onBack} right={<FoundationMenu />} light />
+      <AppHeader onBack={onBack} right={<FoundationMenu onRestart={onRestart} />} light />
 
       <div className="passport-hub passport-hub--solar">
         <OrbitExperience

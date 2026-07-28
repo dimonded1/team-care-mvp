@@ -1,7 +1,11 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useId, useRef, useState } from "react";
 
-export function FoundationMenu() {
+interface FoundationMenuProps {
+  onRestart?: () => void;
+}
+
+export function FoundationMenu({ onRestart }: FoundationMenuProps) {
   const [open, setOpen] = useState(false);
   const [howOpen, setHowOpen] = useState(false);
   const menuId = useId();
@@ -110,6 +114,18 @@ export function FoundationMenu() {
               <a className="foundation-menu-panel__donate" href="https://fond-nika.ru/donation/" target="_blank" rel="noreferrer" onClick={close}>
                 Пожертвовать <span aria-hidden="true">↗</span>
               </a>
+              {onRestart ? (
+                <button
+                  className="foundation-menu-panel__restart"
+                  type="button"
+                  onClick={() => {
+                    close();
+                    onRestart();
+                  }}
+                >
+                  Начать заново <span aria-hidden="true">↻</span>
+                </button>
+              ) : null}
             </motion.nav>
           </>
         )}
