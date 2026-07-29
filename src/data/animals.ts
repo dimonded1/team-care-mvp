@@ -24,6 +24,14 @@ interface BitrixAnimalSnapshot {
     profileUrl: boolean;
   };
   profileUrl: string | null;
+  matching?: {
+    profileSource: "reviewed" | "derived-v1";
+    nameGenitive: string;
+    shortDescription: string;
+    traits: string[];
+    careTags: string[];
+    matchProfile: Animal["matchProfile"];
+  };
 }
 
 function pluralize(value: number, one: string, few: string, many: string) {
@@ -55,8 +63,11 @@ export function formatAnimalAge(birthDate: string, now = new Date()): string {
 
 export const animals: Animal[] = (snapshots as BitrixAnimalSnapshot[]).map((snapshot) => {
   const editorial = animalEditorialBySourceId[snapshot.sourceId];
-  if (!editorial) {
-    throw new Error(`Missing editorial matching profile for Bitrix animal ${snapshot.sourceId}`);
+  const matching = editorial
+    ? { profileSource: "reviewed" as const, ...editorial }
+    : snapshot.matching;
+  if (!matching) {
+    throw new Error(`Missing generated matching profile for Bitrix animal ${snapshot.sourceId}`);
   }
 
   return {
@@ -67,19 +78,20 @@ export const animals: Animal[] = (snapshots as BitrixAnimalSnapshot[]).map((snap
       categoryId: snapshot.categoryId,
       categoryName: snapshot.categoryName,
       syncedAt: snapshot.syncedAt,
+      matchingProfileSource: matching.profileSource,
     },
     name: snapshot.name,
-    nameGenitive: editorial.nameGenitive,
+    nameGenitive: matching.nameGenitive,
     species: snapshot.species,
     sex: snapshot.sex === "female" ? "девочка" : "мальчик",
     birthDate: snapshot.birthDate,
     age: formatAnimalAge(snapshot.birthDate),
     photo: assetUrl(snapshot.photoPath),
-    shortDescription: editorial.shortDescription,
+    shortDescription: matching.shortDescription,
     story: snapshot.story,
-    traits: editorial.traits,
-    careTags: editorial.careTags,
-    matchProfile: editorial.matchProfile,
+    traits: matching.traits,
+    careTags: matching.careTags,
+    matchProfile: matching.matchProfile,
     profileUrl: snapshot.profileUrl ?? "https://fond-nika.ru/ourpets/",
   };
 });

@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  clearSession,
+  loadRecentMatchedAnimalIds,
   loadSession,
   normalizeSessionForJourney,
   reconcileSessionWithAnimalCatalog,
+  rememberMatchedAnimalId,
   saveSession,
 } from "./storage";
 
@@ -212,5 +215,34 @@ describe("session storage", () => {
       startedMissionIds: [],
       completedMissionIds: [],
     });
+  });
+
+  it("keeps a bounded recent match history without clearing it with the journey", () => {
+    const available = Array.from({ length: 15 }, (_, index) => `animal-${index + 1}`);
+    available.slice(0, 14).forEach((animalId) => rememberMatchedAnimalId(animalId, available));
+    clearSession();
+
+    expect(loadRecentMatchedAnimalIds(available)).toEqual(
+      Array.from({ length: 12 }, (_, index) => `animal-${14 - index}`),
+    );
+  });
+
+  it("ignores corrupted and unavailable recent animal IDs", () => {
+    values.set("nika-team-care-recent-matches-v1", JSON.stringify([
+      "missing-animal",
+      "animal-2",
+      "animal-2",
+      42,
+    ]));
+
+    expect(loadRecentMatchedAnimalIds(["animal-1", "animal-2"])).toEqual(["animal-2"]);
+  });
+
+  it("keeps one candidate available when the matching pool is small", () => {
+    const available = ["animal-1", "animal-2"];
+    rememberMatchedAnimalId("animal-1", available);
+    rememberMatchedAnimalId("animal-2", available);
+
+    expect(loadRecentMatchedAnimalIds(available)).toEqual(["animal-2"]);
   });
 });

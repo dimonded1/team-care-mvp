@@ -4,15 +4,18 @@ This is a server-only Bitrix24 adapter. It is deliberately disabled unless the g
 
 Place it behind a server endpoint (or another trusted server runtime). **Never import it from Vite client code**: it handles the integration secret and is not safe to bundle for the browser. Use `authorizeIntegrationRequest()` at that server boundary before accepting an event. The integration secret is deliberately not forwarded to Bitrix; the Bitrix webhook URL already contains its own access token.
 
-`buildAnimalListRequest()` requests only the configured public animal fields. `mapBitrixAnimal()` strips markup, validates public HTTPS links and deliberately excludes medication/medical free text from the game model. It also marks every imported record as requiring an editorial `matchProfile`; the matching algorithm must never invent behavioural scores from CRM prose.
+`buildAnimalListRequest()` requests only the configured public animal fields. `mapBitrixAnimal()` strips markup, validates public HTTPS links and deliberately excludes medication/medical free text from the game model.
 
 The checked-in browser catalog is refreshed with `npm run sync:animals`. The
 script paginates every category from `BITRIX_ANIMAL_CATEGORY_IDS` and writes a
-safe full inventory to `animalCatalog.generated.json`. Only animals with a
-reviewed profile in `src/data/animalEditorial.json` enter
-`src/data/bitrixAnimals.generated.json` and have their main image downloaded
-through the temporary server-only `crm.item.get` URL. Signed file URLs are never
-persisted or returned to the browser.
+safe full inventory to `animalCatalog.generated.json`. Every eligible animal
+with a recognized species, sex, birth date, public description and main photo
+enters `src/data/bitrixAnimals.generated.json`. Profiles from
+`src/data/animalEditorial.json` override the generated matching content; all
+other profiles are deterministically derived from public Bitrix character,
+behavior, story, species and age fields. Main images are downloaded through the
+temporary server-only `crm.item.get` URL. Signed file URLs are never persisted
+or returned to the browser.
 
 `mapGuardianshipLead()` creates a standard CRM lead payload. `mapCareEvent()` creates a smart-process item payload. `mapContactCapture()` creates a Bitrix contact from the final-screen form and refuses requests without explicit personal-data consent. Configure all placeholder IDs in the server environment before enabling a feature; enabled mode rejects non-HTTPS webhook URLs and incomplete feature configuration.
 

@@ -11,5 +11,6 @@ export {
   mapGuardianshipLead,
 } from "./mappers.mjs";
 export { loadAllAnimalsFromBitrix, loadAnimalsFromBitrix } from "./animals.mjs";
+export { deriveAnimalMatchingContent } from "./matching-profile.mjs";
 export { sendToBitrix } from "./sender.mjs";
 export { authorizeIntegrationRequest } from "./private.mjs";

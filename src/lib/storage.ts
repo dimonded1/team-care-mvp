@@ -1,6 +1,8 @@
 import type { Mission, StoredSession } from "../types/app";
 
 const STORAGE_KEY = "nika-team-care-mvp-v1";
+const RECENT_MATCHES_KEY = "nika-team-care-recent-matches-v1";
+const RECENT_MATCH_LIMIT = 12;
 const missionIds: Mission["id"][] = ["food", "health", "trust", "home"];
 const restorableStages: StoredSession["stage"][] = [
   "welcome",
@@ -190,5 +192,41 @@ export function clearSession(): void {
     window.localStorage.removeItem(STORAGE_KEY);
   } catch {
     // Nothing else is required when storage is unavailable.
+  }
+}
+
+export function loadRecentMatchedAnimalIds(
+  availableAnimalIds: Iterable<string>,
+): string[] {
+  try {
+    const available = new Set(availableAnimalIds);
+    const stored = JSON.parse(window.localStorage.getItem(RECENT_MATCHES_KEY) ?? "[]");
+    if (!Array.isArray(stored)) return [];
+    return [...new Set(stored)]
+      .filter((animalId): animalId is string =>
+        typeof animalId === "string" && available.has(animalId))
+      .slice(0, RECENT_MATCH_LIMIT);
+  } catch {
+    return [];
+  }
+}
+
+export function rememberMatchedAnimalId(
+  animalId: string,
+  availableAnimalIds: Iterable<string>,
+): void {
+  try {
+    const available = new Set(availableAnimalIds);
+    if (!available.has(animalId)) return;
+    const limit = Math.min(RECENT_MATCH_LIMIT, Math.max(0, available.size - 1));
+    if (limit === 0) {
+      window.localStorage.removeItem(RECENT_MATCHES_KEY);
+      return;
+    }
+    const recent = loadRecentMatchedAnimalIds(available);
+    const next = [animalId, ...recent.filter((storedId) => storedId !== animalId)].slice(0, limit);
+    window.localStorage.setItem(RECENT_MATCHES_KEY, JSON.stringify(next));
+  } catch {
+    // Matching remains score-based when storage is unavailable.
   }
 }

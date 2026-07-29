@@ -13,6 +13,7 @@ import { promisify } from "node:util";
 
 import {
   createBitrixConfig,
+  deriveAnimalMatchingContent,
   loadAllAnimalsFromBitrix,
   sendToBitrix,
   validateBitrixConfig,
@@ -77,9 +78,9 @@ function imageFormat(bytes, contentType) {
   const webp = String.fromCharCode(...bytes.slice(0, 4)) === "RIFF"
     && String.fromCharCode(...bytes.slice(8, 12)) === "WEBP";
 
-  if (mime === "image/jpeg" && jpeg) return { extension: "jpg", mime };
-  if (mime === "image/png" && png) return { extension: "png", mime };
-  if (mime === "image/webp" && webp) return { extension: "webp", mime };
+  if (jpeg) return { extension: "jpg", mime: "image/jpeg" };
+  if (png) return { extension: "png", mime: "image/png" };
+  if (webp) return { extension: "webp", mime: "image/webp" };
   throw new Error(`Unsupported or mismatched image response (${mime || "unknown MIME"})`);
 }
 
@@ -139,10 +140,10 @@ async function downloadPhoto(signedUrl, config, sourceId) {
   if (process.platform === "darwin" && format.extension === "jpg") {
     await execFileAsync("/usr/bin/sips", [
       "-Z",
-      "1600",
+      "960",
       "-s",
       "formatOptions",
-      "82",
+      "78",
       outputPath,
     ]);
   }
@@ -195,11 +196,11 @@ function catalogRecord(animal, labels, reviewedIds) {
       ? "incomplete"
       : reviewedIds.has(animal.sourceId)
         ? "reviewed"
-        : "needsEditorialProfile",
+        : "derived",
   };
 }
 
-async function createMatchSnapshot(animal, config, labels, syncedAt) {
+async function createMatchSnapshot(animal, config, labels, syncedAt, reviewedProfile = null) {
   if (animal.species === "unknown" || animal.sex === "unknown" || !animal.birthDate) {
     throw new Error(`${animal.name} lacks species, sex or birth date`);
   }
@@ -217,6 +218,9 @@ async function createMatchSnapshot(animal, config, labels, syncedAt) {
   const signedUrl = Array.isArray(mainPhoto) ? mainPhoto[0]?.urlMachine : mainPhoto?.urlMachine;
   if (!signedUrl) throw new Error(`${animal.name} has no server-downloadable main photo`);
   const downloaded = await downloadPhoto(signedUrl, config, animal.sourceId);
+  const matching = deriveAnimalMatchingContent(animal, reviewedProfile, {
+    now: new Date(syncedAt),
+  });
 
   return {
     snapshot: {
@@ -240,6 +244,7 @@ async function createMatchSnapshot(animal, config, labels, syncedAt) {
         profileUrl: Boolean(animal.profileUrl),
       },
       profileUrl: animal.profileUrl,
+      matching,
     },
     report: {
       id: animal.sourceId,
@@ -250,6 +255,25 @@ async function createMatchSnapshot(animal, config, labels, syncedAt) {
     },
     filename: downloaded.filename,
   };
+}
+
+async function mapWithConcurrency(items, concurrency, mapper) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await mapper(items[index], index);
+    }
+  }
+
+  await Promise.all(Array.from(
+    { length: Math.min(concurrency, items.length) },
+    () => worker(),
+  ));
+  return results;
 }
 
 async function main() {
@@ -274,10 +298,31 @@ async function main() {
   }
 
   await mkdir(OUTPUT_PHOTOS, { recursive: true });
-  const imported = [];
-  for (const sourceId of reviewedIds) {
-    imported.push(await createMatchSnapshot(candidateById.get(sourceId), config, labels, syncedAt));
-  }
+  const matchCandidates = candidates.filter((animal) => (
+    animal.species !== "unknown"
+    && animal.sex !== "unknown"
+    && Boolean(animal.birthDate)
+    && Boolean(storyExcerpt(animal.story || animal.shortDescription))
+    && animal.photoFileIds.length > 0
+  ));
+  const imported = await mapWithConcurrency(matchCandidates, 6, async (animal, index) => {
+    let result;
+    try {
+      result = await createMatchSnapshot(
+        animal,
+        config,
+        labels,
+        syncedAt,
+        editorial[animal.sourceId] ?? null,
+      );
+    } catch (error) {
+      throw new Error(`Animal ${animal.sourceId} (${animal.name}): ${error.message}`);
+    }
+    if ((index + 1) % 25 === 0 || index + 1 === matchCandidates.length) {
+      console.log(`Prepared ${index + 1}/${matchCandidates.length} animals`);
+    }
+    return result;
+  });
 
   const snapshots = imported
     .map((item) => item.snapshot)
@@ -294,8 +339,10 @@ async function main() {
     })),
     summary: {
       eligible: catalog.length,
-      matchReady: catalog.filter((animal) => animal.matchingStatus === "reviewed").length,
-      awaitingEditorial: catalog.filter((animal) => animal.matchingStatus === "needsEditorialProfile").length,
+      matchReady: catalog.filter((animal) => animal.matchingStatus !== "incomplete").length,
+      reviewed: catalog.filter((animal) => animal.matchingStatus === "reviewed").length,
+      derived: catalog.filter((animal) => animal.matchingStatus === "derived").length,
+      awaitingEditorial: 0,
       incomplete: catalog.filter((animal) => animal.matchingStatus === "incomplete").length,
     },
     animals: catalog,
@@ -315,7 +362,9 @@ async function main() {
     status: "synced",
     eligibleAnimals: catalog.length,
     matchReadyAnimals: snapshots.length,
-    awaitingEditorial: catalog.filter((animal) => animal.matchingStatus === "needsEditorialProfile").length,
+    reviewedProfiles: catalog.filter((animal) => animal.matchingStatus === "reviewed").length,
+    derivedProfiles: catalog.filter((animal) => animal.matchingStatus === "derived").length,
+    awaitingEditorial: 0,
     incomplete: catalog.filter((animal) => animal.matchingStatus === "incomplete").length,
     matchedAnimals: imported.map((item) => item.report),
   }, null, 2));

@@ -14,9 +14,10 @@ export interface Animal {
   source: {
     type: "bitrix";
     id: string;
-    categoryId: number;
-    categoryName: string;
-    syncedAt: string;
+      categoryId: number;
+      categoryName: string;
+      syncedAt: string;
+      matchingProfileSource: "reviewed" | "derived-v1";
   };
   name: string;
   nameGenitive: string;

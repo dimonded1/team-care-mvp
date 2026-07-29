@@ -23,9 +23,11 @@ import { RevealScreen } from "./features/RevealScreen";
 import { WelcomeScreen } from "./features/WelcomeScreen";
 import {
   clearSession,
+  loadRecentMatchedAnimalIds,
   loadSession,
   normalizeSessionForJourney,
   reconcileSessionWithAnimalCatalog,
+  rememberMatchedAnimalId,
   saveSession,
 } from "./lib/storage";
 import { createSessionHistory, type SessionHistory } from "./lib/history";
@@ -51,6 +53,7 @@ const restorableStages = new Set<StoredSession["stage"]>([
   "guardianship",
   "final",
 ]);
+const availableAnimalIds = animals.map((animal) => animal.id);
 
 export default function App() {
   const [stage, setStage] = useState<Stage>("boot");
@@ -114,7 +117,7 @@ export default function App() {
           : null;
         const restored = reconcileSessionWithAnimalCatalog(
           { ...saved, answers: restoredAnswers },
-          animals.map((animal) => animal.id),
+          availableAnimalIds,
           rematchedAnimalId,
         );
         setAnswers(restored.answers);
@@ -224,7 +227,10 @@ export default function App() {
     const nextAnswers = [...answers, answer];
     setAnswers(nextAnswers);
     if (nextAnswers.length === questions.length) {
-      const result = findMatch(animals, questions, nextAnswers);
+      const result = findMatch(animals, questions, nextAnswers, {
+        recentAnimalIds: loadRecentMatchedAnimalIds(availableAnimalIds),
+      });
+      rememberMatchedAnimalId(result.animal.id, availableAnimalIds);
       setAnimalId(result.animal.id);
       setStage("reveal");
     }

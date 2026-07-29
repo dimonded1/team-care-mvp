@@ -5,6 +5,7 @@ import {
   authorizeIntegrationRequest,
   buildAnimalListRequest,
   createBitrixConfig,
+  deriveAnimalMatchingContent,
   loadAllAnimalsFromBitrix,
   loadAnimalsFromBitrix,
   mapBitrixAnimal,
@@ -378,6 +379,65 @@ test("animal loader filters records blocked from the site or guardianship", asyn
 
   assert.equal(response.status, "sent");
   assert.deepEqual(response.animals.map((animal) => animal.name), ["Мира"]);
+});
+
+test("derived matching profiles are deterministic and respond to public animal traits", () => {
+  const common = {
+    name: "Тест",
+    species: "dog",
+    birthDate: "2024-01-01",
+    shortDescription: "",
+  };
+  const active = deriveAnimalMatchingContent({
+    ...common,
+    story: "Активный, общительный и дружелюбный пёс любит прогулки и людей.",
+    character: "Смелый и открытый.",
+    behavior: "",
+  }, null, { now: new Date("2026-07-29T00:00:00.000Z") });
+  const cautious = deriveAnimalMatchingContent({
+    ...common,
+    story: "Осторожному и пугливому псу нужно время и особый подход.",
+    character: "Спокойный, держит дистанцию.",
+    behavior: "",
+  }, null, { now: new Date("2026-07-29T00:00:00.000Z") });
+  const repeated = deriveAnimalMatchingContent({
+    ...common,
+    story: "Активный, общительный и дружелюбный пёс любит прогулки и людей.",
+    character: "Смелый и открытый.",
+    behavior: "",
+  }, null, { now: new Date("2026-07-29T00:00:00.000Z") });
+
+  assert.deepEqual(active, repeated);
+  assert.equal(active.profileSource, "derived-v1");
+  assert.ok(active.matchProfile.energy > cautious.matchProfile.energy);
+  assert.ok(active.matchProfile.sociability > cautious.matchProfile.sociability);
+  assert.ok(cautious.matchProfile.spaceRespect > active.matchProfile.spaceRespect);
+  assert.ok(cautious.matchProfile.challenge > active.matchProfile.challenge);
+  assert.ok(active.traits.length >= 3);
+  assert.ok(cautious.careTags.length >= 3);
+});
+
+test("reviewed matching profiles remain exact overrides", () => {
+  const reviewed = {
+    nameGenitive: "Миры",
+    shortDescription: "Проверенное описание",
+    traits: ["ласковая", "спокойная", "чуткая"],
+    careTags: ["общение", "режим", "внимание"],
+    matchProfile: {
+      energy: 10,
+      sociability: 20,
+      initiative: 30,
+      patience: 40,
+      routine: 50,
+      spaceRespect: 60,
+      challenge: 70,
+    },
+  };
+
+  assert.deepEqual(
+    deriveAnimalMatchingContent({ name: "Мира", species: "cat" }, reviewed),
+    { profileSource: "reviewed", ...reviewed },
+  );
 });
 
 test("full animal loader paginates every configured category and deduplicates IDs", async () => {

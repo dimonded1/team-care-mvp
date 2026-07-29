@@ -3,9 +3,11 @@ import { animals } from "../data/animals";
 import { questions } from "../data/questions";
 import {
   buildUserProfile,
+  CLOSE_MATCH_SCORE_DELTA,
   createMatchResult,
   findMatch,
   matchAxes,
+  rankMatches,
   scoreAnimal,
 } from "./matching";
 
@@ -25,6 +27,87 @@ describe("matching", () => {
     expect(first.animal.id).toBe(second.animal.id);
     expect(first.score).toBe(second.score);
     expect(first.reasons).toEqual(second.reasons);
+  });
+
+  it("deduplicates the candidate pool by stable animal ID", () => {
+    const answers = questions.map((_, index) => index % 2 === 0);
+    const ranked = rankMatches(
+      [animals[0], animals[0], animals[1], animals[1]],
+      questions,
+      answers,
+    );
+
+    expect(ranked.map(({ animal }) => animal.id)).toEqual([
+      ...new Set(ranked.map(({ animal }) => animal.id)),
+    ]);
+    expect(ranked).toHaveLength(2);
+  });
+
+  it("produces different best matches for meaningfully different answers", () => {
+    const quietResult = findMatch(animals, questions, questions.map(() => false));
+    const activeResult = findMatch(animals, questions, questions.map(() => true));
+
+    expect(quietResult.animal.id).not.toBe(activeResult.animal.id);
+  });
+
+  it("avoids a recent result only when a close alternative exists", () => {
+    const answers = questions.map(() => true);
+    const best = findMatch(animals, questions, answers);
+    const next = findMatch(animals, questions, answers, {
+      recentAnimalIds: [best.animal.id],
+    });
+    const ranked = rankMatches(animals, questions, answers);
+    const nextScore = ranked.find(({ animal }) => animal.id === next.animal.id)?.score;
+
+    expect(next.animal.id).not.toBe(best.animal.id);
+    expect(nextScore).toBeDefined();
+    expect(ranked[0].score - nextScore!).toBeLessThanOrEqual(CLOSE_MATCH_SCORE_DELTA);
+  });
+
+  it("rotates to the least recent close match after every close option was shown", () => {
+    const answers = questions.map(() => true);
+    const closeAnimals = rankMatches(animals, questions, answers)
+      .slice(0, 3)
+      .map(({ animal }) => animal);
+    const first = findMatch(closeAnimals, questions, answers);
+    const second = findMatch(closeAnimals, questions, answers, {
+      recentAnimalIds: [first.animal.id],
+    });
+    const third = findMatch(closeAnimals, questions, answers, {
+      recentAnimalIds: [second.animal.id, first.animal.id],
+    });
+    const fourth = findMatch(closeAnimals, questions, answers, {
+      recentAnimalIds: [third.animal.id, second.animal.id, first.animal.id],
+    });
+
+    expect(new Set([first.animal.id, second.animal.id, third.animal.id])).toHaveLength(3);
+    expect(fourth.animal.id).toBe(first.animal.id);
+    expect(fourth.animal.id).not.toBe(third.animal.id);
+  });
+
+  it("keeps the best recent result when no close alternative is suitable", () => {
+    const exact = animals[0];
+    const distant = {
+      ...animals[1],
+      id: "distant-animal",
+      matchProfile: Object.fromEntries(
+        matchAxes.map((axis) => [axis, exact.matchProfile[axis] === 0 ? 100 : 0]),
+      ) as typeof animals[number]["matchProfile"],
+    };
+    const syntheticQuestions = matchAxes.map((axis, index) => ({
+      id: `axis-${index}`,
+      text: axis,
+      yes: { [axis]: exact.matchProfile[axis] - 50 },
+      no: {},
+    }));
+    const result = findMatch(
+      [exact, distant],
+      syntheticQuestions,
+      syntheticQuestions.map(() => true),
+      { recentAnimalIds: [exact.id] },
+    );
+
+    expect(result.animal.id).toBe(exact.id);
   });
 
   it("gives an exact profile the maximum score", () => {
