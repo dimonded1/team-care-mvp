@@ -75,6 +75,15 @@ const allowedWorkSpheres = new Set([
 
 const allowedPreferredContacts = new Set(["whatsapp", "phone", "email", "telegram", "max"]);
 
+/**
+ * Campaign marks travel through printed QR codes and shared links, so an unreadable
+ * one is dropped instead of throwing: a visitor must never lose a submission over it.
+ */
+function normalizeCampaignTag(value) {
+  const tag = String(value ?? "").trim().toLowerCase();
+  return /^[a-z0-9_-]{1,40}$/u.test(tag) ? tag : "";
+}
+
 function optionalSingleLine(value, name, maxLength) {
   if (value === undefined || value === null || String(value).trim() === "") return null;
   return cleanSingleLine(value, name, maxLength);
@@ -236,9 +245,21 @@ export function mapContactCapture(input, config, { now = new Date() } = {}) {
   if (!allowedWorkSpheres.has(workSphere)) throw new TypeError("workSphere is not allowed");
   if (!allowedPreferredContacts.has(preferredContact)) throw new TypeError("preferredContact is not allowed");
 
+  const campaign = normalizeCampaignTag(input.campaign);
+
   const fields = config.contacts.fields;
   const workSphereEnumId = config.contacts.workSphereEnums[workSphere];
   const preferredContactEnumId = config.contacts.preferredContactEnums[preferredContact];
+  // The interest field is multiple: an event visitor keeps the programme interest
+  // and gains the event one, so both reports stay correct.
+  const interestEnumIds = [config.contacts.interestEnums.guardianship];
+  if (
+    campaign
+    && config.contacts.eventInterestEnumId
+    && config.contacts.eventCampaigns.includes(campaign)
+  ) {
+    interestEnumIds.push(config.contacts.eventInterestEnumId);
+  }
   const date = now instanceof Date && !Number.isNaN(now.valueOf())
     ? now.toISOString().slice(0, 10)
     : new Date().toISOString().slice(0, 10);
@@ -252,7 +273,7 @@ export function mapContactCapture(input, config, { now = new Date() } = {}) {
     COMMENTS: `Интерес к программе опеки. Подопечный: ${animalName} (${animalId}).`,
     [fields.workSphere]: workSphereEnumId,
     [fields.preferredContact]: preferredContactEnumId,
-    [fields.interest]: config.contacts.interestEnums.guardianship,
+    [fields.interest]: interestEnumIds,
     [fields.consent]: true,
     [fields.consentAt]: date,
     [fields.submittedAt]: date,
@@ -261,6 +282,11 @@ export function mapContactCapture(input, config, { now = new Date() } = {}) {
   if (config.contacts.sourceId && config.contacts.sourceId !== "<SET_IN_SERVER_ENV>") {
     contactFields.SOURCE_ID = config.contacts.sourceId;
   }
+  const sourceDescription = [
+    config.contacts.sourceDescription,
+    campaign ? `метка: ${campaign}` : "",
+  ].filter(Boolean).join(" · ");
+  if (sourceDescription) contactFields.SOURCE_DESCRIPTION = sourceDescription;
   if (birthDate) contactFields.BIRTHDATE = birthDate;
   if (address) contactFields.ADDRESS = address;
   if (telegram) contactFields[fields.telegram] = telegram;

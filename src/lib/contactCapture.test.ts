@@ -7,6 +7,7 @@ import {
   isValidContactName,
   isValidContactPhone,
   preferredContactOptions,
+  readCampaignTag,
   resolveContactCaptureMode,
   submitContactCapture,
   workSphereOptions,
@@ -35,6 +36,15 @@ describe("contact capture validation", () => {
       "whatsapp",
       "max",
     ]);
+  });
+
+  it("reads the campaign mark from the QR link and ignores a broken one", () => {
+    expect(readCampaignTag("?e=run")).toBe("run");
+    expect(readCampaignTag("?utm_campaign=Zabeg")).toBe("zabeg");
+    expect(readCampaignTag("?e=run&utm_campaign=other")).toBe("run");
+    expect(readCampaignTag("")).toBe("");
+    expect(readCampaignTag("?e=<script>alert(1)</script>")).toBe("");
+    expect(readCampaignTag(`?e=${"a".repeat(41)}`)).toBe("");
   });
 
   it("shows a safe preview on GitHub Pages without enabling submission", () => {

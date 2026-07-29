@@ -119,7 +119,7 @@ test("all angle-bracket env placeholders are normalized and never sent to Bitrix
   );
 
   assert.equal(Object.hasOwn(request.payload.fields, "SOURCE_ID"), false);
-  assert.equal(request.payload.fields.UF_CRM_1773242372621, "501");
+  assert.deepEqual(request.payload.fields.UF_CRM_1773242372621, ["501"]);
 });
 
 test("feature flags disable one contour without disabling the others", async () => {
@@ -206,7 +206,7 @@ test("contact mapper creates a consented Bitrix contact with allowlisted profile
   assert.deepEqual(request.payload.fields.EMAIL, [
     { VALUE: "anna@example.org", VALUE_TYPE: "WORK" },
   ]);
-  assert.equal(request.payload.fields.UF_CRM_1773242372621, "501");
+  assert.deepEqual(request.payload.fields.UF_CRM_1773242372621, ["501"]);
   assert.equal(request.payload.fields.UF_CRM_WORK, "603");
   assert.equal(request.payload.fields.UF_CRM_PREFERRED, "704");
   assert.equal(request.payload.fields.UF_CRM_TELEGRAM, "https://t.me/anna_nika");
@@ -215,6 +215,87 @@ test("contact mapper creates a consented Bitrix contact with allowlisted profile
   assert.equal(request.payload.fields.UF_CRM_1771837777534, "2026-07-27");
   assert.equal(request.payload.fields.UF_CRM_1773673401962, "2026-07-27");
   assert.match(request.payload.fields.COMMENTS, /Мира \(mira-42\)/);
+});
+
+test("event campaign adds the second interest and is recorded in the source description", () => {
+  const config = createBitrixConfig({
+    ...configuredEnv,
+    BITRIX_CONTACT_SOURCE_DESCRIPTION: "Стенд «Команда заботы»",
+    BITRIX_CONTACT_INTEREST_EVENT_ENUM_ID: "502",
+    BITRIX_CONTACT_EVENT_CAMPAIGNS: "run,zabeg",
+  });
+  const base = {
+    firstName: "Анна",
+    lastName: "Иванова",
+    middleName: "Сергеевна",
+    phone: "+7 900 000-00-00",
+    email: "anna@example.org",
+    workSphere: "media",
+    preferredContact: "telegram",
+    animalId: "mira",
+    animalName: "Мира",
+    consent: true,
+  };
+
+  const fromEvent = mapContactCapture({ ...base, campaign: "RUN" }, config).payload.fields;
+  assert.deepEqual(fromEvent.UF_CRM_1773242372621, ["501", "502"]);
+  assert.equal(fromEvent.SOURCE_DESCRIPTION, "Стенд «Команда заботы» · метка: run");
+
+  const withoutCampaign = mapContactCapture(base, config).payload.fields;
+  assert.deepEqual(withoutCampaign.UF_CRM_1773242372621, ["501"]);
+  assert.equal(withoutCampaign.SOURCE_DESCRIPTION, "Стенд «Команда заботы»");
+
+  const unknownCampaign = mapContactCapture({ ...base, campaign: "newsletter" }, config).payload.fields;
+  assert.deepEqual(unknownCampaign.UF_CRM_1773242372621, ["501"]);
+  assert.equal(unknownCampaign.SOURCE_DESCRIPTION, "Стенд «Команда заботы» · метка: newsletter");
+});
+
+test("a broken campaign mark is dropped instead of costing the visitor a submission", () => {
+  const config = createBitrixConfig({
+    ...configuredEnv,
+    BITRIX_CONTACT_INTEREST_EVENT_ENUM_ID: "502",
+    BITRIX_CONTACT_EVENT_CAMPAIGNS: "run",
+  });
+  const base = {
+    firstName: "Анна",
+    lastName: "Иванова",
+    middleName: "Сергеевна",
+    phone: "+7 900 000-00-00",
+    email: "anna@example.org",
+    workSphere: "media",
+    preferredContact: "telegram",
+    animalId: "mira",
+    animalName: "Мира",
+    consent: true,
+  };
+
+  for (const campaign of ["<script>", "run run", "тег", "a".repeat(41), null, undefined, ""]) {
+    const fields = mapContactCapture({ ...base, campaign }, config).payload.fields;
+    assert.deepEqual(fields.UF_CRM_1773242372621, ["501"]);
+    assert.equal(Object.hasOwn(fields, "SOURCE_DESCRIPTION"), false);
+  }
+});
+
+test("the event interest stays off when no campaign enum is configured", () => {
+  const config = createBitrixConfig({ ...configuredEnv, BITRIX_CONTACT_EVENT_CAMPAIGNS: "run" });
+  const fields = mapContactCapture(
+    {
+      firstName: "Анна",
+      lastName: "Иванова",
+      middleName: "Сергеевна",
+      phone: "+7 900 000-00-00",
+      email: "anna@example.org",
+      workSphere: "media",
+      preferredContact: "telegram",
+      animalId: "mira",
+      animalName: "Мира",
+      campaign: "run",
+      consent: true,
+    },
+    config,
+  ).payload.fields;
+
+  assert.deepEqual(fields.UF_CRM_1773242372621, ["501"]);
 });
 
 test("contact mapper rejects missing consent and invalid allowlisted data", () => {
