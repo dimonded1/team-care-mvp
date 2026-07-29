@@ -124,13 +124,13 @@ export function PassportScreen({
             <h2 id="passport-goal-title">Быть рядом с {animal.name} регулярно</h2>
             <span>
               {complete
-                ? "Все четыре направления пройдены. Можно завершить путь или открыть справку об опеке."
+                ? "Все четыре направления пройдены. Осталось коротко узнать, как устроена опека."
                 : `Пройдите ещё ${missions.length - completedMissionIds.length} из ${missions.length} кругов в любом удобном порядке.`}
             </span>
           </div>
           {complete ? (
             <Button className="button--orange passport-goal__action" onClick={onContinue}>
-              Завершить орбиту
+              Коротко об опеке
             </Button>
           ) : (
             <button

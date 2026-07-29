@@ -303,7 +303,7 @@ export function OrbitExperience({
         </button>
         {completed ? (
           <button type="button" className="care-orbit__complete-action" onClick={onCompleteOrbit}>
-            Завершить орбиту <span aria-hidden="true">→</span>
+            Коротко об опеке <span aria-hidden="true">→</span>
           </button>
         ) : null}
       </div>

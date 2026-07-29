@@ -8,18 +8,39 @@ import { JourneyPetScene } from "../components/JourneyPetScene";
 import { Progress } from "../components/Progress";
 import type { Animal, Mission } from "../types/app";
 import { createShuffleSeed, shuffleBySeed } from "../lib/shuffle";
-import { DayBuilderGame } from "./DayBuilderGame";
-import { HealthCareGame } from "./HealthCareGame";
-import { TrustCareGame } from "./TrustCareGame";
-import { VisitCareGame } from "./VisitCareGame";
+import type { StoredSession } from "../types/app";
+import { carePairDeckOrder } from "../data/carePairs";
+import { walkMazes } from "../data/walkMazes";
+import {
+  createMatchingPairsState,
+  restoreMatchingPairsState,
+} from "../lib/matchingPairs";
+import {
+  createWalkMazeProgress,
+  restoreWalkMazeProgress,
+} from "../lib/maze";
+import {
+  HealthCareGame,
+  createInitialHealthGameProgress,
+  restoreHealthGameProgress,
+} from "./HealthCareGame";
+import { MatchingCareGame } from "./MatchingCareGame";
+import {
+  VisitCareGame,
+  createInitialVisitGameProgress,
+  restoreVisitGameProgress,
+} from "./VisitCareGame";
+import { WalkMazeGame } from "./WalkMazeGame";
 
 interface JourneyScreenProps {
   animal: Animal;
   missions: Mission[];
   missionIndex: number;
   completedMissionIds: Mission["id"][];
+  missionProgress: StoredSession["missionProgress"];
   onBack: () => void;
   onCompleteMission: (mission: Mission) => void;
+  onMissionProgressChange: (missionId: Mission["id"], progress: unknown) => void;
   onRestart: () => void;
 }
 
@@ -28,8 +49,10 @@ export function JourneyScreen({
   missions,
   missionIndex,
   completedMissionIds,
+  missionProgress,
   onBack,
   onCompleteMission,
+  onMissionProgressChange,
   onRestart,
 }: JourneyScreenProps) {
   const mission = missions[missionIndex];
@@ -40,6 +63,32 @@ export function JourneyScreen({
   const [trustReady, setTrustReady] = useState(false);
   const reduceMotion = useReducedMotion();
   const [shuffleSeed] = useState(createShuffleSeed);
+  const [initialVisitProgress] = useState(createInitialVisitGameProgress);
+  const [initialHealthProgress] = useState(() =>
+    createInitialHealthGameProgress(animal.species));
+  const [initialMatchingProgress] = useState(() =>
+    createMatchingPairsState(shuffleBySeed(carePairDeckOrder, createShuffleSeed())));
+  const [initialMazeProgress] = useState(() => {
+    const animalSeed = [...animal.id].reduce((total, character) =>
+      total + character.charCodeAt(0), 0);
+    return createWalkMazeProgress(walkMazes[animalSeed % walkMazes.length].id);
+  });
+  const visitProgress = restoreVisitGameProgress(
+    missionProgress.food,
+    initialVisitProgress,
+  );
+  const healthProgress = restoreHealthGameProgress(
+    missionProgress.health,
+    animal.species,
+    initialHealthProgress,
+  );
+  const matchingProgress = missionProgress.trust
+    ? restoreMatchingPairsState(missionProgress.trust)
+    : initialMatchingProgress;
+  const mazeProgress = restoreWalkMazeProgress(
+    missionProgress.home,
+    initialMazeProgress.mazeId,
+  );
   const displayedOptions = useMemo(
     () => shuffleBySeed(mission.options, `${shuffleSeed}:${mission.id}`),
     [mission.id, mission.options, shuffleSeed],
@@ -52,6 +101,26 @@ export function JourneyScreen({
     setHealthReady(false);
     setTrustReady(false);
   }, [mission.id]);
+
+  useEffect(() => {
+    if (missionProgress[mission.id]) return;
+    const initialProgress = mission.id === "food"
+      ? visitProgress
+      : mission.id === "health"
+        ? healthProgress
+        : mission.id === "trust"
+          ? matchingProgress
+          : mazeProgress;
+    onMissionProgressChange(mission.id, initialProgress);
+  }, [
+    healthProgress,
+    matchingProgress,
+    mazeProgress,
+    mission.id,
+    missionProgress,
+    onMissionProgressChange,
+    visitProgress,
+  ]);
 
   const selected = mission.options.find((option) => option.id === selectedId) ?? null;
   const isVisitGame = mission.id === "food";
@@ -89,13 +158,31 @@ export function JourneyScreen({
         <section className="journey-content">
           <Progress value={visibleCompletedCount} total={missions.length} label="Исследовано" />
           {isVisitGame ? (
-            <VisitCareGame animal={animal} onReadyChange={setVisitReady} />
+            <VisitCareGame
+              animal={animal}
+              progress={visitProgress}
+              onProgressChange={(next) => onMissionProgressChange("food", next)}
+              onReadyChange={setVisitReady}
+            />
           ) : isWalkGame ? (
-            <DayBuilderGame animal={animal} onReadyChange={setWalkReady} />
+            <WalkMazeGame
+              value={mazeProgress}
+              onChange={(next) => onMissionProgressChange("home", next)}
+              onReadyChange={setWalkReady}
+            />
           ) : isHealthGame ? (
-            <HealthCareGame animal={animal} onReadyChange={setHealthReady} />
+            <HealthCareGame
+              animal={animal}
+              progress={healthProgress}
+              onProgressChange={(next) => onMissionProgressChange("health", next)}
+              onReadyChange={setHealthReady}
+            />
           ) : isTrustGame ? (
-            <TrustCareGame animal={animal} onReadyChange={setTrustReady} />
+            <MatchingCareGame
+              value={matchingProgress}
+              onChange={(next) => onMissionProgressChange("trust", next)}
+              onReadyChange={setTrustReady}
+            />
           ) : (
             <motion.div
               key={mission.id}

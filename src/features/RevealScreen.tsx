@@ -18,7 +18,7 @@ export function RevealScreen({ result, onContinue }: RevealScreenProps) {
       opacity: 1,
       y: 0,
       transition: {
-        duration: reduceMotion ? 0.12 : 0.72,
+        duration: reduceMotion ? 0.12 : 0.38,
         delay: reduceMotion ? 0 : delay,
         ease: [0.23, 1, 0.32, 1],
       },
@@ -32,7 +32,7 @@ export function RevealScreen({ result, onContinue }: RevealScreenProps) {
       y: 0,
       transition: reduceMotion
         ? { duration: 0.12 }
-        : { type: "spring", stiffness: 125, damping: 23, mass: 1.02, delay: 0.74 },
+        : { type: "spring", stiffness: 150, damping: 24, mass: 0.92, delay: 0.12 },
     },
   };
 
@@ -44,7 +44,7 @@ export function RevealScreen({ result, onContinue }: RevealScreenProps) {
     >
       <OrbitField variant="reveal" showPlanets />
       <div className="reveal-layout">
-        <motion.div className="reveal-topline" custom={0.24} variants={itemVariants}>
+        <motion.div className="reveal-topline" custom={0.06} variants={itemVariants}>
           Кажется, вам стоит познакомиться
         </motion.div>
         <motion.div className="reveal-visual" variants={photoVariants}>
@@ -53,7 +53,7 @@ export function RevealScreen({ result, onContinue }: RevealScreenProps) {
               className="reveal-photo-pulse"
               initial={{ opacity: 0, scale: 0.82 }}
               animate={{ opacity: [0, 0.48, 0], scale: [0.82, 1.08, 1.18] }}
-              transition={{ duration: 1.7, delay: 0.98, ease: [0.23, 1, 0.32, 1] }}
+              transition={{ duration: 1.1, delay: 0.18, ease: [0.23, 1, 0.32, 1] }}
               aria-hidden="true"
             />
           )}
@@ -62,9 +62,9 @@ export function RevealScreen({ result, onContinue }: RevealScreenProps) {
           </div>
         </motion.div>
         <div className="reveal-copy">
-          <motion.h1 custom={1.5} variants={itemVariants}>{result.animal.name}</motion.h1>
-          <motion.p custom={1.9} variants={itemVariants}>{result.reasons.join(" ")}</motion.p>
-          <motion.div className="screen-actions" custom={2.3} variants={itemVariants}>
+          <motion.h1 custom={0.16} variants={itemVariants}>{result.animal.name}</motion.h1>
+          <motion.p custom={0.22} variants={itemVariants}>{result.reasons.join(" ")}</motion.p>
+          <motion.div className="screen-actions" custom={0.28} variants={itemVariants}>
             <Button fullWidth className="button--orange" onClick={onContinue}>
               Познакомиться
             </Button>

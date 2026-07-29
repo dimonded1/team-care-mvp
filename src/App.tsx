@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppHeader } from "./components/AppHeader";
 import { FoundationMenu } from "./components/FoundationMenu";
 import { LegalCenter } from "./components/LegalCenter";
@@ -24,9 +24,11 @@ import { WelcomeScreen } from "./features/WelcomeScreen";
 import {
   clearSession,
   loadSession,
+  normalizeSessionForJourney,
   reconcileSessionWithAnimalCatalog,
   saveSession,
 } from "./lib/storage";
+import { createSessionHistory, type SessionHistory } from "./lib/history";
 import { createMatchResult, findMatch } from "./lib/matching";
 import { assetUrl } from "./lib/assets";
 import type { Mission, Stage, StoredSession } from "./types/app";
@@ -43,6 +45,7 @@ function preload(src: string): Promise<void> {
 const restorableStages = new Set<StoredSession["stage"]>([
   "welcome",
   "quiz",
+  "reveal",
   "passport",
   "journey",
   "guardianship",
@@ -56,6 +59,12 @@ export default function App() {
   const [activeMissionId, setActiveMissionId] = useState<Mission["id"] | null>(null);
   const [startedMissionIds, setStartedMissionIds] = useState<Mission["id"][]>([]);
   const [completedMissionIds, setCompletedMissionIds] = useState<Mission["id"][]>([]);
+  const [missionProgress, setMissionProgress] = useState<StoredSession["missionProgress"]>({});
+  const [sessionReady, setSessionReady] = useState(false);
+  const sessionHistoryRef = useRef<SessionHistory | null>(null);
+  const historyWriteRef = useRef<"replace" | "push" | "none">("replace");
+  const lastHistoryKeyRef = useRef("");
+  if (!sessionHistoryRef.current) sessionHistoryRef.current = createSessionHistory();
   const [legalDocumentId, setLegalDocumentId] = useState<LegalDocumentId | null>(() =>
     getLegalDocumentIdFromHash(window.location.hash));
   const reduceMotion = useReducedMotion();
@@ -87,18 +96,16 @@ export default function App() {
 
   useEffect(() => {
     let active = true;
-    const saved = loadSession();
+    const saved = normalizeSessionForJourney(loadSession(), questions.length);
     const minimumBoot = new Promise((resolve) => window.setTimeout(resolve, 650));
-    const assets = Promise.race([
-      Promise.allSettled([
-        preload(assetUrl("assets/brand/logo-nika-green.jpg")),
-        preload(animals[0]?.photo ?? ""),
-        preload(animals[1]?.photo ?? ""),
-      ]),
-      new Promise((resolve) => window.setTimeout(resolve, 2_500)),
+    const logo = Promise.race([
+      preload(assetUrl("assets/brand/logo-nika-green.jpg")),
+      new Promise((resolve) => window.setTimeout(resolve, 1_200)),
     ]);
+    void preload(animals[0]?.photo ?? "");
+    void preload(animals[1]?.photo ?? "");
 
-    Promise.all([minimumBoot, assets]).then(() => {
+    Promise.all([minimumBoot, logo]).then(() => {
       if (!active) return;
       if (saved && restorableStages.has(saved.stage)) {
         const restoredAnswers = saved.answers.slice(0, questions.length);
@@ -115,16 +122,32 @@ export default function App() {
         setActiveMissionId(restored.activeMissionId);
         setStartedMissionIds(restored.startedMissionIds);
         setCompletedMissionIds(restored.completedMissionIds);
+        setMissionProgress(restored.missionProgress);
         setStage(restored.stage);
       } else {
         setStage("welcome");
       }
+      historyWriteRef.current = "replace";
+      setSessionReady(true);
     });
 
     return () => {
       active = false;
     };
   }, []);
+
+  useEffect(() => sessionHistoryRef.current?.listen((session) => {
+    const restored = normalizeSessionForJourney(session, questions.length);
+    if (!restored) return;
+    historyWriteRef.current = "none";
+    setAnswers(restored.answers);
+    setAnimalId(restored.animalId);
+    setActiveMissionId(restored.activeMissionId);
+    setStartedMissionIds(restored.startedMissionIds);
+    setCompletedMissionIds(restored.completedMissionIds);
+    setMissionProgress(restored.missionProgress);
+    setStage(restored.stage);
+  }), []);
 
   const matchResult = useMemo(() => {
     if (answers.length < questions.length) return null;
@@ -144,17 +167,32 @@ export default function App() {
     : -1;
 
   useEffect(() => {
-    if (stage === "boot" || stage === "reveal") return;
-    saveSession({
-      version: 2,
+    if (stage === "boot" || !sessionReady) return;
+    const session: StoredSession = {
+      version: 3,
       stage,
       answers,
       animalId,
       activeMissionId,
       startedMissionIds,
       completedMissionIds,
+      missionProgress,
       updatedAt: new Date().toISOString(),
-    });
+    };
+    saveSession(session);
+    const historyKey = `${stage}:${answers.length}:${activeMissionId ?? ""}`;
+    if (historyWriteRef.current === "none") {
+      lastHistoryKeyRef.current = historyKey;
+      historyWriteRef.current = "push";
+      return;
+    }
+    if (historyWriteRef.current === "replace" || historyKey === lastHistoryKeyRef.current) {
+      sessionHistoryRef.current?.replace(session);
+    } else {
+      sessionHistoryRef.current?.push(session);
+    }
+    lastHistoryKeyRef.current = historyKey;
+    historyWriteRef.current = "push";
   }, [
     stage,
     answers,
@@ -162,6 +200,8 @@ export default function App() {
     activeMissionId,
     startedMissionIds,
     completedMissionIds,
+    missionProgress,
+    sessionReady,
   ]);
 
   useEffect(() => {
@@ -176,6 +216,7 @@ export default function App() {
     setActiveMissionId(null);
     setStartedMissionIds([]);
     setCompletedMissionIds([]);
+    setMissionProgress({});
     setStage("quiz");
   };
 
@@ -190,6 +231,7 @@ export default function App() {
   };
 
   const goBackInQuiz = () => {
+    if (sessionHistoryRef.current?.back()) return;
     if (answers.length === 0) {
       setStage("welcome");
       return;
@@ -218,6 +260,16 @@ export default function App() {
     setStage("journey");
   };
 
+  const updateMissionProgress = useCallback((
+    missionId: Mission["id"],
+    progress: unknown,
+  ) => {
+    setMissionProgress((current) => ({
+      ...current,
+      [missionId]: progress,
+    }));
+  }, []);
+
   const restart = () => {
     clearSession();
     setAnswers([]);
@@ -225,6 +277,7 @@ export default function App() {
     setActiveMissionId(null);
     setStartedMissionIds([]);
     setCompletedMissionIds([]);
+    setMissionProgress({});
     setStage("welcome");
   };
 
@@ -321,7 +374,7 @@ export default function App() {
           onBack={() => setStage("reveal")}
           onSelectMission={openMission}
           onOpenGuardianship={() => setStage("guardianship")}
-          onContinue={() => setStage("final")}
+          onContinue={() => setStage("guardianship")}
           onRestart={restart}
         />
       );
@@ -333,11 +386,14 @@ export default function App() {
           missions={missions}
           missionIndex={activeMissionIndex}
           completedMissionIds={completedMissionIds}
+          missionProgress={missionProgress}
           onBack={() => {
+            if (sessionHistoryRef.current?.back()) return;
             setActiveMissionId(null);
             setStage("passport");
           }}
           onCompleteMission={completeMission}
+          onMissionProgressChange={updateMissionProgress}
           onRestart={restart}
         />
       );
@@ -364,7 +420,7 @@ export default function App() {
       return (
         <FinalScreen
           animal={selectedAnimal}
-          onBack={() => setStage("passport")}
+          onBack={() => setStage("guardianship")}
           onRestart={restart}
         />
       );

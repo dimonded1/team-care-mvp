@@ -35,6 +35,37 @@ export function createSlidingWindowRateLimiter({
   };
 }
 
+/** Stores only opaque request IDs, never contact fields, to suppress retries. */
+export function createRequestIdDeduplicator({
+  ttlMs = 10 * 60 * 1000,
+  maxEntries = 1_000,
+  now = () => Date.now(),
+} = {}) {
+  const requests = new Map();
+
+  function prune(timestamp) {
+    for (const [requestId, seenAt] of requests) {
+      if (timestamp - seenAt >= ttlMs) requests.delete(requestId);
+    }
+    while (requests.size > maxEntries) requests.delete(requests.keys().next().value);
+  }
+
+  return {
+    claim(requestId) {
+      if (!requestId || requestId.length > 128) return true;
+      const timestamp = now();
+      prune(timestamp);
+      if (requests.has(requestId)) return false;
+      requests.set(requestId, timestamp);
+      prune(timestamp);
+      return true;
+    },
+    release(requestId) {
+      if (requestId) requests.delete(requestId);
+    },
+  };
+}
+
 export function parseAllowedOrigins(value = "") {
   return new Set(
     String(value)

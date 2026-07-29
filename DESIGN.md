@@ -2,7 +2,7 @@
 
 ## Source of truth
 - Status: Active
-- Last refreshed: 2026-07-27
+- Last refreshed: 2026-07-29
 - Primary product surfaces: launch screen, swipe matching, reveal, interactive care orbit, four care modules, optional guardianship reference, final card, foundation footer, legal document center.
 - Evidence reviewed: `README.md`, `src/styles.css`, `src/components/EditorialHero.tsx`, `src/components/OrbitField.tsx`, `src/features/PassportScreen.tsx`, all four game screens and data configs, `design-system/nika-team-care/MASTER.md`, supplied orbit-navigation references, `design-concepts/guardian-orbit-hub.webp`, both Bitrix field workbooks, and the supplied flat cosmic-cartoon moodboard.
 
@@ -22,8 +22,8 @@
 - Key contexts of use: one-handed mobile use, noisy event space, unstable connection, bright ambient light.
 
 ## Information architecture
-- Primary navigation: focused journey with Back controls; after matching, the care orbit is the single navigation hub; every planet opens its module directly; guardianship facts are optional reference content rather than a mandatory route step.
-- Core routes/screens: loading → welcome → matching → reveal → interactive orbit hub ↔ four care modules → final; the optional guardianship explainer opens from a smaller fifth orbit point. Legal documents open as deep-linkable overlay states `#legal/offer`, `#legal/privacy`, `#legal/consent`, `#legal/requisites`.
+- Primary navigation: focused journey with Back controls; after matching, the care orbit is the single navigation hub; every planet opens its module directly; a compact guardianship explainer is the required bridge from the completed orbit to the final screen.
+- Core routes/screens: loading → welcome → matching → reveal → interactive orbit hub ↔ four care modules → compact guardianship explainer → final. Legal documents open as deep-linkable overlay states `#legal/offer`, `#legal/privacy`, `#legal/consent`, `#legal/requisites`.
 - Content hierarchy: one primary action per screen; supporting information is progressively disclosed; legal text is visually separate from decorative chrome.
 
 ## Design principles
@@ -36,15 +36,15 @@
 
 ## Visual language
 - Color: forest green `#234721` / `#183419`, warm canvas `#F6F2E9`, paper `#FFFDF8`, coral `#F76D31`, blush `#FFB5B5`.
-- Typography: bundled Raleway; 760–900 display weights, 450–600 reading text, 16px minimum legal body copy.
+- Typography: bundled Raleway for body copy and controls; bundled Unbounded for short display headings, game names, stage labels and selected primary CTAs; bundled NauryzRedKeds for at most one short emotional accent per screen. All three local files include Cyrillic support; 16px is preferred for reading text and remains the minimum for legal body copy.
 - Spacing/layout rhythm: mobile-first; 16–24px content rhythm, 44px minimum controls, 1200–1440px wide-screen bounds.
-- Shape/radius/elevation: rounded paper surfaces, pill controls, tinted green shadows, sparse orbit lines and planet dots.
-- Motion: Framer Motion springs, critically damped for sheets; on entering the hub, the portrait appears first, two or three story fragments converge into one caption, then four planets reveal on different phases and speeds; progress glow communicates state; decorative loops are subtle and disabled for reduced motion.
+- Shape/radius/elevation: rounded paper surfaces with one restrained asymmetric corner, pill controls, tinted green shadows, sparse orbit lines and planet dots. Shared CSS tokens own the 14/20/28/36px radius scale, warm card/CTA shadows and 180/360ms motion timings.
+- Motion: Framer Motion springs, critically damped for sheets; on entering the hub, the portrait appears first, two or three story fragments converge into one caption, then four planets reveal on different phases and speeds; progress glow communicates state; decorative loops are subtle and disabled for reduced motion. The polish layer adds no animation dependency and never makes logic wait for CSS motion.
 - Imagery/iconography: real animal photography remains the source of truth in matching, reveal and share surfaces. The hub and four game scenes use one original flat 2D “planets of care” illustration system: bold clean silhouettes, limited internal shading, warm saturated greens/corals/creams, tactile grain, readable foregrounds and friendly recognisable cats/dogs with consistent proportions. Each module is a compact planetary world with its own terrain and palette accent; no photorealistic backgrounds, fake 3D renders, readable third-party mascots, or copied animation characters.
 - Planet identities: “Визит” is a welcoming shelter porch world; “Здоровье” is a calm care-station world; “Знакомство” is a quiet living-room world; “Прогулка” is a day-cycle garden world. The same stroke weight, eye construction, fur-shape language and lighting direction bind them together.
 
 ## Components
-- Existing components to reuse: `Logo`, `Button`, `AppHeader`, `SiteFooter`, existing motion and color tokens.
+- Existing components to reuse: `Logo`, `Button`, `AppHeader`, `SiteFooter`, existing motion and color tokens. Visual polish should stay CSS-first and reuse the current screen markup unless a decorative element also improves semantics.
 - New/changed components: interactive `PassportScreen` orbit, optional guardianship reference node, `VisitCareGame`, reusable `OrbitField`, local legal-document data, existing game components, `ContactCaptureForm`, and the server-only `/api/contact-capture` boundary.
 - Variants and states: module available/started/completed, correct/learning feedback, shelter visit step, story-fragment convergence, swipe idle/dragging/committed/returning.
 - Token/component ownership: global tokens remain in `src/styles.css`; legal text content lives under `src/content/legal/`; metadata lives in `src/data/legalDocuments.ts`.

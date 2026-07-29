@@ -6,6 +6,22 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Unbounded";
+  src: url("/assets/fonts/unbounded/Unbounded-VariableFont_wght.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "NauryzRedKeds";
+  src: url("/assets/fonts/nauryz/NauryzRedKeds.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
 /* Guardianship cycle v3 — ward as the sun, guardians as a recurring orbit */
 
 .app:has(.care-cycle-intro),
@@ -1242,6 +1258,631 @@
   }
 }
 
+/* Focused mission replacements and compact guardianship step */
+
+.app:has(.journey-screen--walk-game),
+.screen-frame:has(.journey-screen--walk-game),
+.app:has(.journey-screen--trust-game),
+.screen-frame:has(.journey-screen--trust-game),
+.app:has(.guardianship-brief),
+.screen-frame:has(.guardianship-brief) {
+  background:
+    radial-gradient(circle at 50% 16%, rgba(247, 109, 49, 0.2), transparent 23rem),
+    radial-gradient(circle at 12% 62%, rgba(120, 187, 120, 0.12), transparent 27rem),
+    linear-gradient(150deg, #173a25 0%, #0a2719 58%, #12351f 100%);
+}
+
+.journey-screen--walk-game,
+.journey-screen--trust-game {
+  color: #fffdf8;
+}
+
+.journey-screen--walk-game .journey-content,
+.journey-screen--trust-game .journey-content {
+  width: min(100%, 720px);
+  margin-inline: auto;
+}
+
+.matching-care-game {
+  display: grid;
+  gap: 14px;
+  color: #fffdf8;
+}
+
+.matching-care-game__header {
+  text-align: center;
+}
+
+.matching-care-game__header h2 {
+  max-width: 620px;
+  margin: 4px auto 8px;
+  color: #fffdf8;
+  font-size: clamp(27px, 5vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.matching-care-game__header > p:last-child {
+  max-width: 580px;
+  margin: 0 auto;
+  color: rgba(255, 253, 248, 0.72);
+  line-height: 1.42;
+}
+
+.matching-care-game__progress {
+  margin: 0;
+  color: #ffb99d;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.matching-care-game__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.matching-care-card {
+  min-width: 0;
+  min-height: 132px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 20px;
+  color: #173a25;
+  background: transparent;
+  perspective: 900px;
+}
+
+.matching-care-card:focus-visible {
+  outline: 3px solid #ffb99d;
+  outline-offset: 3px;
+}
+
+.matching-care-card__inner {
+  position: relative;
+  width: 100%;
+  min-height: 132px;
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.matching-care-card.is-flipped .matching-care-card__inner {
+  transform: rotateY(180deg);
+}
+
+.matching-care-card__front,
+.matching-care-card__back {
+  grid-area: 1 / 1;
+  min-width: 0;
+  padding: 14px 12px;
+  display: grid;
+  place-content: center;
+  gap: 7px;
+  border-radius: 19px;
+  backface-visibility: hidden;
+  overflow-wrap: anywhere;
+}
+
+.matching-care-card__front {
+  color: #fffdf8;
+  background:
+    radial-gradient(circle at 80% 18%, rgba(255, 185, 157, 0.22), transparent 38%),
+    rgba(255, 255, 255, 0.075);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.matching-care-card--action .matching-care-card__front {
+  background:
+    radial-gradient(circle at 80% 18%, rgba(120, 187, 120, 0.24), transparent 38%),
+    rgba(255, 255, 255, 0.075);
+}
+
+.matching-care-card__back {
+  transform: rotateY(180deg);
+  background: #fff9ef;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.matching-care-card__back strong {
+  color: #e45c28;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.matching-care-card.is-matched {
+  border-color: rgba(140, 220, 140, 0.9);
+  box-shadow: 0 0 0 2px rgba(140, 220, 140, 0.18);
+}
+
+.matching-care-card.is-checking {
+  box-shadow: 0 0 0 2px rgba(255, 185, 157, 0.28);
+}
+
+.matching-care-game__feedback,
+.matching-care-game__complete {
+  margin: 0;
+  padding: 13px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 17px;
+  color: #fffdf8;
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.matching-care-game__feedback p {
+  margin: 4px 0 0;
+  color: rgba(255, 253, 248, 0.78);
+  line-height: 1.38;
+}
+
+.walk-maze {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  color: #fffdf8;
+}
+
+.walk-maze__header {
+  max-width: 620px;
+  text-align: center;
+}
+
+.walk-maze__header h1 {
+  margin: 4px 0 7px;
+  color: #fffdf8;
+  font-size: clamp(27px, 5vw, 42px);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.walk-maze__header > p:last-child {
+  margin: 0;
+  color: rgba(255, 253, 248, 0.72);
+  line-height: 1.4;
+}
+
+.walk-maze__board {
+  width: min(100%, 340px);
+  aspect-ratio: 1;
+  padding: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 24px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.025) 50%, transparent 50%),
+    rgba(255, 253, 248, 0.07);
+  background-size: 100% 12px;
+  touch-action: pan-y;
+}
+
+.walk-maze__board:focus-visible {
+  outline: 3px solid #ffb99d;
+  outline-offset: 3px;
+}
+
+.walk-maze__board svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.walk-maze__walls {
+  stroke: rgba(255, 253, 248, 0.94);
+  stroke-width: 0.09;
+  stroke-linecap: round;
+}
+
+.walk-maze__finish {
+  fill: #ffb99d;
+  stroke: #fffdf8;
+  stroke-width: 0.05;
+}
+
+.walk-maze__bonus circle {
+  fill: #f9cb50;
+  stroke: #fffdf8;
+  stroke-width: 0.045;
+}
+
+.walk-maze__bonus.is-collected {
+  opacity: 0.2;
+}
+
+.walk-maze__bonus text,
+.walk-maze__finish-mark {
+  fill: #173a25;
+  font-size: 0.21px;
+  font-weight: 900;
+  pointer-events: none;
+}
+
+.walk-maze__finish-mark {
+  font-size: 0.38px;
+}
+
+.walk-maze__player {
+  fill: #8cdb91;
+  stroke: #fffdf8;
+  stroke-width: 0.075;
+  transition: cx 170ms ease, cy 170ms ease;
+}
+
+.walk-maze__meta {
+  width: min(100%, 340px);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(255, 253, 248, 0.72);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.walk-maze__status {
+  min-height: 20px;
+  margin: 0;
+  color: #fff3d7;
+  font-size: 13px;
+  text-align: center;
+}
+
+.walk-maze__controls {
+  width: 188px;
+  display: grid;
+  grid-template-columns: repeat(3, 56px);
+  grid-template-rows: repeat(2, 56px);
+  grid-template-areas:
+    ". north ."
+    "west south east";
+  gap: 10px;
+}
+
+.walk-maze__control {
+  width: 56px;
+  height: 56px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  color: #173a25;
+  background: #fff9ef;
+  font-size: 25px;
+  font-weight: 900;
+  box-shadow: 0 7px 18px rgba(1, 16, 9, 0.18);
+}
+
+.walk-maze__control--north { grid-area: north; }
+.walk-maze__control--west { grid-area: west; }
+.walk-maze__control--south { grid-area: south; }
+.walk-maze__control--east { grid-area: east; }
+
+.walk-maze__control:focus-visible {
+  outline: 3px solid #ffb99d;
+  outline-offset: 2px;
+}
+
+.walk-maze__completion {
+  margin: 0;
+  padding: 12px 15px;
+  border-radius: 16px;
+  color: #173a25;
+  background: #d9f0d6;
+  font-weight: 800;
+  text-align: center;
+}
+
+.screen.guardianship-brief {
+  position: relative;
+  width: min(100%, 920px);
+  min-height: 100dvh;
+  color: #fffdf8;
+  isolation: isolate;
+}
+
+.guardianship-brief__stars {
+  position: absolute;
+  z-index: -1;
+  inset: 54px 0 auto;
+  height: 380px;
+  opacity: 0.32;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.8) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(255, 185, 157, 0.7) 0 1.2px, transparent 1.8px);
+  background-position: 0 0, 24px 31px;
+  background-size: 68px 68px, 103px 103px;
+  mask-image: linear-gradient(#000, transparent);
+}
+
+.guardianship-brief__content {
+  width: min(100%, 780px);
+  margin-inline: auto;
+  display: grid;
+  gap: 16px;
+}
+
+.guardianship-brief__hero {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 22px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.065);
+  backdrop-filter: blur(12px);
+}
+
+.guardianship-brief__photo {
+  position: relative;
+  aspect-ratio: 1;
+}
+
+.guardianship-brief__animal-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 185, 157, 0.72);
+}
+
+.guardianship-brief__photo > span {
+  position: absolute;
+  right: -3px;
+  bottom: 8px;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #f76d31;
+  box-shadow: 0 0 24px rgba(247, 109, 49, 0.44);
+}
+
+.guardianship-brief__photo svg {
+  width: 22px;
+}
+
+.guardianship-brief__hero h1 {
+  max-width: 560px;
+  margin: 3px 0 9px;
+  color: #fffdf8;
+  font-size: clamp(32px, 6vw, 55px);
+  line-height: 0.96;
+  letter-spacing: -0.055em;
+}
+
+.guardianship-brief__hero p:last-child {
+  margin: 0;
+  color: rgba(255, 253, 248, 0.78);
+  line-height: 1.48;
+}
+
+.guardianship-brief__cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.guardianship-brief__cards article {
+  min-width: 0;
+  padding: 16px;
+  display: grid;
+  gap: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.guardianship-brief__cards article > span {
+  color: #ffb99d;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.guardianship-brief__cards h2 {
+  margin: 0;
+  color: #fffdf8;
+  font-size: 17px;
+  line-height: 1.12;
+}
+
+.guardianship-brief__cards p {
+  margin: 6px 0 0;
+  color: rgba(255, 253, 248, 0.7);
+  font-size: 13px;
+  line-height: 1.38;
+}
+
+.guardianship-brief__details {
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.guardianship-brief__details summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: #fffdf8;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.guardianship-brief__details ul {
+  margin: 8px 0 10px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  list-style: none;
+}
+
+.guardianship-brief__details li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: rgba(255, 253, 248, 0.82);
+  font-size: 13px;
+}
+
+.guardianship-brief__details li > span:first-child {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 11px;
+  color: #ffb99d;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.guardianship-brief__details svg {
+  width: 18px;
+  height: 18px;
+}
+
+.guardianship-brief__details > p {
+  margin: 0;
+  color: rgba(255, 253, 248, 0.65);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+@media (max-width: 759px) {
+  .screen.journey-screen--walk-game,
+  .screen.journey-screen--trust-game,
+  .screen.guardianship-brief {
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-left: max(14px, env(safe-area-inset-left));
+  }
+
+  .matching-care-game {
+    gap: 10px;
+  }
+
+  .matching-care-game__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .matching-care-card,
+  .matching-care-card__inner {
+    min-height: 104px;
+  }
+
+  .matching-care-card__front,
+  .matching-care-card__back {
+    padding: 10px 9px;
+  }
+
+  .matching-care-card__back {
+    font-size: 11px;
+  }
+
+  .walk-maze__header > p:last-child {
+    font-size: 13px;
+  }
+
+  .walk-maze__board {
+    width: min(100%, 318px);
+    padding: 7px;
+    border-radius: 20px;
+  }
+
+  .walk-maze__meta {
+    width: min(100%, 318px);
+  }
+
+  .guardianship-brief__content {
+    gap: 11px;
+  }
+
+  .guardianship-brief__hero {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 13px;
+    padding: 14px;
+    border-radius: 22px;
+  }
+
+  .guardianship-brief__photo > span {
+    width: 32px;
+    height: 32px;
+  }
+
+  .guardianship-brief__photo svg {
+    width: 17px;
+  }
+
+  .guardianship-brief__hero h1 {
+    font-size: clamp(27px, 8.3vw, 36px);
+  }
+
+  .guardianship-brief__hero p:last-child {
+    font-size: 13px;
+    line-height: 1.38;
+  }
+
+  .guardianship-brief__cards {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .guardianship-brief__cards article {
+    padding: 11px 13px;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 8px;
+    border-radius: 16px;
+  }
+
+  .guardianship-brief__cards h2 {
+    font-size: 15px;
+  }
+
+  .guardianship-brief__cards p {
+    margin-top: 3px;
+    font-size: 12px;
+  }
+
+  .guardianship-brief__details {
+    padding: 8px 13px;
+  }
+
+  .guardianship-brief__details ul {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .matching-care-card__inner {
+    transition: none;
+    transform-style: flat;
+  }
+
+  .matching-care-card__front,
+  .matching-care-card__back {
+    backface-visibility: visible;
+  }
+
+  .matching-care-card:not(.is-flipped) .matching-care-card__back,
+  .matching-care-card.is-flipped .matching-care-card__front {
+    visibility: hidden;
+  }
+
+  .matching-care-card.is-flipped .matching-care-card__inner {
+    transform: none;
+  }
+
+  .walk-maze__player {
+    transition: none;
+  }
+}
+
 @media (max-width: 390px) {
   .care-cycle-intro__steps strong {
     font-size: 9px;
@@ -1315,6 +1956,22 @@
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --motion-press: 160ms;
   --motion-ui: 260ms;
+  --font-body: "Raleway", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Unbounded", "Raleway", sans-serif;
+  --font-accent: "NauryzRedKeds", "Unbounded", "Raleway", sans-serif;
+  --night-green: #0b281a;
+  --night-green-soft: #153821;
+  --cream: #fff8ec;
+  --coral-soft: #ff9870;
+  --radius-sm: 14px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+  --radius-xl: 36px;
+  --shadow-card: 0 16px 44px rgba(7, 37, 22, 0.16);
+  --shadow-cta: 0 14px 34px rgba(247, 109, 49, 0.3);
+  --content-max: 1120px;
+  --motion-fast: 180ms;
+  --motion-scene: 360ms;
 }
 
 * {
@@ -15500,5 +16157,648 @@ p {
   .visit-game__character,
   .day-character {
     will-change: auto;
+  }
+}
+
+/* Keep the replacement-game surface above legacy mission selectors. */
+.app:has(.journey-screen--walk-game),
+.screen-frame:has(.journey-screen--walk-game),
+.app:has(.journey-screen--trust-game),
+.screen-frame:has(.journey-screen--trust-game),
+.app:has(.guardianship-brief),
+.screen-frame:has(.guardianship-brief) {
+  background:
+    radial-gradient(circle at 50% 16%, rgba(247, 109, 49, 0.2), transparent 23rem),
+    radial-gradient(circle at 12% 62%, rgba(120, 187, 120, 0.12), transparent 27rem),
+    linear-gradient(150deg, #173a25 0%, #0a2719 58%, #12351f 100%);
+}
+
+@media (max-width: 759px) {
+  .screen.journey-screen--walk-game,
+  .screen.journey-screen--trust-game,
+  .screen.guardianship-brief {
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-left: max(14px, env(safe-area-inset-left));
+  }
+}
+
+/* Orbit of care — compact visual polish, July 2026 */
+
+body,
+button,
+a,
+input,
+textarea,
+select {
+  font-family: var(--font-body);
+}
+
+.launch-card h1,
+.quiz-copy h1,
+.matching-care-game__header h2,
+.walk-maze__header h1,
+.visit-game__header h1,
+.health-game__header h1,
+.health-situation__heading h2,
+.health-summary h2,
+.care-orbit__heading h1,
+.passport-panels__heading h2,
+.passport-goal__copy h2,
+.final-copy h1 {
+  font-family: var(--font-display);
+  font-weight: 660;
+  letter-spacing: -0.035em;
+}
+
+.section-number,
+.screen-eyebrow,
+.reveal-topline,
+.progress-copy,
+.header-status,
+.care-orbit__progress > span {
+  font-family: var(--font-display);
+}
+
+.launch-card h1 strong,
+.reveal-copy h1,
+.care-orbit__sun strong,
+.visit-game__pet-marker strong,
+.final-copy .screen-eyebrow {
+  font-family: var(--font-accent);
+  font-weight: 700;
+  letter-spacing: 0.015em;
+}
+
+.button--orange,
+.launch-card__cta,
+.passport-goal__action {
+  font-family: var(--font-display);
+  font-size: clamp(12px, 3.2vw, 14px);
+  font-weight: 620;
+  letter-spacing: -0.02em;
+}
+
+button,
+a,
+summary,
+input,
+textarea,
+select {
+  transition:
+    color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    background-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease,
+    transform var(--motion-fast) var(--ease-out);
+}
+
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(255, 253, 248, 0.92);
+}
+
+.app:has(.welcome-screen),
+.screen-frame:has(.welcome-screen),
+.app:has(.quiz-screen),
+.screen-frame:has(.quiz-screen),
+.app:has(.reveal-screen),
+.screen-frame:has(.reveal-screen),
+.app:has(.passport-hub-screen),
+.screen-frame:has(.passport-hub-screen),
+.app:has(.journey-screen--visit-game),
+.screen-frame:has(.journey-screen--visit-game),
+.app:has(.journey-screen--health-game),
+.screen-frame:has(.journey-screen--health-game),
+.app:has(.journey-screen--walk-game),
+.screen-frame:has(.journey-screen--walk-game),
+.app:has(.journey-screen--trust-game),
+.screen-frame:has(.journey-screen--trust-game),
+.app:has(.final-screen),
+.screen-frame:has(.final-screen) {
+  background:
+    radial-gradient(circle at 15% 11%, rgba(255, 181, 181, 0.16), transparent 21rem),
+    radial-gradient(circle at 88% 29%, rgba(247, 109, 49, 0.14), transparent 19rem),
+    radial-gradient(circle, rgba(255, 253, 248, 0.22) 0 1px, transparent 1.4px) 7px 12px / 58px 58px,
+    radial-gradient(circle, rgba(255, 181, 181, 0.17) 0 1px, transparent 1.5px) 32px 4px / 93px 93px,
+    linear-gradient(150deg, #1d4227 0%, var(--night-green) 62%, #11331f 100%);
+}
+
+.screen {
+  width: min(100%, var(--content-max));
+}
+
+.button.button--orange,
+.launch-card .launch-card__cta {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: linear-gradient(135deg, #ff8b5b, var(--orange));
+  box-shadow:
+    var(--shadow-cta),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.button.button--orange:hover:not(:disabled),
+.launch-card .launch-card__cta:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff9a6d, #ef5e24);
+  box-shadow:
+    0 18px 42px rgba(247, 109, 49, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.launch-card {
+  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-xl) 22px;
+  box-shadow:
+    0 28px 74px rgba(3, 25, 14, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.welcome-screen .welcome-nav {
+  position: relative;
+  z-index: 30;
+}
+
+.launch-card h1 {
+  font-size: clamp(30px, 3.3vw, 38px);
+  line-height: 1.01;
+}
+
+.launch-card h1 span {
+  display: inline;
+}
+
+.launch-card h1 span:first-child::after {
+  content: " ";
+}
+
+.launch-card h1 strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--orange);
+  font-size: 1.12em;
+  line-height: 0.9;
+  transform: rotate(-1.5deg);
+}
+
+.launch-card__cta {
+  border-radius: 18px 18px 18px 8px;
+}
+
+.launch-scene__orbit {
+  border-color: rgba(255, 253, 248, 0.22);
+  border-style: dashed;
+}
+
+.launch-planet {
+  box-shadow:
+    0 0 0 4px rgba(255, 253, 248, 0.1),
+    0 0 26px rgba(247, 109, 49, 0.28);
+}
+
+.quiz-screen .progress-block,
+.journey-content > .progress-block {
+  padding: 8px 10px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.055);
+  box-shadow: 0 10px 28px rgba(3, 25, 14, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.quiz-screen .progress-track,
+.journey-content > .progress-block .progress-track {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.quiz-screen .progress-track span,
+.journey-content > .progress-block .progress-track span {
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--orange), var(--pink));
+  box-shadow: 0 0 16px rgba(247, 109, 49, 0.32);
+}
+
+.quiz-copy h1 {
+  font-size: clamp(27px, 7.6vw, 42px);
+  line-height: 1.05;
+}
+
+.swipe-card {
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) 17px;
+  box-shadow: 0 24px 56px rgba(2, 24, 13, 0.26);
+}
+
+.swipe-control {
+  min-height: 50px;
+  border-radius: 18px 18px 18px 9px;
+}
+
+.swipe-control--yes {
+  border-style: solid;
+  background: rgba(255, 253, 248, 0.09);
+}
+
+.swipe-control--no {
+  border-style: dashed;
+  background: rgba(247, 109, 49, 0.07);
+}
+
+.reveal-copy h1 {
+  margin-bottom: 10px;
+  font-size: clamp(58px, 18vw, 108px);
+  line-height: 0.76;
+  transform: rotate(-1deg);
+}
+
+.reveal-photo {
+  border-radius: 46% 54% 50% 50% / 52% 46% 54% 48%;
+  box-shadow:
+    0 0 0 8px rgba(255, 253, 248, 0.1),
+    0 0 0 11px rgba(247, 109, 49, 0.2),
+    0 24px 70px rgba(2, 22, 12, 0.42);
+}
+
+.reveal-photo img,
+.reveal-photo .photo-fallback {
+  border-radius: inherit;
+}
+
+.care-orbit__heading h1 {
+  font-size: clamp(22px, 6.2vw, 38px);
+  line-height: 1.05;
+}
+
+.care-orbit__sun strong {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.care-orbit__progress,
+.care-orbit__guardianship,
+.care-orbit__complete-action {
+  border-radius: 18px 18px 18px 9px;
+  box-shadow: 0 14px 30px rgba(2, 20, 10, 0.16);
+}
+
+.care-planet__label {
+  border-radius: 13px 13px 13px 6px;
+}
+
+.care-planet--completed .care-planet__label::before {
+  content: "✓";
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 19px;
+  height: 19px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--cream);
+  border-radius: 50%;
+  background: var(--orange);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.passport-panel,
+.passport-goal {
+  border-radius: var(--radius-md) var(--radius-md) var(--radius-md) 10px;
+}
+
+.matching-care-game {
+  gap: 12px;
+}
+
+.matching-care-game__header h2,
+.walk-maze__header h1,
+.visit-game__header h1,
+.health-game__header h1 {
+  font-size: clamp(24px, 6.7vw, 38px);
+  line-height: 1.08;
+}
+
+.matching-care-game__progress {
+  width: fit-content;
+  margin-inline: auto;
+  border: 1px solid rgba(255, 181, 181, 0.26);
+  border-radius: 999px;
+  background: rgba(255, 181, 181, 0.09);
+}
+
+.matching-care-card {
+  overflow: hidden;
+  border-radius: 20px 20px 20px 10px;
+  box-shadow: 0 14px 30px rgba(2, 20, 10, 0.18);
+}
+
+.matching-care-card--situation {
+  border-style: dashed;
+}
+
+.matching-care-card--action {
+  border-style: solid;
+}
+
+.matching-care-card__front {
+  position: relative;
+  padding-top: 34px;
+}
+
+.matching-care-card__front::before {
+  position: absolute;
+  top: 13px;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  opacity: 0.78;
+  transform: translateX(-50%);
+}
+
+.matching-care-card--situation .matching-care-card__front::before {
+  content: "?";
+}
+
+.matching-care-card--action .matching-care-card__front::before {
+  content: "→";
+}
+
+.matching-care-card--situation .matching-care-card__back {
+  background:
+    radial-gradient(circle at 90% 10%, rgba(255, 181, 181, 0.34), transparent 34%),
+    var(--cream);
+}
+
+.matching-care-card--action .matching-care-card__back {
+  background:
+    radial-gradient(circle at 90% 10%, rgba(120, 187, 120, 0.32), transparent 34%),
+    var(--cream);
+}
+
+.matching-care-game__feedback,
+.matching-care-game__complete {
+  border-left: 4px solid var(--pink);
+  border-radius: 10px var(--radius-md) var(--radius-md) 10px;
+}
+
+.walk-maze__board {
+  position: relative;
+  border-width: 2px;
+  border-radius: var(--radius-md) var(--radius-md) var(--radius-md) 10px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.035) 50%, transparent 50%),
+    radial-gradient(circle at 18% 14%, rgba(255, 181, 181, 0.1), transparent 38%),
+    rgba(255, 253, 248, 0.06);
+  background-size: 100% 12px, auto, auto;
+  box-shadow:
+    inset 0 0 0 4px rgba(255, 253, 248, 0.035),
+    0 18px 42px rgba(2, 20, 10, 0.22);
+}
+
+.walk-maze__walls {
+  stroke-width: 0.105;
+  stroke-linecap: square;
+}
+
+.walk-maze__finish {
+  fill: var(--pink);
+  stroke-width: 0.075;
+}
+
+.walk-maze__bonus circle {
+  fill: #f8c94f;
+  stroke-width: 0.06;
+}
+
+.walk-maze__player {
+  fill: var(--orange);
+  stroke-width: 0.09;
+  filter: drop-shadow(0 0 0.16px rgba(255, 181, 181, 0.9));
+}
+
+.walk-maze__meta {
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.walk-maze__control {
+  border: 2px solid rgba(35, 71, 33, 0.18);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%, #fff, var(--cream) 64%);
+  box-shadow:
+    0 8px 0 rgba(5, 30, 17, 0.28),
+    0 14px 24px rgba(2, 20, 10, 0.2);
+}
+
+.walk-maze__control:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow:
+    0 4px 0 rgba(5, 30, 17, 0.26),
+    0 8px 18px rgba(2, 20, 10, 0.18);
+}
+
+.visit-game__scene,
+.health-silhouette {
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) 14px;
+  box-shadow: 0 20px 48px rgba(2, 20, 10, 0.24);
+}
+
+.visit-game__pet-marker {
+  border-radius: 17px 17px 17px 7px;
+}
+
+.visit-game__pet-marker strong {
+  font-size: 17px;
+}
+
+.visit-situation,
+.health-situation,
+.health-summary {
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) 12px;
+}
+
+.visit-action,
+.health-action {
+  border-radius: 18px 18px 18px 8px;
+}
+
+.health-zone__marker {
+  border-radius: 50% 50% 50% 36%;
+}
+
+.guardianship-brief :is(
+  .header-status,
+  .section-number,
+  .guardianship-brief__hero h1,
+  .guardianship-brief__cards h2,
+  .guardianship-brief__cards article > span,
+  .button--orange
+) {
+  font-family: var(--font-body);
+  letter-spacing: normal;
+}
+
+.final-check {
+  position: relative;
+  border: 1px solid rgba(255, 181, 181, 0.34);
+  box-shadow:
+    0 0 0 8px rgba(255, 181, 181, 0.06),
+    0 0 34px rgba(247, 109, 49, 0.2);
+}
+
+.final-check::after {
+  content: "";
+  position: absolute;
+  width: 86px;
+  height: 40px;
+  border: 1px dashed rgba(255, 181, 181, 0.34);
+  border-radius: 50%;
+  transform: rotate(-16deg);
+  pointer-events: none;
+}
+
+.final-copy h1 {
+  max-width: 720px;
+  font-size: clamp(26px, 7vw, 48px);
+  line-height: 1.05;
+}
+
+.result-card-preview {
+  border-radius: 24px 24px 24px 10px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 26px 62px rgba(1, 17, 9, 0.34);
+}
+
+.contact-capture,
+.contact-capture__fallback {
+  border-radius: var(--radius-md) var(--radius-md) var(--radius-md) 10px;
+}
+
+.contact-capture__success > div:only-child {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.contact-capture__success > div:only-child .button {
+  width: fit-content;
+  min-width: 180px;
+  margin-top: 12px;
+}
+
+@media (max-width: 620px) {
+  .screen {
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-left: max(14px, env(safe-area-inset-left));
+  }
+
+  .launch-card {
+    padding-inline: 20px;
+  }
+
+  .launch-card h1 {
+    font-size: clamp(19.5px, 5.7vw, 22px);
+    line-height: 1.06;
+    letter-spacing: -0.045em;
+  }
+
+  .launch-card h1 span {
+    display: inline;
+  }
+
+  .launch-card h1 strong {
+    display: block;
+    margin-top: 7px;
+    font-size: 1.55em;
+  }
+
+  .reveal-copy h1 {
+    font-size: clamp(58px, 19vw, 78px);
+  }
+
+  .matching-care-game__header h2,
+  .walk-maze__header h1,
+  .visit-game__header h1,
+  .health-game__header h1 {
+    font-size: clamp(23px, 6.4vw, 29px);
+  }
+
+  .matching-care-card,
+  .matching-care-card__inner {
+    min-height: 108px;
+  }
+
+  .matching-care-card__front {
+    font-size: 12px;
+  }
+
+  .walk-maze__board {
+    width: min(100%, 310px);
+  }
+
+  .walk-maze__meta {
+    width: min(100%, 310px);
+    font-size: 11px;
+  }
+
+}
+
+@media (max-width: 340px) {
+  .launch-card {
+    padding-inline: 18px;
+  }
+
+  .launch-card h1 {
+    font-size: 19px;
+  }
+
+  .launch-card .launch-card__cta {
+    font-size: 11px;
+  }
+
+  .launch-card p {
+    font-size: 15px;
+  }
+
+  .matching-care-card,
+  .matching-care-card__inner {
+    min-height: 104px;
+  }
+
+  .matching-care-card__back {
+    font-size: 10px;
+  }
+
+  .walk-maze__board {
+    width: min(100%, 286px);
+  }
+
+  .walk-maze__meta {
+    width: min(100%, 286px);
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+
+  .launch-card h1 strong,
+  .reveal-copy h1 {
+    transform: none;
   }
 }

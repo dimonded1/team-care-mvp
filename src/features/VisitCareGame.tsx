@@ -12,10 +12,43 @@ import type { Animal } from "../types/app";
 interface VisitCareGameProps {
   animal: Animal;
   onReadyChange: (ready: boolean) => void;
+  progress?: VisitGameProgress;
+  onProgressChange?: (progress: VisitGameProgress) => void;
 }
 
 const CORRECT_FEEDBACK_MS = 1_950;
 const LEARNING_FEEDBACK_MS = 2_450;
+
+export interface VisitGameProgress {
+  version: 1;
+  step: number;
+  shuffleSeed: string;
+}
+
+export function createInitialVisitGameProgress(): VisitGameProgress {
+  return {
+    version: 1,
+    step: 0,
+    shuffleSeed: createShuffleSeed(),
+  };
+}
+
+export function restoreVisitGameProgress(
+  value: unknown,
+  fallback = createInitialVisitGameProgress(),
+): VisitGameProgress {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return fallback;
+  const candidate = value as Partial<VisitGameProgress>;
+  return {
+    version: 1,
+    step: typeof candidate.step === "number" && Number.isFinite(candidate.step)
+      ? Math.max(0, Math.min(Math.floor(candidate.step), visitSituations.length))
+      : 0,
+    shuffleSeed: typeof candidate.shuffleSeed === "string" && candidate.shuffleSeed
+      ? candidate.shuffleSeed
+      : fallback.shuffleSeed,
+  };
+}
 
 function VisitActionIcon({ id }: { id: VisitActionIconId }) {
   if (id === "calendar") {
@@ -39,13 +72,22 @@ function VisitActionIcon({ id }: { id: VisitActionIconId }) {
   return <svg viewBox="0 0 24 24"><path d="M7 8v8M12 6v12M17 8v8" /><path d="M4 20h16" /></svg>;
 }
 
-export function VisitCareGame({ animal, onReadyChange }: VisitCareGameProps) {
+export function VisitCareGame({
+  animal,
+  onReadyChange,
+  progress,
+  onProgressChange,
+}: VisitCareGameProps) {
   const reduceMotion = useReducedMotion();
-  const [step, setStep] = useState(0);
+  const [internalProgress, setInternalProgress] = useState(createInitialVisitGameProgress);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [locked, setLocked] = useState(false);
-  const [shuffleSeed] = useState(createShuffleSeed);
   const timerRef = useRef<number | null>(null);
+  const lockedRef = useRef(false);
+  const phaseHeadingRef = useRef<HTMLHeadingElement>(null);
+  const activeProgress = progress ?? internalProgress;
+  const step = Math.max(0, Math.min(activeProgress.step, visitSituations.length));
+  const shuffleSeed = activeProgress.shuffleSeed || internalProgress.shuffleSeed;
   const situation = visitSituations[Math.min(step, visitSituations.length - 1)];
   const selected = situation.actions.find((action) => action.id === selectedId) ?? null;
   const displayedActions = useMemo(
@@ -64,21 +106,39 @@ export function VisitCareGame({ animal, onReadyChange }: VisitCareGameProps) {
     onReadyChange(complete);
   }, [complete, onReadyChange]);
 
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => phaseHeadingRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [step]);
+
   useEffect(() => () => {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
   }, []);
 
+  const commitProgress = (next: VisitGameProgress) => {
+    if (!progress) setInternalProgress(next);
+    onProgressChange?.(next);
+  };
+
   const choose = (actionId: string) => {
-    if (locked || complete) return;
+    if (lockedRef.current || complete) return;
     const action = situation.actions.find((item) => item.id === actionId);
     if (!action) return;
 
+    lockedRef.current = true;
     setSelectedId(actionId);
     setLocked(true);
     timerRef.current = window.setTimeout(() => {
       setSelectedId(null);
       setLocked(false);
-      if (action.correct) setStep((current) => current + 1);
+      lockedRef.current = false;
+      if (action.correct) {
+        commitProgress({
+          version: 1,
+          step: Math.min(step + 1, visitSituations.length),
+          shuffleSeed,
+        });
+      }
     }, action.correct ? CORRECT_FEEDBACK_MS : LEARNING_FEEDBACK_MS);
   };
 
@@ -151,7 +211,7 @@ export function VisitCareGame({ animal, onReadyChange }: VisitCareGameProps) {
           >
             <span aria-hidden="true"><CheckIcon /></span>
             <div>
-              <h2>Визит стал частью орбиты</h2>
+              <h2 ref={phaseHeadingRef} tabIndex={-1}>Визит стал частью орбиты</h2>
               <p>Вы прошли путь от входа до возвращения, сохранили безопасную дистанцию и передали наблюдения команде.</p>
             </div>
           </motion.div>
@@ -165,7 +225,7 @@ export function VisitCareGame({ animal, onReadyChange }: VisitCareGameProps) {
             exit={{ opacity: 0, y: reduceMotion ? 0 : -8 }}
           >
             <p>{situation.stepLabel}</p>
-            <h2>{situation.title}</h2>
+            <h2 ref={phaseHeadingRef} tabIndex={-1}>{situation.title}</h2>
             <span>{situation.prompt}</span>
 
             <div className="visit-actions" role="group" aria-label="Как поступить">

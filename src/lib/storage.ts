@@ -5,6 +5,7 @@ const missionIds: Mission["id"][] = ["food", "health", "trust", "home"];
 const restorableStages: StoredSession["stage"][] = [
   "welcome",
   "quiz",
+  "reveal",
   "passport",
   "journey",
   "guardianship",
@@ -28,6 +29,13 @@ function isMissionId(value: unknown): value is Mission["id"] {
 function normalizeMissionIds(value: unknown): Mission["id"][] {
   if (!Array.isArray(value)) return [];
   return [...new Set(value.filter(isMissionId))];
+}
+
+function normalizeMissionProgress(value: unknown): StoredSession["missionProgress"] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).filter(([missionId]) => isMissionId(missionId)),
+  ) as StoredSession["missionProgress"];
 }
 
 function isStoredStage(value: unknown): value is StoredSession["stage"] {
@@ -54,36 +62,50 @@ export function loadSession(): StoredSession | null {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const value = JSON.parse(raw) as Record<string, unknown>;
-    const common = normalizeCommon(value);
+    return normalizeStoredSession(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
+export function normalizeStoredSession(value: unknown): StoredSession | null {
+  try {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const record = value as Record<string, unknown>;
+    const common = normalizeCommon(record);
     if (!common) return null;
 
-    if (value.version === 2) {
-      const completedMissionIds = normalizeMissionIds(value.completedMissionIds);
-      const activeMissionId = isMissionId(value.activeMissionId) ? value.activeMissionId : null;
+    if (record.version === 3 || record.version === 2) {
+      const completedMissionIds = normalizeMissionIds(record.completedMissionIds);
+      const activeMissionId = isMissionId(record.activeMissionId) ? record.activeMissionId : null;
       const startedMissionIds = normalizeMissionIds([
-        ...normalizeMissionIds(value.startedMissionIds),
+        ...normalizeMissionIds(record.startedMissionIds),
         ...completedMissionIds,
         ...(activeMissionId ? [activeMissionId] : []),
       ]);
       return {
-        version: 2,
+        version: 3,
         ...common,
-        stage: common.stage === "journey" && !activeMissionId ? "passport" : common.stage,
+        stage: common.stage === "journey" && !activeMissionId
+          ? "passport"
+          : record.version === 2 && common.stage === "final"
+            ? "guardianship"
+            : common.stage,
         activeMissionId,
         startedMissionIds,
         completedMissionIds,
+        missionProgress: normalizeMissionProgress(record.missionProgress),
       };
     }
 
-    if (value.version === 1 && typeof value.missionIndex === "number") {
-      const legacy = value as unknown as LegacyStoredSession;
+    if (record.version === 1 && typeof record.missionIndex === "number") {
+      const legacy = record as unknown as LegacyStoredSession;
       const completedMissionIds = normalizeMissionIds(legacy.completedMissionIds);
       const activeMissionId = common.stage === "journey"
         ? missionIds[Math.max(0, Math.min(missionIds.length - 1, legacy.missionIndex))] ?? null
         : null;
       return {
-        version: 2,
+        version: 3,
         ...common,
         activeMissionId,
         startedMissionIds: normalizeMissionIds([
@@ -91,6 +113,7 @@ export function loadSession(): StoredSession | null {
           ...(activeMissionId ? [activeMissionId] : []),
         ]),
         completedMissionIds,
+        missionProgress: {},
       };
     }
 
@@ -98,6 +121,35 @@ export function loadSession(): StoredSession | null {
   } catch {
     return null;
   }
+}
+
+export function normalizeSessionForJourney(
+  value: unknown,
+  expectedAnswerCount: number,
+): StoredSession | null {
+  const session = normalizeStoredSession(value);
+  if (!session) return null;
+  const requiresCompleteMatch = session.stage !== "welcome" && session.stage !== "quiz";
+  if (requiresCompleteMatch && session.answers.length !== expectedAnswerCount) {
+    return {
+      ...session,
+      stage: "quiz",
+      animalId: null,
+      activeMissionId: null,
+      startedMissionIds: [],
+      completedMissionIds: [],
+      missionProgress: {},
+    };
+  }
+  if (session.stage === "final"
+    && !missionIds.every((missionId) => session.completedMissionIds.includes(missionId))) {
+    return {
+      ...session,
+      stage: "guardianship",
+      activeMissionId: null,
+    };
+  }
+  return session;
 }
 
 export function reconcileSessionWithAnimalCatalog(
@@ -121,6 +173,7 @@ export function reconcileSessionWithAnimalCatalog(
     activeMissionId: null,
     startedMissionIds: [],
     completedMissionIds: [],
+    missionProgress: {},
   };
 }
 

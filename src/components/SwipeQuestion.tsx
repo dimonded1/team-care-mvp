@@ -63,6 +63,14 @@ export function SwipeQuestion({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        event.altKey
+        || event.ctrlKey
+        || event.metaKey
+        || event.shiftKey
+        || target?.closest("input, textarea, select, [contenteditable='true'], [role='dialog']")
+      ) return;
       if (event.key === "ArrowRight") answer(true);
       if (event.key === "ArrowLeft") answer(false);
     };

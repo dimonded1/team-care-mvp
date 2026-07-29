@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   CONTACT_BODY_LIMIT_BYTES,
   createContactCaptureService,
+  createRequestIdDeduplicator,
   createSlidingWindowRateLimiter,
   isAllowedOrigin,
   parseAllowedOrigins,
@@ -22,6 +23,7 @@ const limiter = createSlidingWindowRateLimiter({
   limit: Number.isFinite(rateLimit) && rateLimit > 0 ? rateLimit : 5,
   windowMs: Number.isFinite(rateWindowMs) && rateWindowMs > 0 ? rateWindowMs : 600_000,
 });
+const requestDeduplicator = createRequestIdDeduplicator();
 
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
@@ -132,11 +134,19 @@ async function handleApi(request, response, url) {
     return true;
   }
 
+  const requestId = String(request.headers["x-request-id"] || "");
+  let requestClaimed = false;
   try {
     const payload = await readJsonBody(request);
+    if (!requestDeduplicator.claim(requestId)) {
+      sendJson(response, 201, { status: "accepted" });
+      return true;
+    }
+    requestClaimed = Boolean(requestId);
     await contactService.submit(payload);
     sendJson(response, 201, { status: "accepted" });
   } catch (error) {
+    if (requestClaimed) requestDeduplicator.release(requestId);
     const status = Number(error?.status) || 502;
     sendJson(response, status, {
       error: status === 400

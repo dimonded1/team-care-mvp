@@ -15,6 +15,7 @@ import {
 } from "../components/Icons";
 import {
   buildHealthGameRound,
+  healthSituationPool,
   healthZones,
   type HealthActionIconId,
   type HealthSituation,
@@ -27,6 +28,91 @@ import { createShuffleSeed, shuffleBySeed } from "../lib/shuffle";
 interface HealthCareGameProps {
   animal: Animal;
   onReadyChange: (ready: boolean) => void;
+  progress?: HealthGameProgress;
+  onProgressChange?: (progress: HealthGameProgress) => void;
+}
+
+export interface HealthGameProgress {
+  version: 1;
+  roundIds: string[];
+  activeZoneId: HealthZoneId | null;
+  selectedChoiceId: string | null;
+  completedZoneIds: HealthZoneId[];
+  shuffleSeed: string;
+}
+
+export function createInitialHealthGameProgress(
+  species: Animal["species"],
+): HealthGameProgress {
+  return {
+    version: 1,
+    roundIds: buildHealthGameRound(species).map((situation) => situation.id),
+    activeZoneId: null,
+    selectedChoiceId: null,
+    completedZoneIds: [],
+    shuffleSeed: createShuffleSeed(),
+  };
+}
+
+function resolveHealthRound(
+  progress: HealthGameProgress,
+  species: Animal["species"],
+): HealthSituation[] {
+  const restored = progress.roundIds.map((id) =>
+    healthSituationPool.find((situation) =>
+      situation.id === id && (situation.species === species || situation.species === "all")));
+  const hasEveryZone = restored.length === healthZones.length
+    && restored.every(Boolean)
+    && healthZones.every((zone) => restored.some((situation) => situation?.zoneId === zone.id));
+  return hasEveryZone
+    ? restored as HealthSituation[]
+    : buildHealthGameRound(species);
+}
+
+export function restoreHealthGameProgress(
+  value: unknown,
+  species: Animal["species"],
+  fallback = createInitialHealthGameProgress(species),
+): HealthGameProgress {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return fallback;
+  const candidate = value as Partial<HealthGameProgress>;
+  const candidateRoundIds = Array.isArray(candidate.roundIds)
+    ? candidate.roundIds.filter((id): id is string => typeof id === "string")
+    : fallback.roundIds;
+  const provisional: HealthGameProgress = {
+    version: 1,
+    roundIds: candidateRoundIds,
+    activeZoneId: healthZones.some((zone) => zone.id === candidate.activeZoneId)
+      ? candidate.activeZoneId as HealthZoneId
+      : null,
+    selectedChoiceId: typeof candidate.selectedChoiceId === "string"
+      ? candidate.selectedChoiceId
+      : null,
+    completedZoneIds: Array.isArray(candidate.completedZoneIds)
+      ? [...new Set(candidate.completedZoneIds.filter((zoneId): zoneId is HealthZoneId =>
+        healthZones.some((zone) => zone.id === zoneId)))]
+      : [],
+    shuffleSeed: typeof candidate.shuffleSeed === "string" && candidate.shuffleSeed
+      ? candidate.shuffleSeed
+      : fallback.shuffleSeed,
+  };
+  const round = resolveHealthRound(provisional, species);
+  const activeSituation = round.find((situation) =>
+    situation.zoneId === provisional.activeZoneId);
+  const activeZoneId = provisional.completedZoneIds.includes(
+    provisional.activeZoneId as HealthZoneId,
+  )
+    ? null
+    : provisional.activeZoneId;
+  return {
+    ...provisional,
+    roundIds: round.map((situation) => situation.id),
+    activeZoneId,
+    selectedChoiceId: activeZoneId && activeSituation?.options.some((choice) =>
+      choice.id === provisional.selectedChoiceId)
+      ? provisional.selectedChoiceId
+      : null,
+  };
 }
 
 const actionIcons = {
@@ -74,7 +160,7 @@ function HealthPetSilhouette({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={reduceMotion
           ? { duration: 0.1 }
-          : { duration: 0.42, type: "spring", stiffness: 180, damping: 22 }}
+          : { duration: 0.32, type: "spring", stiffness: 200, damping: 24 }}
       >
         <div className="health-silhouette__aura" aria-hidden="true" />
         <span className="health-silhouette__ground" aria-hidden="true" />
@@ -115,8 +201,8 @@ function HealthPetSilhouette({
               transition={reduceMotion
                 ? { duration: 0.1 }
                 : {
-                    delay: 0.12 + index * 0.045,
-                    duration: 0.24,
+                    delay: 0.04 + index * 0.02,
+                    duration: 0.2,
                     type: "spring",
                     stiffness: 420,
                     damping: 26,
@@ -174,7 +260,7 @@ function SituationPanel({
     >
       <div className="health-situation__heading">
         <p>Бытовая ситуация</p>
-        <h2 id="health-situation-title">{situation.situation}</h2>
+        <h2 id="health-situation-title" tabIndex={-1}>{situation.situation}</h2>
         <span>{situation.prompt}</span>
       </div>
 
@@ -263,7 +349,7 @@ function HealthSummary({ round }: { round: HealthSituation[] }) {
       transition={{ duration: 0.28 }}
     >
       <p className="section-number">Наблюдения собраны</p>
-      <h2>К визиту к ветеринару готовы</h2>
+      <h2 tabIndex={-1}>К визиту к ветеринару готовы</h2>
       <p>
         Вы не ставили диагноз и не назначали лечение: заметили важное, выбрали
         безопасную первую реакцию и подготовили понятную информацию для команды.
@@ -294,15 +380,28 @@ function HealthSummary({ round }: { round: HealthSituation[] }) {
   );
 }
 
-export function HealthCareGame({ animal, onReadyChange }: HealthCareGameProps) {
+export function HealthCareGame({
+  animal,
+  onReadyChange,
+  progress,
+  onProgressChange,
+}: HealthCareGameProps) {
   const reduceMotion = useReducedMotion();
-  const [round] = useState(() => buildHealthGameRound(animal.species));
-  const [activeZoneId, setActiveZoneId] = useState<HealthZoneId | null>(null);
-  const [selectedChoiceId, setSelectedChoiceId] = useState<string | null>(null);
-  const [completedZoneIds, setCompletedZoneIds] = useState<HealthZoneId[]>([]);
-  const [shuffleSeed] = useState(createShuffleSeed);
+  const [internalProgress, setInternalProgress] = useState(() =>
+    createInitialHealthGameProgress(animal.species));
+  const activeProgress = progress ?? internalProgress;
+  const round = useMemo(
+    () => resolveHealthRound(activeProgress, animal.species),
+    [activeProgress, animal.species],
+  );
+  const activeZoneId = activeProgress.activeZoneId;
+  const selectedChoiceId = activeProgress.selectedChoiceId;
+  const completedZoneIds = activeProgress.completedZoneIds.filter((zoneId) =>
+    healthZones.some((zone) => zone.id === zoneId));
+  const shuffleSeed = activeProgress.shuffleSeed || internalProgress.shuffleSeed;
   const mapRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const choiceLockedRef = useRef(Boolean(selectedChoiceId));
 
   const activeSituation = useMemo(
     () => round.find((situation) => situation.zoneId === activeZoneId) ?? null,
@@ -321,32 +420,66 @@ export function HealthCareGame({ animal, onReadyChange }: HealthCareGameProps) {
   }, [complete, onReadyChange]);
 
   useEffect(() => {
-    if ((!activeSituation && !complete) || !window.matchMedia("(max-width: 759px)").matches) {
-      return;
-    }
+    if (!activeSituation && !complete) return;
     const frame = window.requestAnimationFrame(() => {
-      panelRef.current?.scrollIntoView({
-        behavior: reduceMotion ? "auto" : "smooth",
-        block: "start",
-      });
+      if (window.matchMedia("(max-width: 759px)").matches) {
+        panelRef.current?.scrollIntoView({
+          behavior: reduceMotion ? "auto" : "smooth",
+          block: "start",
+        });
+      }
+      panelRef.current?.querySelector<HTMLElement>("h2")?.focus();
     });
     return () => window.cancelAnimationFrame(frame);
   }, [activeSituation, complete, reduceMotion]);
 
+  const commitProgress = (next: HealthGameProgress) => {
+    if (!progress) setInternalProgress(next);
+    onProgressChange?.(next);
+  };
+
   const selectZone = (zoneId: HealthZoneId) => {
     if (completedZoneIds.includes(zoneId)) return;
-    setActiveZoneId(zoneId);
-    setSelectedChoiceId(null);
+    choiceLockedRef.current = false;
+    commitProgress({
+      version: 1,
+      roundIds: round.map((situation) => situation.id),
+      activeZoneId: zoneId,
+      selectedChoiceId: null,
+      completedZoneIds,
+      shuffleSeed,
+    });
+  };
+
+  const selectChoice = (choiceId: string) => {
+    if (choiceLockedRef.current || !activeSituation) return;
+    if (!activeSituation.options.some((choice) => choice.id === choiceId)) return;
+    choiceLockedRef.current = true;
+    commitProgress({
+      version: 1,
+      roundIds: round.map((situation) => situation.id),
+      activeZoneId,
+      selectedChoiceId: choiceId,
+      completedZoneIds,
+      shuffleSeed,
+    });
   };
 
   const continueJourney = () => {
     if (!activeZoneId || !selectedChoiceId) return;
     const completingLastZone = completedZoneIds.length === healthZones.length - 1;
-    setCompletedZoneIds((current) =>
-      current.includes(activeZoneId) ? current : [...current, activeZoneId],
-    );
-    setActiveZoneId(null);
-    setSelectedChoiceId(null);
+    const nextCompletedZoneIds = completedZoneIds.includes(activeZoneId)
+      ? completedZoneIds
+      : [...completedZoneIds, activeZoneId];
+    choiceLockedRef.current = false;
+    commitProgress({
+      version: 1,
+      roundIds: round.map((situation) => situation.id),
+      activeZoneId: null,
+      selectedChoiceId: null,
+      completedZoneIds: nextCompletedZoneIds,
+      shuffleSeed,
+    });
     if (!completingLastZone && window.matchMedia("(max-width: 759px)").matches) {
       window.requestAnimationFrame(() => {
         mapRef.current?.scrollIntoView({
@@ -401,7 +534,7 @@ export function HealthCareGame({ animal, onReadyChange }: HealthCareGameProps) {
                   key={activeSituation.id}
                   situation={activeSituation}
                   selectedChoiceId={selectedChoiceId}
-                  onSelectChoice={setSelectedChoiceId}
+                  onSelectChoice={selectChoice}
                   onContinue={continueJourney}
                   shuffleSeed={shuffleSeed}
                 />

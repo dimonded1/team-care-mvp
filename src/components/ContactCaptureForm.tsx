@@ -1,8 +1,10 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { CheckIcon } from "./Icons";
 import {
   getContactCaptureMode,
+  createContactCaptureRequestTracker,
+  createContactCaptureSubmitGate,
   isValidContactEmail,
   isValidContactName,
   isValidContactPhone,
@@ -45,6 +47,8 @@ export function ContactCaptureForm({ animal }: ContactCaptureFormProps) {
   const [consent, setConsent] = useState(false);
   const [state, setState] = useState<SubmitState>("idle");
   const [error, setError] = useState("");
+  const submitGate = useRef(createContactCaptureSubmitGate());
+  const requestTracker = useRef(createContactCaptureRequestTracker());
 
   useEffect(() => {
     const controller = new AbortController();
@@ -61,6 +65,7 @@ export function ContactCaptureForm({ animal }: ContactCaptureFormProps) {
   if (mode === "disabled") return null;
 
   const update = (field: keyof typeof initialForm, value: string) => {
+    requestTracker.current.reset();
     setForm((current) => ({ ...current, [field]: value }));
   };
 
@@ -78,9 +83,11 @@ export function ContactCaptureForm({ animal }: ContactCaptureFormProps) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSubmit || !form.workSphere || !form.preferredContact) return;
+    if (!submitGate.current.tryStart()) return;
 
     setState("submitting");
     setError("");
+    const requestId = requestTracker.current.current();
     try {
       await submitContactCapture({
         firstName: form.firstName,
@@ -100,11 +107,14 @@ export function ContactCaptureForm({ animal }: ContactCaptureFormProps) {
         animalId: animal.id,
         animalName: animal.name,
         consent: true,
-      });
+      }, requestId);
+      requestTracker.current.reset();
       setState("success");
     } catch (submitError) {
       setState("error");
       setError(submitError instanceof Error ? submitError.message : "Не получилось отправить контакты.");
+    } finally {
+      submitGate.current.release();
     }
   };
 
@@ -130,7 +140,21 @@ export function ContactCaptureForm({ animal }: ContactCaptureFormProps) {
       </div>
 
       <AnimatePresence mode="wait">
-        {state === "success" ? (
+        {mode === "unavailable" ? (
+          <motion.div
+            key="unavailable"
+            className="contact-capture__success"
+            role="status"
+            initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <div>
+              <strong>Форма временно недоступна</strong>
+              <p>Пожалуйста, напишите фонду напрямую — персональные данные на этой странице не сохраняются.</p>
+              <a className="button button--secondary" href="mailto:info@fond-nika.ru">Написать фонду</a>
+            </div>
+          </motion.div>
+        ) : state === "success" ? (
           <motion.div
             key="success"
             className="contact-capture__success"
@@ -234,7 +258,15 @@ export function ContactCaptureForm({ animal }: ContactCaptureFormProps) {
             </fieldset>
 
             <label className="contact-capture__consent">
-              <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} required />
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(event) => {
+                  requestTracker.current.reset();
+                  setConsent(event.target.checked);
+                }}
+                required
+              />
               <span>
                 Я соглашаюсь на обработку персональных данных и ознакомился(-ась) с{" "}
                 <a href="#legal/privacy">политикой конфиденциальности</a>.

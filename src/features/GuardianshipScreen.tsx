@@ -19,44 +19,10 @@ interface GuardianshipScreenProps {
 }
 
 const careDirections = [
-  {
-    label: "Повседневный уход и корм",
-    icon: FoodIcon,
-  },
-  {
-    label: "Здоровье и лечение",
-    icon: HealthIcon,
-  },
-  {
-    label: "Прогулки и социализация",
-    icon: MovementIcon,
-  },
-  {
-    label: "Фото, истории и поиск дома",
-    icon: HomeIcon,
-  },
-  {
-    label: "Внимание, подарки и участие",
-    icon: HeartIcon,
-  },
-];
-
-const fitProfiles = [
-  {
-    title: "Хотите помогать адресно",
-    text: "Вы знаете имя подопечного, следите за его историей и видите, на чью жизнь влияет ваша помощь.",
-    icon: HeartIcon,
-  },
-  {
-    title: "Пока не можете забрать домой",
-    text: "Можно стать важным человеком рядом, даже если дома сейчас нет условий для питомца.",
-    icon: HomeIcon,
-  },
-  {
-    title: "Ищете посильный формат",
-    text: "Не нужно делать всё одному: у животного может быть команда до пяти опекунов.",
-    icon: MovementIcon,
-  },
+  { label: "корм и ежедневный уход", icon: FoodIcon },
+  { label: "здоровье и лечение", icon: HealthIcon },
+  { label: "прогулки и социализацию", icon: MovementIcon },
+  { label: "фото, истории и поиск дома", icon: HomeIcon },
 ];
 
 export function GuardianshipScreen({
@@ -67,153 +33,91 @@ export function GuardianshipScreen({
 }: GuardianshipScreenProps) {
   const reduceMotion = useReducedMotion();
   const enter = (delay = 0) => ({
-    initial: reduceMotion ? false : { opacity: 0, y: 20 },
+    initial: reduceMotion ? false : { opacity: 0, y: 14 },
     animate: { opacity: 1, y: 0 },
     transition: {
-      duration: reduceMotion ? 0.12 : 0.52,
+      duration: reduceMotion ? 0.12 : 0.38,
       delay: reduceMotion ? 0 : delay,
       ease: [0.22, 1, 0.36, 1] as const,
     },
   });
 
   return (
-    <main className="screen guardianship-screen guardianship-landing">
-      <AppHeader onBack={onBack} right="Что такое опека" light />
+    <main className="screen guardianship-screen guardianship-brief">
+      <AppHeader onBack={onBack} right="Опека · коротко" light />
 
-      <div className="guardianship-landing__content">
-        <motion.section className="guardianship-hero" {...enter()}>
-          <div className="guardianship-hero__media">
-            <AnimalPhoto src={animal.photo} name={animal.name} />
+      <div className="guardianship-brief__stars" aria-hidden="true" />
+      <div className="guardianship-brief__content">
+        <motion.section className="guardianship-brief__hero" {...enter()}>
+          <div className="guardianship-brief__photo">
+            <AnimalPhoto
+              src={animal.photo}
+              name={animal.name}
+              className="guardianship-brief__animal-photo"
+            />
+            <span aria-hidden="true"><HeartIcon /></span>
           </div>
-
-          <div className="guardianship-hero__copy">
+          <div>
+            <p className="section-number">Следующий круг заботы</p>
             <h1>Быть рядом, пока не найдётся дом</h1>
             <p>
-              Опека в фонде «Ника» - регулярная адресная помощь конкретному животному.
-              Вы становитесь его виртуальным хозяином и участвуете в его жизни.
+              Опека — это регулярная адресная помощь конкретному животному.
+              Вы следите за историей {animal.name} и поддерживаете его вместе с фондом.
             </p>
-
-            <div className="guardianship-home-goal">
-              <div className="guardianship-home-goal__visual" aria-hidden="true">
-                <span className="guardianship-home-goal__orbit" />
-                <span className="guardianship-home-goal__satellite"><HeartIcon /></span>
-                <span className="guardianship-home-goal__home"><HomeIcon /></span>
-              </div>
-              <div>
-                <strong>Главная цель - будущая семья</strong>
-                <span>Социализация и рассказы о питомце помогают ему быстрее встретить своих людей.</span>
-              </div>
-            </div>
           </div>
         </motion.section>
 
         <motion.section
-          className="guardianship-facts"
-          aria-labelledby="guardianship-facts-title"
-          {...enter(0.08)}
+          className="guardianship-brief__cards"
+          aria-label="Главное об опеке"
+          {...enter(0.06)}
         >
-          <h2 id="guardianship-facts-title">Опека в нескольких фактах</h2>
-          <div className="guardianship-facts__grid">
-            <article className="guardianship-fact guardianship-fact--cat">
-              <span>Кошка</span>
-              <strong>2 000 ₽</strong>
-              <small>в месяц</small>
-            </article>
-            <article className="guardianship-fact guardianship-fact--dog">
-              <span>Собака</span>
-              <strong>3 500 ₽</strong>
-              <small>в месяц</small>
-            </article>
-            <article className="guardianship-fact guardianship-fact--visit">
-              <span>Можно приезжать в гости</span>
-              <strong>Четверг-воскресенье</strong>
-              <small>11:00-16:00 или в опекунские дни, предупредив менеджера</small>
-            </article>
-            <article className="guardianship-fact guardianship-fact--news">
-              <span>Оставаться в курсе</span>
-              <strong>Новости, фото и видео</strong>
-              <small>закрытые каналы опекунов в Telegram и MAX</small>
-            </article>
-            <article className="guardianship-fact guardianship-fact--symbol">
-              <span>Знак личного участия</span>
-              <strong>Сертификат и значок</strong>
-              <small>ваше имя появится в карточке подопечного и в приюте</small>
-            </article>
-          </div>
-        </motion.section>
-
-        <motion.section
-          className="guardianship-fit"
-          aria-labelledby="guardianship-fit-title"
-          {...enter(0.13)}
-        >
-          <header>
-            <span>Забота в удобном ритме</span>
-            <h2 id="guardianship-fit-title">Кому подходит опека</h2>
-          </header>
-          <div className="guardianship-fit__grid">
-            {fitProfiles.map((profile, index) => {
-              const ProfileIcon = profile.icon;
-              return (
-                <motion.article
-                  key={profile.title}
-                  initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.5 }}
-                  transition={{ duration: reduceMotion ? 0.12 : 0.36, delay: reduceMotion ? 0 : index * 0.06 }}
-                >
-                  <span aria-hidden="true"><ProfileIcon /></span>
-                  <strong>{profile.title}</strong>
-                  <p>{profile.text}</p>
-                </motion.article>
-              );
-            })}
-          </div>
-        </motion.section>
-
-        <motion.section
-          className="guardianship-team"
-          aria-labelledby="guardianship-team-title"
-          {...enter(0.2)}
-        >
-          <header className="guardianship-team__header">
+          <article>
+            <span aria-hidden="true">01</span>
             <div>
-              <h2 id="guardianship-team-title">До пяти опекунов в одной команде</h2>
-              <p>Одному человеку не нужно делать всё. Каждый усиливает общую заботу о {animal.name}.</p>
+              <h2>Команда до пяти опекунов</h2>
+              <p>Помощь можно разделить: одному человеку не нужно закрывать всё.</p>
             </div>
-            <div className="guardianship-team__count" aria-label="До пяти опекунов">
-              <strong>5</strong>
-              <span>мест в команде</span>
+          </article>
+          <article>
+            <span aria-hidden="true">02</span>
+            <div>
+              <h2>Помощь на каждый день</h2>
+              <p>Команда поддерживает уход, здоровье, прогулки и шанс встретить семью.</p>
             </div>
-          </header>
+          </article>
+          <article>
+            <span aria-hidden="true">03</span>
+            <div>
+              <h2>Связь с подопечным</h2>
+              <p>Опекуны получают новости и могут участвовать в жизни животного.</p>
+            </div>
+          </article>
+        </motion.section>
 
-          <ol className="guardianship-directions" aria-label="Пять направлений помощи">
-            {careDirections.map((direction, index) => {
+        <motion.details className="guardianship-brief__details" {...enter(0.1)}>
+          <summary>Что именно закрывает команда</summary>
+          <ul>
+            {careDirections.map((direction) => {
               const DirectionIcon = direction.icon;
               return (
-                <motion.li
-                  key={direction.label}
-                  initial={reduceMotion ? false : { opacity: 0, scale: 0.96, y: 10 }}
-                  whileInView={{ opacity: 1, scale: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.45 }}
-                  transition={{
-                    duration: reduceMotion ? 0.12 : 0.38,
-                    delay: reduceMotion ? 0 : index * 0.055,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                >
-                  <span><DirectionIcon /></span>
-                  <strong>{direction.label}</strong>
-                </motion.li>
+                <li key={direction.label}>
+                  <span aria-hidden="true"><DirectionIcon /></span>
+                  <span>{direction.label}</span>
+                </li>
               );
             })}
-          </ol>
-        </motion.section>
+          </ul>
+          <p>
+            Размер и формат участия фонд уточняет лично: можно выбрать посильный
+            ритм и задать вопросы до решения.
+          </p>
+        </motion.details>
       </div>
 
       <div className="screen-actions sticky-actions guardianship-actions">
         <Button className="button--orange" fullWidth onClick={onContinue}>
-          {complete ? "Перейти к финалу" : "Вернуться к орбите"}
+          {complete ? "Продолжить с командой заботы" : "Вернуться к орбите"}
         </Button>
       </div>
     </main>

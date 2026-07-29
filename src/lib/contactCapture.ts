@@ -1,4 +1,4 @@
-export type ContactCaptureMode = "enabled" | "preview" | "disabled";
+export type ContactCaptureMode = "enabled" | "preview" | "disabled" | "unavailable";
 
 export type WorkSphere =
   | "publicService"
@@ -32,6 +32,25 @@ export interface ContactCapturePayload {
   animalId: string;
   animalName: string;
   consent: true;
+}
+
+/**
+ * Keeps a submit attempt synchronous until the request settles. This prevents
+ * two browser submit events from racing React's asynchronous state update.
+ */
+export function createContactCaptureSubmitGate() {
+  let locked = false;
+
+  return {
+    tryStart() {
+      if (locked) return false;
+      locked = true;
+      return true;
+    },
+    release() {
+      locked = false;
+    },
+  };
 }
 
 export const workSphereOptions: ReadonlyArray<{ id: WorkSphere; label: string }> = [
@@ -85,20 +104,44 @@ export async function getContactCaptureMode(signal?: AbortSignal): Promise<Conta
       headers: { accept: "application/json" },
       signal,
     });
-    if (!response.ok) return resolveContactCaptureMode(false);
+    if (!response.ok) return "unavailable";
     const body = await response.json();
     return resolveContactCaptureMode(body?.contactCaptureEnabled === true);
   } catch {
-    return resolveContactCaptureMode(false);
+    return "unavailable";
   }
 }
 
-export async function submitContactCapture(payload: ContactCapturePayload) {
+function createContactCaptureRequestId() {
+  return globalThis.crypto?.randomUUID?.()
+    ?? `contact-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+export function createContactCaptureRequestTracker(
+  createId: () => string = createContactCaptureRequestId,
+) {
+  let requestId: string | null = null;
+  return {
+    current() {
+      requestId ??= createId();
+      return requestId;
+    },
+    reset() {
+      requestId = null;
+    },
+  };
+}
+
+export async function submitContactCapture(
+  payload: ContactCapturePayload,
+  requestId: string = createContactCaptureRequestId(),
+) {
   const response = await fetch("/api/contact-capture", {
     method: "POST",
     headers: {
       accept: "application/json",
       "content-type": "application/json",
+      "x-request-id": requestId,
     },
     body: JSON.stringify(payload),
   });

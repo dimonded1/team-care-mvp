@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   createContactCaptureService,
+  createRequestIdDeduplicator,
   createSlidingWindowRateLimiter,
   isAllowedOrigin,
   parseAllowedOrigins,
@@ -103,6 +104,25 @@ test("rate limiter uses a bounded sliding window", () => {
   assert.equal(limiter.consume("ip"), false);
   timestamp += 1_001;
   assert.equal(limiter.consume("ip"), true);
+});
+
+test("request ID deduplicator suppresses retries without retaining contact data", () => {
+  let timestamp = 1_000;
+  const deduplicator = createRequestIdDeduplicator({
+    ttlMs: 1_000,
+    maxEntries: 2,
+    now: () => timestamp,
+  });
+
+  assert.equal(deduplicator.claim("request-1"), true);
+  assert.equal(deduplicator.claim("request-1"), false);
+  assert.equal(deduplicator.claim("request-2"), true);
+  deduplicator.release("request-2");
+  assert.equal(deduplicator.claim("request-2"), true);
+  assert.equal(deduplicator.claim("request-3"), true);
+  assert.equal(deduplicator.claim("request-1"), true);
+  timestamp += 1_001;
+  assert.equal(deduplicator.claim("request-3"), true);
 });
 
 test("origin validation allows same-origin and configured production origin", () => {

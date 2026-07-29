@@ -74,12 +74,13 @@ export type Stage =
   | "final";
 
 export interface StoredSession {
-  version: 2;
-  stage: Exclude<Stage, "boot" | "reveal">;
+  version: 3;
+  stage: Exclude<Stage, "boot">;
   answers: boolean[];
   animalId: string | null;
   activeMissionId: Mission["id"] | null;
   startedMissionIds: Mission["id"][];
   completedMissionIds: Mission["id"][];
+  missionProgress: Partial<Record<Mission["id"], unknown>>;
   updatedAt: string;
 }
