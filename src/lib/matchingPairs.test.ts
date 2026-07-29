@@ -16,12 +16,19 @@ describe("matching pairs state", () => {
     expect(restoreMatchingPairsState({ deck, matchedPairIds: ["new-arrival-situation"] }).deck).toEqual(deck);
   });
 
-  it("opens at most two cards and synchronously locks checking", () => {
+  it("keeps one visible selection per column and synchronously locks checking", () => {
     const first = selectMatchingPairCard(createMatchingPairsState(), "new-arrival-situation");
-    const checking = selectMatchingPairCard(first, "feeding-time-action");
-    expect(checking.openCardIds).toEqual(["new-arrival-situation", "feeding-time-action"]);
+    const replaced = selectMatchingPairCard(first, "feeding-time-situation");
+    expect(replaced.openCardIds).toEqual(["feeding-time-situation"]);
+    const checking = selectMatchingPairCard(replaced, "cat-contact-action");
+    expect(checking.openCardIds).toEqual(["feeding-time-situation", "cat-contact-action"]);
     expect(checking.phase).toBe("checking");
-    expect(selectMatchingPairCard(checking, "cat-contact-situation")).toBe(checking);
+    expect(selectMatchingPairCard(checking, "walk-prep-situation")).toBe(checking);
+  });
+
+  it("lets the user deselect a visible card before choosing a pair", () => {
+    const selected = selectMatchingPairCard(createMatchingPairsState(), "new-arrival-situation");
+    expect(selectMatchingPairCard(selected, "new-arrival-situation").openCardIds).toEqual([]);
   });
 
   it("matches only opposite card kinds belonging to the same pair", () => {

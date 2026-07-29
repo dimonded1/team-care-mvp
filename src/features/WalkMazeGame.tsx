@@ -7,6 +7,7 @@ import {
   createWalkMazeProgress,
   getWalkCompletionMessage,
   getWalkElapsedMs,
+  getWalkHazardCell,
   isWalkInputLocked,
   moveWalkMaze,
   type WalkMazeProgress,
@@ -45,6 +46,26 @@ function MazeWalls({ maze }: { maze: WalkMaze }) {
     }
   }
   return <g className="walk-maze__walls" fill="none">{lines}</g>;
+}
+
+function MazeFloor({ maze }: { maze: WalkMaze }) {
+  const cells: ReactElement[] = [];
+  for (let y = 0; y < maze.height; y += 1) {
+    for (let x = 0; x < maze.width; x += 1) {
+      if (Object.values(maze.cells[y][x]).every(Boolean)) continue;
+      cells.push(
+        <rect
+          key={`${x}-${y}`}
+          x={x + 0.08}
+          y={y + 0.08}
+          width="0.84"
+          height="0.84"
+          rx="0.14"
+        />,
+      );
+    }
+  }
+  return <g className="walk-maze__floor">{cells}</g>;
 }
 
 export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMazeGameProps) {
@@ -95,11 +116,15 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
       return;
     }
     lockUntil.current = now + WALK_INPUT_LOCK_MS;
-    setInputMessage(result.collectedBonusId
-      ? "Найдена спокойная точка на маршруте."
-      : result.completed
+    setInputMessage(result.hazardEncountered
+      ? "Клещ замечен вовремя и ушёл с маршрута. Все находки сохранены."
+      : result.collectedBonusId
+        ? "Точка заботы собрана. Выберите следующий маршрут."
+        : result.completed
         ? "Финиш достигнут."
-        : "Шаг выполнен.");
+          : result.reachedFinish
+            ? "Станция рядом — сначала соберите оставшиеся точки заботы."
+            : "Шаг выполнен.");
     onChange(result.progress);
   };
 
@@ -122,20 +147,23 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
   };
 
   const collected = new Set(progress.collectedBonusIds);
+  const allCollected = collected.size === maze.bonuses.length;
+  const hazard = getWalkHazardCell(maze, progress);
   const elapsed = getWalkElapsedMs(progress, clockNow);
 
   return (
     <section className={`walk-maze${completed ? " walk-maze--complete" : ""}`} data-testid="walk-maze" data-maze-id={maze.id} aria-labelledby="walk-maze-title">
       <header className="walk-maze__header">
         <p className="section-number">Направление заботы · прогулка</p>
-        <h1 id="walk-maze-title">Пройдите маршрут в темпе питомца</h1>
-        <p>Стрелки, клавиши или свайп — один шаг за раз. Найдите спокойные точки на пути.</p>
+        <h1 id="walk-maze-title">Соберите маршрут заботы</h1>
+        <p>Исследуйте развилки, соберите все точки и возвращайтесь на станцию. Клещ не отнимает прогресс — его можно спокойно обойти.</p>
       </header>
 
       <div className="walk-maze__board" tabIndex={0} onKeyDown={onKeyDown} onTouchStart={(event) => { const touch = event.touches[0]; if (touch) touchStart.current = { x: touch.clientX, y: touch.clientY }; }} onTouchEnd={onTouchEnd} aria-label="Лабиринт прогулки. Управляйте стрелками">
         <svg viewBox={`0 0 ${maze.width} ${maze.height}`} role="img" aria-label={`Маршрут ${maze.id}`} preserveAspectRatio="xMidYMid meet">
+          <MazeFloor maze={maze} />
           <MazeWalls maze={maze} />
-          <rect className="walk-maze__finish" x={maze.finish.x + 0.22} y={maze.finish.y + 0.22} width="0.56" height="0.56" rx="0.12" />
+          <rect className={`walk-maze__finish${allCollected ? " is-ready" : ""}`} x={maze.finish.x + 0.22} y={maze.finish.y + 0.22} width="0.56" height="0.56" rx="0.12" />
           <text className="walk-maze__finish-mark" x={maze.finish.x + 0.5} y={maze.finish.y + 0.63} textAnchor="middle" aria-hidden="true">⌂</text>
           {maze.bonuses.map((bonus) => (
             <g key={bonus.id} className={`walk-maze__bonus${collected.has(bonus.id) ? " is-collected" : ""}`}>
@@ -145,12 +173,20 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
               <text x={bonus.cell.x + 0.5} y={bonus.cell.y + 0.59} textAnchor="middle" aria-hidden="true">♥</text>
             </g>
           ))}
+          {!completed ? (
+            <g className="walk-maze__hazard" data-testid="walk-maze-hazard">
+              <circle cx={hazard.x + 0.5} cy={hazard.y + 0.5} r="0.2">
+                <title>Клещ на маршруте</title>
+              </circle>
+              <text x={hazard.x + 0.5} y={hazard.y + 0.59} textAnchor="middle" aria-hidden="true">✦</text>
+            </g>
+          ) : null}
           <circle className="walk-maze__player" cx={progress.position.x + 0.5} cy={progress.position.y + 0.5} r="0.23" />
         </svg>
       </div>
 
       <div className="walk-maze__meta" aria-live="polite">
-        <span>Спокойных точек: {progress.collectedBonusIds.length} / {maze.bonuses.length}</span>
+        <span>Точек заботы: {progress.collectedBonusIds.length} / {maze.bonuses.length}</span>
         <span>Мягкий ориентир: {Math.max(0, Math.ceil((WALK_FRIENDLY_TIME_MS - elapsed) / 1000))} c</span>
       </div>
       <p className="walk-maze__status" role="status" aria-live="polite">

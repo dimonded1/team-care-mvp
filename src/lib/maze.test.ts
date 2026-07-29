@@ -1,6 +1,46 @@
 import { describe, expect, it } from "vitest";
-import { getWalkMaze } from "../data/walkMazes";
-import { WALK_FRIENDLY_TIME_MS, WALK_INPUT_LOCK_MS, completeWalkMazeForTime, createWalkMazeProgress, getWalkCompletionMessage, isWalkInputLocked, moveWalkMaze, restoreWalkMazeProgress } from "./maze";
+import {
+  getWalkCell,
+  getWalkMaze,
+  getWalkNeighbour,
+  type WalkCell,
+  type WalkDirection,
+  type WalkMaze,
+} from "../data/walkMazes";
+import { WALK_FRIENDLY_TIME_MS, WALK_INPUT_LOCK_MS, completeWalkMazeForTime, createWalkMazeProgress, getWalkCompletionMessage, getWalkHazardCell, isWalkInputLocked, moveWalkMaze, restoreWalkMazeProgress } from "./maze";
+
+const directions = ["north", "east", "south", "west"] as const;
+
+function sameCell(left: WalkCell, right: WalkCell) {
+  return left.x === right.x && left.y === right.y;
+}
+
+function directionBetween(from: WalkCell, to: WalkCell): WalkDirection {
+  return directions.find((direction) => sameCell(getWalkNeighbour(from, direction), to))!;
+}
+
+function findDirections(maze: WalkMaze, from: WalkCell, target: WalkCell): WalkDirection[] {
+  const queue: Array<{ cell: WalkCell; path: WalkDirection[] }> = [{ cell: from, path: [] }];
+  const visited = new Set<string>();
+  while (queue.length) {
+    const current = queue.shift()!;
+    const key = `${current.cell.x},${current.cell.y}`;
+    if (visited.has(key)) continue;
+    if (sameCell(current.cell, target)) return current.path;
+    visited.add(key);
+    const walls = getWalkCell(maze, current.cell);
+    if (!walls) continue;
+    for (const direction of directions) {
+      if (!walls[direction]) {
+        queue.push({
+          cell: getWalkNeighbour(current.cell, direction),
+          path: [...current.path, direction],
+        });
+      }
+    }
+  }
+  throw new Error("Target is unreachable in test map.");
+}
 
 describe("walk maze state", () => {
   it("exports a 170ms single-input lock contract", () => {
@@ -13,7 +53,9 @@ describe("walk maze state", () => {
   it("blocks walls without starting the timer", () => {
     const maze = getWalkMaze("park-loop");
     const start = createWalkMazeProgress(maze.id);
-    expect(moveWalkMaze(maze, start, "north", 100)).toMatchObject({ moved: false, blocked: "wall", progress: start });
+    const blockedDirection = directions.find((direction) =>
+      getWalkCell(maze, maze.start)?.[direction])!;
+    expect(moveWalkMaze(maze, start, blockedDirection, 100)).toMatchObject({ moved: false, blocked: "wall", progress: start });
   });
 
   it("rejects an open boundary defensively", () => {
@@ -26,13 +68,46 @@ describe("walk maze state", () => {
   it("starts after a successful move, collects bonuses and serializes cleanly", () => {
     const maze = getWalkMaze("park-loop");
     let progress = createWalkMazeProgress(maze.id);
-    const directions = ["east", "east", "east", "south", "north", "east", "east"] as const;
-    directions.forEach((direction, step) => {
+    const route = findDirections(maze, maze.start, maze.bonuses[0].cell);
+    route.forEach((direction, step) => {
       progress = moveWalkMaze(maze, progress, direction, 100 + step * 170).progress;
     });
-    expect(progress.startedAt).toBe(1_120);
-    expect(progress.collectedBonusIds).toEqual(["park-loop-bonus-1"]);
+    expect(progress.startedAt).not.toBeNull();
+    expect(progress.collectedBonusIds).toContain("park-loop-bonus-1");
     expect(JSON.parse(JSON.stringify(progress))).toEqual(progress);
+  });
+
+  it("restores legacy progress with a safe deterministic hazard state", () => {
+    const maze = getWalkMaze("quiet-lane");
+    const restored = restoreWalkMazeProgress({
+      mazeId: maze.id,
+      position: maze.start,
+      collectedBonusIds: [],
+      elapsedMs: 0,
+      startedAt: null,
+      completedAt: null,
+    }, maze.id);
+    expect(restored.hazardIndex).toBe(0);
+    expect(restored.hazardEncounters).toBe(0);
+    expect(getWalkHazardCell(maze, restored)).toEqual(maze.hazardRoute[0]);
+  });
+
+  it("keeps collected points after a soft hazard encounter", () => {
+    const maze = getWalkMaze("park-loop");
+    const progress = {
+      ...createWalkMazeProgress(maze.id),
+      position: maze.hazardRoute[0],
+      collectedBonusIds: [maze.bonuses[0].id],
+    };
+    const result = moveWalkMaze(
+      maze,
+      progress,
+      directionBetween(maze.hazardRoute[0], maze.hazardRoute[1]),
+      1_000,
+    );
+    expect(result.hazardEncountered).toBe(true);
+    expect(result.progress.hazardEncounters).toBe(1);
+    expect(result.progress.collectedBonusIds).toEqual([maze.bonuses[0].id]);
   });
 
   it("restores safe progress and completes kindly after the time limit", () => {
@@ -46,13 +121,18 @@ describe("walk maze state", () => {
     expect(getWalkCompletionMessage(completed)).toContain("Маршрут пройден");
   });
 
-  it("marks the route complete with a friendly 45-second message", () => {
+  it("completes only after collecting every point and reaching the station", () => {
     const maze = getWalkMaze("courtyard-turn");
     let progress = createWalkMazeProgress(maze.id);
-    const directions = ["east", "east", "east", "north", "north", "north", "north", "east", "east", "east", "south", "south", "south"] as const;
-    directions.forEach((direction, index) => { progress = moveWalkMaze(maze, progress, direction, index * 100).progress; });
-    expect(progress.completedAt).toBe(1200);
-    expect(progress.elapsedMs).toBe(1200);
+    let now = 0;
+    for (const target of [...maze.bonuses.map((bonus) => bonus.cell), maze.finish]) {
+      for (const direction of findDirections(maze, progress.position, target)) {
+        progress = moveWalkMaze(maze, progress, direction, now).progress;
+        now += 100;
+      }
+    }
+    expect(progress.collectedBonusIds).toHaveLength(maze.bonuses.length);
+    expect(progress.completedAt).not.toBeNull();
     expect(getWalkCompletionMessage(progress)).toContain("пройдена");
     expect(WALK_FRIENDLY_TIME_MS).toBe(45_000);
   });

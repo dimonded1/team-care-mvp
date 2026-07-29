@@ -80,7 +80,7 @@ export function PassportScreen({
               </div>
             </details>
 
-            <details className="passport-panel">
+            <details className="passport-panel passport-panel--story" open>
               <summary>
                 <span>История подопечного</span>
                 <span aria-hidden="true">+</span>

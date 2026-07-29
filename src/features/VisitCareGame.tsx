@@ -151,7 +151,7 @@ export function VisitCareGame({
     >
       <header className="visit-game__header">
         <p className="section-number">Круг заботы · 02</p>
-        <h1 id="visit-game-title">Навестите {animal.name}</h1>
+        <h1 id="visit-game-title">Навестите подопечного</h1>
         <p>Пройдите визит от входа до возвращения. В приюте всегда следуйте подсказкам сотрудника.</p>
       </header>
 
@@ -179,13 +179,6 @@ export function VisitCareGame({
           <img src={petImage} alt="" draggable={false} />
           <span className="visit-game__character-shadow" aria-hidden="true" />
         </motion.div>
-
-        <div className="visit-game__pet-marker" aria-label={`${animal.name} находится рядом`}>
-          <div>
-            <strong>{animal.name}</strong>
-            <small>{complete ? "следующая встреча уже ближе" : selected && !selected.correct ? "нужна спокойная пауза" : "выбирает свой темп"}</small>
-          </div>
-        </div>
 
         <ol className="visit-game__progress" aria-label="Пять шагов визита">
           {visitSituations.map((item, index) => (

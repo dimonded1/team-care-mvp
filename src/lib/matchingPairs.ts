@@ -29,6 +29,16 @@ function distinctKnownIds(ids: unknown) {
     typeof id === "string" && cardById.has(id));
 }
 
+function keepOneCardPerKind(cardIds: readonly string[]) {
+  const seenKinds = new Set<CarePairCard["kind"]>();
+  return cardIds.filter((id) => {
+    const card = cardById.get(id);
+    if (!card || seenKinds.has(card.kind)) return false;
+    seenKinds.add(card.kind);
+    return true;
+  });
+}
+
 export function createMatchingPairsState(deck: readonly string[] = carePairDeckOrder): MatchingPairsState {
   return {
     deck: validDeck(deck) ? [...deck] : [...carePairDeckOrder],
@@ -54,11 +64,13 @@ export function restoreMatchingPairsState(value: unknown): MatchingPairsState {
     .filter((id): id is string => Boolean(id));
   state.matchedPairIds = [...new Set(matchedPairIds)].filter((id) => pairById.has(id));
 
-  const openCardIds = distinctKnownIds(candidate.openCardIds)
+  const openCardIds = keepOneCardPerKind(distinctKnownIds(candidate.openCardIds)
     .filter((id) => !state.matchedPairIds.includes(cardById.get(id)!.pairId))
-    .slice(0, 2);
+    .slice(0, 2));
   state.openCardIds = openCardIds;
-  state.phase = candidate.phase === "checking" && openCardIds.length === 2
+  state.phase = candidate.phase === "checking"
+    && openCardIds.length === 2
+    && cardById.get(openCardIds[0])?.kind !== cardById.get(openCardIds[1])?.kind
     ? "checking"
     : "idle";
   const feedback = candidate.feedback;
@@ -85,15 +97,29 @@ export function areMatchingPairCards(firstId: string, secondId: string): boolean
 
 export function selectMatchingPairCard(state: MatchingPairsState, cardId: string): MatchingPairsState {
   const card = cardById.get(cardId);
-  if (!card || state.phase === "checking" || state.matchedPairIds.includes(card.pairId) || state.openCardIds.includes(cardId)) {
+  if (!card || state.phase === "checking" || state.matchedPairIds.includes(card.pairId)) {
     return state;
   }
 
-  const openCardIds = [...state.openCardIds, cardId].slice(0, 2);
+  if (state.openCardIds.includes(cardId)) {
+    return {
+      ...state,
+      openCardIds: state.openCardIds.filter((id) => id !== cardId),
+      feedback: null,
+    };
+  }
+
+  const openCardIds = [
+    ...state.openCardIds.filter((id) => cardById.get(id)?.kind !== card.kind),
+    cardId,
+  ];
   return {
     ...state,
     openCardIds,
-    phase: openCardIds.length === 2 ? "checking" : "idle",
+    phase: openCardIds.length === 2
+      && cardById.get(openCardIds[0])?.kind !== cardById.get(openCardIds[1])?.kind
+      ? "checking"
+      : "idle",
     feedback: null,
   };
 }

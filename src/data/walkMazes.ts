@@ -21,6 +21,7 @@ export interface WalkMaze {
   finish: WalkCell;
   cells: readonly (readonly WalkWalls[])[];
   bonuses: readonly WalkMazeBonus[];
+  hazardRoute: readonly WalkCell[];
 }
 
 const directions: readonly WalkDirection[] = ["north", "east", "south", "west"];
@@ -52,15 +53,17 @@ function directionBetween(from: WalkCell, to: WalkCell): WalkDirection {
     ?? (() => { throw new Error("A maze path can only join adjacent cells."); })();
 }
 
-function createPathMaze(
+function createRouteMaze(
   id: string,
   width: number,
   height: number,
-  path: readonly WalkCell[],
-  bonusBranches: readonly [WalkCell, WalkCell, string][],
+  routes: readonly (readonly WalkCell[])[],
+  bonuses: readonly (readonly [WalkCell, string])[],
+  hazardRoute: readonly WalkCell[],
 ): WalkMaze {
-  if (path.length < 2 || path.some((cell, index) => index > 0 && !isNeighbour(path[index - 1], cell))) {
-    throw new Error(`Invalid static path for ${id}.`);
+  const primaryRoute = routes[0];
+  if (!primaryRoute || primaryRoute.length < 2) {
+    throw new Error(`Missing primary route for ${id}.`);
   }
 
   const cells = Array.from({ length: height }, () => Array.from({ length: width }, (): WalkWalls => ({
@@ -70,35 +73,34 @@ function createPathMaze(
     west: true,
   })));
 
-  for (let index = 1; index < path.length; index += 1) {
-    const from = path[index - 1];
-    const to = path[index];
-    const direction = directionBetween(from, to);
-    cells[from.y][from.x][direction] = false;
-    cells[to.y][to.x][opposite[direction]] = false;
-  }
-
-  for (const [from, to] of bonusBranches) {
-    if (!isNeighbour(from, to)) {
-      throw new Error(`Invalid bonus branch for ${id}.`);
+  for (const route of routes) {
+    if (route.length < 2 || route.some((cell, index) =>
+      cell.x < 0 || cell.x >= width || cell.y < 0 || cell.y >= height
+      || (index > 0 && !isNeighbour(route[index - 1], cell)))) {
+      throw new Error(`Invalid static route for ${id}.`);
     }
-    const direction = directionBetween(from, to);
-    cells[from.y][from.x][direction] = false;
-    cells[to.y][to.x][opposite[direction]] = false;
+    for (let index = 1; index < route.length; index += 1) {
+      const from = route[index - 1];
+      const to = route[index];
+      const direction = directionBetween(from, to);
+      cells[from.y][from.x][direction] = false;
+      cells[to.y][to.x][opposite[direction]] = false;
+    }
   }
 
   return {
     id,
     width,
     height,
-    start: path[0],
-    finish: path[path.length - 1],
+    start: primaryRoute[0],
+    finish: primaryRoute[primaryRoute.length - 1],
     cells,
-    bonuses: bonusBranches.map(([, cell, label], index) => ({
+    bonuses: bonuses.map(([cell, label], index) => ({
       id: `${id}-bonus-${index + 1}`,
       cell,
       label,
     })),
+    hazardRoute,
   };
 }
 
@@ -117,49 +119,90 @@ function joinPath(...parts: readonly WalkCell[][]): WalkCell[] {
 }
 
 export const walkMazes: readonly WalkMaze[] = [
-  createPathMaze(
+  createRouteMaze(
     "park-loop",
     8,
     8,
-    joinPath(row(0, 5, 0), column(5, 0, 3), row(5, 2, 3), column(2, 3, 5), row(2, 6, 5)),
     [
-      [{ x: 3, y: 0 }, { x: 3, y: 1 }, "лужайка"],
-      [{ x: 4, y: 3 }, { x: 4, y: 2 }, "вода"],
-      [{ x: 4, y: 5 }, { x: 4, y: 6 }, "игрушка"],
+      joinPath(row(0, 7, 0), column(7, 0, 7)),
+      joinPath(column(0, 0, 7), row(0, 7, 7)),
+      joinPath(column(2, 0, 5), row(2, 6, 5), column(6, 5, 7)),
+      joinPath(row(0, 5, 2), column(5, 2, 7)),
+      joinPath(row(0, 4, 4), column(4, 4, 0)),
+      joinPath(row(4, 6, 3), column(6, 3, 1)),
+      column(5, 0, 2),
     ],
+    [
+      [{ x: 3, y: 7 }, "миска"],
+      [{ x: 2, y: 4 }, "сердечко"],
+      [{ x: 5, y: 3 }, "игрушка"],
+      [{ x: 6, y: 1 }, "тихая точка"],
+      [{ x: 7, y: 5 }, "вода"],
+    ],
+    joinPath(row(2, 5, 0), column(5, 0, 5), row(5, 2, 5), column(2, 5, 0)).slice(0, -1),
   ),
-  createPathMaze(
+  createRouteMaze(
     "quiet-lane",
     9,
     9,
-    joinPath(column(0, 0, 5), row(0, 4, 5), column(4, 5, 2), row(4, 8, 2)),
     [
-      [{ x: 0, y: 3 }, { x: 1, y: 3 }, "тихий поворот"],
-      [{ x: 2, y: 5 }, { x: 2, y: 6 }, "скамейка"],
-      [{ x: 6, y: 2 }, { x: 6, y: 1 }, "миска"],
+      joinPath(column(0, 4, 0), row(0, 8, 0), column(8, 0, 4)),
+      joinPath(column(0, 4, 8), row(0, 8, 8), column(8, 8, 4)),
+      joinPath(row(0, 2, 4), column(2, 4, 2), row(2, 6, 2), column(6, 2, 4), row(6, 8, 4)),
+      joinPath(row(0, 2, 4), column(2, 4, 6), row(2, 6, 6), column(6, 6, 4), row(6, 8, 4)),
+      column(4, 1, 7),
     ],
+    [
+      [{ x: 4, y: 2 }, "сердечко"],
+      [{ x: 4, y: 6 }, "игрушка"],
+      [{ x: 8, y: 1 }, "вода"],
+      [{ x: 1, y: 8 }, "миска"],
+      [{ x: 4, y: 4 }, "тихая точка"],
+    ],
+    joinPath(row(2, 6, 2), column(6, 2, 6), row(6, 2, 6), column(2, 6, 2)).slice(0, -1),
   ),
-  createPathMaze(
+  createRouteMaze(
     "courtyard-turn",
     8,
     8,
-    joinPath(row(0, 3, 7), column(3, 7, 3), row(3, 6, 3), column(6, 3, 6)),
     [
-      [{ x: 2, y: 7 }, { x: 2, y: 6 }, "спокойный шаг"],
-      [{ x: 3, y: 5 }, { x: 2, y: 5 }, "игрушка"],
-      [{ x: 5, y: 3 }, { x: 5, y: 2 }, "сердечко"],
+      joinPath(row(0, 7, 7), column(7, 7, 0)),
+      joinPath(column(0, 7, 0), row(0, 7, 0)),
+      joinPath(row(0, 2, 7), column(2, 7, 2), row(2, 5, 2), column(5, 2, 0), row(5, 7, 0)),
+      joinPath(column(0, 7, 5), row(0, 4, 5), column(4, 5, 3), row(4, 7, 3), column(7, 3, 0)),
+      joinPath(row(0, 4, 7), column(4, 7, 3), row(4, 0, 3)),
+      row(5, 6, 2),
     ],
+    [
+      [{ x: 2, y: 5 }, "миска"],
+      [{ x: 4, y: 4 }, "сердечко"],
+      [{ x: 6, y: 2 }, "игрушка"],
+      [{ x: 7, y: 5 }, "вода"],
+      [{ x: 3, y: 0 }, "тихая точка"],
+    ],
+    joinPath(row(0, 4, 7), column(4, 7, 3), row(4, 0, 3), column(0, 3, 7)).slice(0, -1),
   ),
-  createPathMaze(
+  createRouteMaze(
     "garden-route",
     10,
     10,
-    joinPath(row(0, 4, 0), column(4, 0, 4), row(4, 8, 4), column(8, 4, 1)),
     [
-      [{ x: 2, y: 0 }, { x: 2, y: 1 }, "тень"],
-      [{ x: 4, y: 3 }, { x: 3, y: 3 }, "лакомство"],
-      [{ x: 6, y: 4 }, { x: 6, y: 5 }, "вода"],
+      joinPath(row(0, 9, 0), column(9, 0, 9)),
+      joinPath(column(0, 0, 9), row(0, 9, 9)),
+      joinPath(row(0, 3, 0), column(3, 0, 6), row(3, 8, 6), column(8, 6, 9), row(8, 9, 9)),
+      joinPath(column(0, 0, 4), row(0, 6, 4), column(6, 4, 8), row(6, 9, 8), column(9, 8, 9)),
+      joinPath(row(3, 6, 2), column(6, 2, 4)),
+      row(3, 6, 4),
+      row(3, 2, 5),
     ],
+    [
+      [{ x: 3, y: 2 }, "сердечко"],
+      [{ x: 6, y: 4 }, "миска"],
+      [{ x: 8, y: 6 }, "игрушка"],
+      [{ x: 5, y: 9 }, "вода"],
+      [{ x: 0, y: 6 }, "тихая точка"],
+    ],
+    joinPath(row(3, 6, 2), column(6, 2, 4), row(6, 3, 4), column(3, 4, 2)).slice(0, -1),
   ),
 ];
 
@@ -223,6 +266,23 @@ export function validateWalkMaze(maze: WalkMaze): string[] {
   for (const bonus of maze.bonuses) {
     if (!isWalkCellInBounds(maze, bonus.cell)) errors.push(`Bonus ${bonus.id} is outside the maze.`);
     else if (!reachable.has(`${bonus.cell.x},${bonus.cell.y}`)) errors.push(`Bonus ${bonus.id} is unreachable.`);
+  }
+  if (maze.hazardRoute.length < 4) {
+    errors.push("Hazard route is too short.");
+  } else {
+    maze.hazardRoute.forEach((cell, index) => {
+      const next = maze.hazardRoute[(index + 1) % maze.hazardRoute.length];
+      if (!isWalkCellInBounds(maze, cell) || !reachable.has(`${cell.x},${cell.y}`)) {
+        errors.push(`Hazard route cell ${index} is unreachable.`);
+      } else if (!isNeighbour(cell, next)) {
+        errors.push(`Hazard route step ${index} is not adjacent.`);
+      } else {
+        const direction = directionBetween(cell, next);
+        if (getWalkCell(maze, cell)?.[direction]) {
+          errors.push(`Hazard route step ${index} crosses a wall.`);
+        }
+      }
+    });
   }
   return errors;
 }

@@ -44,7 +44,7 @@ export function GuardianshipScreen({
 
   return (
     <main className="screen guardianship-screen guardianship-brief">
-      <AppHeader onBack={onBack} right="Опека · коротко" light />
+      <AppHeader onBack={onBack} right="Меню" light />
 
       <div className="guardianship-brief__stars" aria-hidden="true" />
       <div className="guardianship-brief__content">
