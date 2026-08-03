@@ -23,7 +23,7 @@ import {
 } from "../data/healthSituations";
 import type { Animal } from "../types/app";
 import { assetUrl } from "../lib/assets";
-import { createShuffleSeed, shuffleBySeed } from "../lib/shuffle";
+import { createShuffleSeed, shuffleQuizOptions } from "../lib/shuffle";
 
 interface HealthCareGameProps {
   animal: Animal;
@@ -231,19 +231,21 @@ function SituationPanel({
   onSelectChoice,
   onContinue,
   shuffleSeed,
+  roundIndex,
 }: {
   situation: HealthSituation;
   selectedChoiceId: string | null;
   onSelectChoice: (choiceId: string) => void;
   onContinue: () => void;
   shuffleSeed: string;
+  roundIndex: number;
 }) {
   const reduceMotion = useReducedMotion();
   const selectedChoice = situation.options.find((option) => option.id === selectedChoiceId) ?? null;
   const correctChoice = situation.options.find((option) => option.correct);
   const displayedOptions = useMemo(
-    () => shuffleBySeed(situation.options, `${shuffleSeed}:${situation.id}`),
-    [shuffleSeed, situation.id, situation.options],
+    () => shuffleQuizOptions(situation.options, shuffleSeed, roundIndex, (option) => option.correct),
+    [roundIndex, shuffleSeed, situation.options],
   );
 
   return (
@@ -537,6 +539,7 @@ export function HealthCareGame({
                   onSelectChoice={selectChoice}
                   onContinue={continueJourney}
                   shuffleSeed={shuffleSeed}
+                  roundIndex={round.findIndex((item) => item.id === activeSituation.id)}
                 />
               ) : null}
             </AnimatePresence>

@@ -28,6 +28,24 @@ export function shuffleBySeed<T>(items: readonly T[], seed: string): T[] {
   return result;
 }
 
+/** Keeps answer order deterministic after refresh while rotating the correct
+ * position between rounds, so a lucky seed cannot put every answer first. */
+export function shuffleQuizOptions<T>(
+  items: readonly T[],
+  seed: string,
+  roundIndex: number,
+  isCorrect: (item: T) => boolean,
+): T[] {
+  const correctItems = items.filter(isCorrect);
+  if (correctItems.length !== 1 || items.length < 2) return shuffleBySeed(items, `${seed}:${roundIndex}`);
+
+  const others = shuffleBySeed(items.filter((item) => !isCorrect(item)), `${seed}:others:${roundIndex}`);
+  const startPosition = hashSeed(`${seed}:correct-position`) % items.length;
+  const correctPosition = (startPosition + Math.max(0, roundIndex)) % items.length;
+  others.splice(correctPosition, 0, correctItems[0]);
+  return others;
+}
+
 export function createShuffleSeed() {
   if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
     const value = new Uint32Array(2);

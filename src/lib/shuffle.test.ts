@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shuffleBySeed } from "./shuffle";
+import { shuffleBySeed, shuffleQuizOptions } from "./shuffle";
 
 describe("shuffleBySeed", () => {
   it("keeps a stable order for the same round seed", () => {
@@ -29,5 +29,20 @@ describe("shuffleBySeed", () => {
       ),
     );
     expect(positions.size).toBeGreaterThan(1);
+  });
+
+  it("rotates the correct position across consecutive quiz rounds", () => {
+    const values = [
+      { id: "correct", correct: true },
+      { id: "one", correct: false },
+      { id: "two", correct: false },
+      { id: "three", correct: false },
+    ];
+    const positions = Array.from({ length: 5 }, (_, round) =>
+      shuffleQuizOptions(values, "saved-session", round, (item) => item.correct)
+        .findIndex((item) => item.correct));
+
+    expect(new Set(positions).size).toBe(4);
+    expect(positions.filter((position) => position === 0)).toHaveLength(1);
   });
 });

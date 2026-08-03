@@ -58,6 +58,12 @@ describe("Bitrix animal catalog", () => {
     expect(animals.some((animal) => animal.source.matchingProfileSource === "derived-v1")).toBe(true);
   });
 
+  it("derives a readable guardianship form for unreviewed Bitrix names", () => {
+    const pistachio = animals.find((animal) => animal.name === "Фисташка");
+    expect(pistachio?.source.matchingProfileSource).toBe("derived-v1");
+    expect(pistachio?.nameGenitive).toBe("Фисташки");
+  });
+
   it("formats age from the Bitrix birth date without storing a stale number", () => {
     const now = new Date("2026-07-28T12:00:00.000Z");
     expect(formatAnimalAge("2025-04-01T03:00:00+03:00", now)).toBe("1 год");

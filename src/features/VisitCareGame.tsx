@@ -6,7 +6,7 @@ import {
   type VisitActionIconId,
 } from "../data/visitSituations";
 import { assetUrl } from "../lib/assets";
-import { createShuffleSeed, shuffleBySeed } from "../lib/shuffle";
+import { createShuffleSeed, shuffleQuizOptions } from "../lib/shuffle";
 import type { Animal } from "../types/app";
 
 interface VisitCareGameProps {
@@ -16,20 +16,19 @@ interface VisitCareGameProps {
   onProgressChange?: (progress: VisitGameProgress) => void;
 }
 
-const CORRECT_FEEDBACK_MS = 1_950;
-const LEARNING_FEEDBACK_MS = 2_450;
-
 export interface VisitGameProgress {
-  version: 1;
+  version: 2;
   step: number;
   shuffleSeed: string;
+  selectedActionId: string | null;
 }
 
 export function createInitialVisitGameProgress(): VisitGameProgress {
   return {
-    version: 1,
+    version: 2,
     step: 0,
     shuffleSeed: createShuffleSeed(),
+    selectedActionId: null,
   };
 }
 
@@ -39,14 +38,22 @@ export function restoreVisitGameProgress(
 ): VisitGameProgress {
   if (!value || typeof value !== "object" || Array.isArray(value)) return fallback;
   const candidate = value as Partial<VisitGameProgress>;
+  const step = typeof candidate.step === "number" && Number.isFinite(candidate.step)
+    ? Math.max(0, Math.min(Math.floor(candidate.step), visitSituations.length))
+    : 0;
+  const situation = visitSituations[step];
+  const selectedActionId = situation
+    && typeof candidate.selectedActionId === "string"
+    && situation.actions.some((action) => action.id === candidate.selectedActionId)
+      ? candidate.selectedActionId
+      : null;
   return {
-    version: 1,
-    step: typeof candidate.step === "number" && Number.isFinite(candidate.step)
-      ? Math.max(0, Math.min(Math.floor(candidate.step), visitSituations.length))
-      : 0,
+    version: 2,
+    step,
     shuffleSeed: typeof candidate.shuffleSeed === "string" && candidate.shuffleSeed
       ? candidate.shuffleSeed
       : fallback.shuffleSeed,
+    selectedActionId,
   };
 }
 
@@ -80,21 +87,21 @@ export function VisitCareGame({
 }: VisitCareGameProps) {
   const reduceMotion = useReducedMotion();
   const [internalProgress, setInternalProgress] = useState(createInitialVisitGameProgress);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [locked, setLocked] = useState(false);
-  const timerRef = useRef<number | null>(null);
   const lockedRef = useRef(false);
   const phaseHeadingRef = useRef<HTMLHeadingElement>(null);
+  const feedbackActionRef = useRef<HTMLButtonElement>(null);
   const activeProgress = progress ?? internalProgress;
   const step = Math.max(0, Math.min(activeProgress.step, visitSituations.length));
   const shuffleSeed = activeProgress.shuffleSeed || internalProgress.shuffleSeed;
   const situation = visitSituations[Math.min(step, visitSituations.length - 1)];
+  const complete = step >= visitSituations.length;
+  const selectedId = complete ? null : activeProgress.selectedActionId;
   const selected = situation.actions.find((action) => action.id === selectedId) ?? null;
   const displayedActions = useMemo(
-    () => shuffleBySeed(situation.actions, `${shuffleSeed}:${situation.id}`),
-    [shuffleSeed, situation.actions, situation.id],
+    () => shuffleQuizOptions(situation.actions, shuffleSeed, step, (action) => action.correct),
+    [shuffleSeed, situation.actions, step],
   );
-  const complete = step >= visitSituations.length;
+  const locked = selected !== null;
   const petState = complete
     ? animal.species === "dog" ? "calm" : "relaxed"
     : selected && !selected.correct
@@ -111,9 +118,12 @@ export function VisitCareGame({
     return () => window.cancelAnimationFrame(frame);
   }, [step]);
 
-  useEffect(() => () => {
-    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-  }, []);
+  useEffect(() => {
+    lockedRef.current = locked;
+    if (!selected) return;
+    const frame = window.requestAnimationFrame(() => feedbackActionRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [locked, selected]);
 
   const commitProgress = (next: VisitGameProgress) => {
     if (!progress) setInternalProgress(next);
@@ -126,20 +136,26 @@ export function VisitCareGame({
     if (!action) return;
 
     lockedRef.current = true;
-    setSelectedId(actionId);
-    setLocked(true);
-    timerRef.current = window.setTimeout(() => {
-      setSelectedId(null);
-      setLocked(false);
-      lockedRef.current = false;
-      if (action.correct) {
-        commitProgress({
-          version: 1,
-          step: Math.min(step + 1, visitSituations.length),
-          shuffleSeed,
-        });
-      }
-    }, action.correct ? CORRECT_FEEDBACK_MS : LEARNING_FEEDBACK_MS);
+    commitProgress({
+      version: 2,
+      step,
+      shuffleSeed,
+      selectedActionId: actionId,
+    });
+  };
+
+  const continueAfterFeedback = () => {
+    if (!selected) return;
+    const nextStep = selected.correct
+      ? Math.min(step + 1, visitSituations.length)
+      : step;
+    lockedRef.current = false;
+    commitProgress({
+      version: 2,
+      step: nextStep,
+      shuffleSeed,
+      selectedActionId: null,
+    });
   };
 
   return (
@@ -256,6 +272,16 @@ export function VisitCareGame({
                 >
                   <strong>{selected.correct ? "Встреча становится спокойнее" : "Тут лучше чуть бережнее"}</strong>
                   <span>{selected.correct ? situation.success : selected.feedback}</span>
+                  <button
+                    ref={feedbackActionRef}
+                    type="button"
+                    className="visit-feedback__continue"
+                    onClick={continueAfterFeedback}
+                  >
+                    {selected.correct
+                      ? step === visitSituations.length - 1 ? "Завершить визит" : "Следующий шаг"
+                      : "Выбрать другой шаг"}
+                  </button>
                 </motion.div>
               ) : null}
             </AnimatePresence>

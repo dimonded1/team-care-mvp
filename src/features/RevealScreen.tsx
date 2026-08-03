@@ -11,6 +11,12 @@ interface RevealScreenProps {
 
 export function RevealScreen({ result, onContinue }: RevealScreenProps) {
   const reduceMotion = useReducedMotion();
+  const nameLength = Array.from(result.animal.name).length;
+  const nameClass = nameLength > 11
+    ? "reveal-name reveal-name--very-long"
+    : nameLength > 6
+      ? "reveal-name reveal-name--long"
+      : "reveal-name";
 
   const itemVariants: Variants = {
     hidden: { opacity: 0, y: reduceMotion ? 0 : 16 },
@@ -62,7 +68,7 @@ export function RevealScreen({ result, onContinue }: RevealScreenProps) {
           </div>
         </motion.div>
         <div className="reveal-copy">
-          <motion.h1 custom={0.16} variants={itemVariants}>{result.animal.name}</motion.h1>
+          <motion.h1 className={nameClass} custom={0.16} variants={itemVariants}>{result.animal.name}</motion.h1>
           <motion.p custom={0.22} variants={itemVariants}>{result.reasons.join(" ")}</motion.p>
           <motion.div className="screen-actions" custom={0.28} variants={itemVariants}>
             <Button fullWidth className="button--orange" onClick={onContinue}>

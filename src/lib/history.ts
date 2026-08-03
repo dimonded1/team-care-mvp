@@ -33,9 +33,37 @@ function withEntry(state: unknown, session: StoredSession, index: number): Sessi
   };
 }
 
+function mergeJourneyProgress(
+  current: StoredSession | null,
+  destination: StoredSession,
+): StoredSession {
+  if (!current
+    || current.stage !== "journey"
+    || destination.stage !== "passport"
+    || current.animalId !== destination.animalId) return destination;
+  return {
+    ...destination,
+    startedMissionIds: [...new Set([
+      ...destination.startedMissionIds,
+      ...current.startedMissionIds,
+    ])],
+    completedMissionIds: [...new Set([
+      ...destination.completedMissionIds,
+      ...current.completedMissionIds,
+    ])],
+    missionProgress: {
+      ...destination.missionProgress,
+      ...current.missionProgress,
+    },
+    updatedAt: current.updatedAt,
+  };
+}
+
 export function createSessionHistory(host: HistoryWindow = window): SessionHistory {
+  let latestSession = getEntry(host.history.state)?.session ?? null;
   const write = (method: "pushState" | "replaceState", session: StoredSession, index: number) => {
     host.history[method](withEntry(host.history.state, session, index), "");
+    latestSession = session;
   };
 
   return {
@@ -52,8 +80,15 @@ export function createSessionHistory(host: HistoryWindow = window): SessionHisto
     },
     listen(onRestore) {
       const onPopState = (event: PopStateEvent) => {
-        const session = getEntry(event.state)?.session;
-        if (session) onRestore(session);
+        const entry = getEntry(event.state);
+        if (!entry) return;
+        const session = mergeJourneyProgress(latestSession, entry.session);
+        if (session !== entry.session) {
+          write("replaceState", session, entry.index);
+        } else {
+          latestSession = session;
+        }
+        onRestore(session);
       };
       host.addEventListener("popstate", onPopState);
       return () => host.removeEventListener("popstate", onPopState);

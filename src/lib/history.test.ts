@@ -77,7 +77,12 @@ describe("session history", () => {
     history.push(session("journey", Array(11).fill(true)));
 
     expect(history.back()).toBe(true);
-    expect(restored.at(-1)).toMatchObject({ stage: "passport", animalId: "animal-1" });
+    expect(restored.at(-1)).toMatchObject({
+      stage: "passport",
+      animalId: "animal-1",
+      startedMissionIds: ["food"],
+      missionProgress: { food: { step: 2 } },
+    });
   });
 
   it("does not navigate away when the session has no local Back entry", () => {

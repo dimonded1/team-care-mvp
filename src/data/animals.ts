@@ -1,6 +1,7 @@
 import snapshots from "./bitrixAnimals.generated.json";
 import { animalEditorialBySourceId } from "./animalEditorial";
 import { assetUrl } from "../lib/assets";
+import { petNameGenitive } from "../lib/russianPetName";
 import type { Animal } from "../types/app";
 
 interface BitrixAnimalSnapshot {
@@ -81,7 +82,9 @@ export const animals: Animal[] = (snapshots as BitrixAnimalSnapshot[]).map((snap
       matchingProfileSource: matching.profileSource,
     },
     name: snapshot.name,
-    nameGenitive: matching.nameGenitive,
+    nameGenitive: matching.profileSource === "reviewed"
+      ? matching.nameGenitive
+      : petNameGenitive(snapshot.name, snapshot.sex),
     species: snapshot.species,
     sex: snapshot.sex === "female" ? "девочка" : "мальчик",
     birthDate: snapshot.birthDate,

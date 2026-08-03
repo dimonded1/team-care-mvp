@@ -115,13 +115,7 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
           {card.status === "error" ? (
             <div className="card-error"><strong>Карточка пока не создалась</strong><p>{card.message}</p></div>
           ) : null}
-        </section>
-        <div className="final-actions">
-          <a className="button button--orange button--full" href={animal.profileUrl} target="_blank" rel="noreferrer">
-            Стать опекуном {animal.name}
-          </a>
-          <ContactCaptureForm animal={animal} />
-          <div className="final-action-row">
+          <div className="card-preview-actions" aria-label="Действия с карточкой">
             <Button
               variant="ghost"
               className="final-utility-action"
@@ -130,7 +124,7 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
               data-complete={actionFeedback === "saved"}
             >
               {actionFeedback === "saved" ? <CheckIcon /> : <DownloadIcon />}
-              <span>{actionFeedback === "saved" ? "Сохранено" : "Сохранить"}</span>
+              <span>{actionFeedback === "saved" ? "Карточка скачана" : "Скачать карточку"}</span>
             </Button>
             <Button
               variant="ghost"
@@ -140,9 +134,16 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
               data-complete={actionFeedback === "shared"}
             >
               {actionFeedback === "shared" ? <CheckIcon /> : <ShareIcon />}
-              <span>{actionFeedback === "shared" ? "Отправлено" : "Поделиться"}</span>
+              <span>{actionFeedback === "shared" ? "Карточка отправлена" : "Поделиться"}</span>
             </Button>
           </div>
+          <p className="card-preview-hint">Скачайте картинку или сразу отправьте её в сторис и сообщения.</p>
+        </section>
+        <div className="final-actions">
+          <a className="button button--orange button--full" href={animal.profileUrl} target="_blank" rel="noreferrer">
+            Стать опекуном {animal.nameGenitive}
+          </a>
+          <ContactCaptureForm animal={animal} />
           <span className="visually-hidden" aria-live="polite">
             {actionFeedback === "saved" ? "Карточка сохранена" : null}
             {actionFeedback === "shared" ? "Карточка отправлена" : null}

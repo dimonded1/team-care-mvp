@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactElement, type TouchEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent, type ReactElement } from "react";
 import { getWalkMaze, type WalkDirection, type WalkMaze } from "../data/walkMazes";
 import {
   WALK_FRIENDLY_TIME_MS,
@@ -6,6 +6,7 @@ import {
   completeWalkMazeForTime,
   createWalkMazeProgress,
   getWalkCompletionMessage,
+  getWalkDirectionFromVector,
   getWalkElapsedMs,
   getWalkHazardCell,
   isWalkInputLocked,
@@ -20,18 +21,19 @@ export interface WalkMazeGameProps {
   onReadyChange: (ready: boolean) => void;
 }
 
-const directionLabels: Record<WalkDirection, string> = {
-  north: "Вверх",
-  east: "Вправо",
-  south: "Вниз",
-  west: "Влево",
-};
-
 const keyDirections: Record<string, WalkDirection | undefined> = {
   ArrowUp: "north",
   ArrowRight: "east",
   ArrowDown: "south",
   ArrowLeft: "west",
+};
+
+const bonusMarks: Record<string, string> = {
+  "миска": "●",
+  "сердечко": "♥",
+  "игрушка": "★",
+  "тихая точка": "✦",
+  "вода": "◆",
 };
 
 function MazeWalls({ maze }: { maze: WalkMaze }) {
@@ -71,10 +73,11 @@ function MazeFloor({ maze }: { maze: WalkMaze }) {
 export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMazeGameProps) {
   const maze = getWalkMaze(mazeId ?? value.mazeId);
   const lockUntil = useRef(0);
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const pointerStart = useRef<{ x: number; y: number; pointerType: string } | null>(null);
   const completionRef = useRef<HTMLParagraphElement>(null);
   const [clockNow, setClockNow] = useState(Date.now);
   const [inputMessage, setInputMessage] = useState("");
+  const [lastDirection, setLastDirection] = useState<WalkDirection>("east");
   const progress = value.mazeId === maze.id ? value : createWalkMazeProgress(maze.id);
   const completed = progress.completedAt !== null;
 
@@ -116,6 +119,7 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
       return;
     }
     lockUntil.current = now + WALK_INPUT_LOCK_MS;
+    setLastDirection(direction);
     setInputMessage(result.hazardEncountered
       ? "Клещ замечен вовремя и ушёл с маршрута. Все находки сохранены."
       : result.collectedBonusId
@@ -128,27 +132,53 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
     onChange(result.progress);
   };
 
-  const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    const direction = keyDirections[event.key];
-    if (!direction) return;
-    event.preventDefault();
-    move(direction);
+  const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse") return;
+    pointerStart.current = { x: event.clientX, y: event.clientY, pointerType: event.pointerType };
   };
 
-  const onTouchEnd = (event: TouchEvent<HTMLElement>) => {
-    const start = touchStart.current;
-    const end = event.changedTouches[0];
-    touchStart.current = null;
-    if (!start || !end) return;
-    const x = end.clientX - start.x;
-    const y = end.clientY - start.y;
-    if (Math.max(Math.abs(x), Math.abs(y)) < 24) return;
-    move(Math.abs(x) > Math.abs(y) ? x > 0 ? "east" : "west" : y > 0 ? "south" : "north");
+  const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    const start = pointerStart.current;
+    pointerStart.current = null;
+    if (!start || start.pointerType === "mouse") return;
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    const swipeDirection = getWalkDirectionFromVector(deltaX, deltaY, 24);
+    if (swipeDirection) {
+      move(swipeDirection);
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const targetX = ((event.clientX - rect.left) / rect.width) * maze.width;
+    const targetY = ((event.clientY - rect.top) / rect.height) * maze.height;
+    const x = targetX - (progress.position.x + 0.5);
+    const y = targetY - (progress.position.y + 0.5);
+    const tapDirection = getWalkDirectionFromVector(x, y, 0.35);
+    if (!tapDirection) {
+      setInputMessage("Коснитесь соседнего участка маршрута или смахните в нужную сторону.");
+      return;
+    }
+    move(tapDirection);
   };
+
+  useEffect(() => {
+    const handleWindowKeyDown = (event: globalThis.KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.matches("input, textarea, select, button, a")) return;
+      const direction = keyDirections[event.key];
+      if (!direction) return;
+      event.preventDefault();
+      move(direction);
+    };
+    window.addEventListener("keydown", handleWindowKeyDown);
+    return () => window.removeEventListener("keydown", handleWindowKeyDown);
+  });
 
   const collected = new Set(progress.collectedBonusIds);
   const allCollected = collected.size === maze.bonuses.length;
   const hazard = getWalkHazardCell(maze, progress);
+  const hazardDistance = Math.abs(hazard.x - progress.position.x) + Math.abs(hazard.y - progress.position.y);
   const elapsed = getWalkElapsedMs(progress, clockNow);
 
   return (
@@ -156,10 +186,17 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
       <header className="walk-maze__header">
         <p className="section-number">Направление заботы · прогулка</p>
         <h1 id="walk-maze-title">Соберите маршрут заботы</h1>
-        <p>Исследуйте развилки, соберите все точки и возвращайтесь на станцию. Клещ не отнимает прогресс — его можно спокойно обойти.</p>
+        <p>Исследуйте развилки, соберите все точки и возвращайтесь на станцию. На телефоне ведите героя свайпом или касанием пути, на компьютере — стрелками.</p>
       </header>
 
-      <div className="walk-maze__board" tabIndex={0} onKeyDown={onKeyDown} onTouchStart={(event) => { const touch = event.touches[0]; if (touch) touchStart.current = { x: touch.clientX, y: touch.clientY }; }} onTouchEnd={onTouchEnd} aria-label="Лабиринт прогулки. Управляйте стрелками">
+      <div
+        className="walk-maze__board"
+        data-danger={hazardDistance <= 2 && !completed ? "near" : "calm"}
+        tabIndex={0}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        aria-label="Игровой маршрут. На телефоне смахивайте или касайтесь пути, на компьютере используйте стрелки"
+      >
         <svg viewBox={`0 0 ${maze.width} ${maze.height}`} role="img" aria-label={`Маршрут ${maze.id}`} preserveAspectRatio="xMidYMid meet">
           <MazeFloor maze={maze} />
           <MazeWalls maze={maze} />
@@ -170,7 +207,7 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
               <circle cx={bonus.cell.x + 0.5} cy={bonus.cell.y + 0.5} r="0.16">
                 <title>{bonus.label}</title>
               </circle>
-              <text x={bonus.cell.x + 0.5} y={bonus.cell.y + 0.59} textAnchor="middle" aria-hidden="true">♥</text>
+              <text x={bonus.cell.x + 0.5} y={bonus.cell.y + 0.59} textAnchor="middle" aria-hidden="true">{bonusMarks[bonus.label] ?? "•"}</text>
             </g>
           ))}
           {!completed ? (
@@ -178,10 +215,16 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
               <circle cx={hazard.x + 0.5} cy={hazard.y + 0.5} r="0.2">
                 <title>Клещ на маршруте</title>
               </circle>
-              <text x={hazard.x + 0.5} y={hazard.y + 0.59} textAnchor="middle" aria-hidden="true">✦</text>
+              <text x={hazard.x + 0.5} y={hazard.y + 0.59} textAnchor="middle" aria-hidden="true">×</text>
             </g>
           ) : null}
-          <circle className="walk-maze__player" cx={progress.position.x + 0.5} cy={progress.position.y + 0.5} r="0.23" />
+          <circle
+            className="walk-maze__player"
+            data-direction={lastDirection}
+            cx={progress.position.x + 0.5}
+            cy={progress.position.y + 0.5}
+            r="0.29"
+          />
         </svg>
       </div>
 
@@ -190,12 +233,8 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
         <span>Мягкий ориентир: {Math.max(0, Math.ceil((WALK_FRIENDLY_TIME_MS - elapsed) / 1000))} c</span>
       </div>
       <p className="walk-maze__status" role="status" aria-live="polite">
-        {inputMessage || "Выберите направление для первого шага."}
+        {inputMessage || "Коснитесь пути рядом с героем или смахните в нужную сторону."}
       </p>
-
-      <div className="walk-maze__controls" role="group" aria-label="Управление лабиринтом">
-        {(["north", "west", "south", "east"] as const).map((direction) => <button key={direction} type="button" className={`walk-maze__control walk-maze__control--${direction}`} onClick={() => move(direction)} disabled={completed} aria-label={directionLabels[direction]}>{direction === "north" ? "↑" : direction === "south" ? "↓" : direction === "west" ? "←" : "→"}</button>)}
-      </div>
 
       {completed ? (
         <p
