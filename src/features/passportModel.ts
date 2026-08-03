@@ -19,6 +19,14 @@ export function getRecommendedMissionId(
   return missions.find((mission) => !completedMissionIds.includes(mission.id))?.id ?? null;
 }
 
+export function isCareJourneyComplete(
+  missions: Mission[],
+  completedMissionIds: Mission["id"][],
+) {
+  return missions.length > 0
+    && missions.every((mission) => completedMissionIds.includes(mission.id));
+}
+
 export function getActionLabel(status: MissionStatus, duration: number) {
   if (status === "completed") return "Пройдено · повторить";
   if (status === "started") return "Продолжить";

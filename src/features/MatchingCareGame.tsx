@@ -77,7 +77,7 @@ export function MatchingCareGame({ value, onChange, onReadyChange }: MatchingCar
         </div>
       </header>
       <div className="matching-care-game__cards">
-        {cardsByKind(kind).map((card) => {
+        {cardsByKind(kind).map((card, index) => {
           if (!card) return null;
           const matched = value.matchedPairIds.includes(card.pairId);
           const selected = value.openCardIds.includes(card.id);
@@ -95,6 +95,12 @@ export function MatchingCareGame({ value, onChange, onReadyChange }: MatchingCar
               aria-pressed={selected}
               onClick={() => selectCard(card.id)}
             >
+              <span className="matching-care-card__eyebrow" aria-hidden="true">
+                <i />
+                {kind === "situation"
+                  ? `Сигнал ${String(index + 1).padStart(2, "0")}`
+                  : `Шаг ${String.fromCharCode(1040 + index)}`}
+              </span>
               <span className="matching-care-card__copy">{card.label}</span>
               <span className="matching-care-card__state" aria-hidden="true">
                 {matched ? <CheckIcon /> : selected ? "Выбрано" : kind === "situation" ? "Выбрать" : "Связать"}
@@ -116,7 +122,7 @@ export function MatchingCareGame({ value, onChange, onReadyChange }: MatchingCar
       <header className="matching-care-game__header">
         <p className="section-number">Круг заботы · пары</p>
         <h2 id="matching-care-game-title">Соедините ситуацию и бережный шаг</h2>
-        <p>Сначала выберите ситуацию слева, затем подходящее действие справа. Все тексты видны сразу.</p>
+        <p>Прочитайте сигнал животного, выберите его карточку, а затем найдите бережный ответ справа.</p>
       </header>
 
       <p className="matching-care-game__progress" aria-live="polite">
@@ -131,8 +137,7 @@ export function MatchingCareGame({ value, onChange, onReadyChange }: MatchingCar
         {renderColumn("situation", "Ситуация", "Что происходит")}
         <div className="matching-care-game__link" aria-hidden="true">
           <span />
-          <span />
-          <span />
+          <i />
           <span />
         </div>
         {renderColumn("action", "Бережный шаг", "Что поможет")}

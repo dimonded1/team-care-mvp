@@ -3,7 +3,7 @@ import { Button } from "../components/Button";
 import { FoundationMenu } from "../components/FoundationMenu";
 import { HeartIcon } from "../components/Icons";
 import type { MatchResult, Mission } from "../types/app";
-import { getMissionStatus } from "./passportModel";
+import { getMissionStatus, isCareJourneyComplete } from "./passportModel";
 import { OrbitExperience } from "./orbit/OrbitExperience";
 
 interface PassportScreenProps {
@@ -13,7 +13,6 @@ interface PassportScreenProps {
   completedMissionIds: Mission["id"][];
   onBack: () => void;
   onSelectMission: (missionId: Mission["id"]) => void;
-  onOpenGuardianship: () => void;
   onContinue: () => void;
   onRestart: () => void;
 }
@@ -25,12 +24,11 @@ export function PassportScreen({
   completedMissionIds,
   onBack,
   onSelectMission,
-  onOpenGuardianship,
   onContinue,
   onRestart,
 }: PassportScreenProps) {
   const { animal, reasons, score } = result;
-  const complete = completedMissionIds.length === missions.length && missions.length > 0;
+  const complete = isCareJourneyComplete(missions, completedMissionIds);
   const roundedScore = Math.round(score);
   const missionStatuses = missions.map((mission) => ({
     id: mission.id,
@@ -55,7 +53,6 @@ export function PassportScreen({
           startedMissionIds={startedMissionIds}
           completedMissionIds={completedMissionIds}
           onSelectMission={onSelectMission}
-          onOpenGuardianship={onOpenGuardianship}
           onCompleteOrbit={onContinue}
         />
 

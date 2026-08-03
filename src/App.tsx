@@ -34,6 +34,7 @@ import { createSessionHistory, type SessionHistory } from "./lib/history";
 import { createMatchResult, findMatch } from "./lib/matching";
 import { assetUrl } from "./lib/assets";
 import type { Mission, Stage, StoredSession } from "./types/app";
+import { isCareJourneyComplete } from "./features/passportModel";
 
 function preload(src: string): Promise<void> {
   return new Promise((resolve) => {
@@ -168,6 +169,7 @@ export default function App() {
   const activeMissionIndex = activeMissionId
     ? missions.findIndex((mission) => mission.id === activeMissionId)
     : -1;
+  const journeyComplete = isCareJourneyComplete(missions, completedMissionIds);
 
   useEffect(() => {
     if (stage === "boot" || !sessionReady) return;
@@ -212,6 +214,13 @@ export default function App() {
       setStage("passport");
     }
   }, [stage, activeMissionIndex]);
+
+  useEffect(() => {
+    if ((stage === "guardianship" || stage === "final") && selectedAnimal && !journeyComplete) {
+      historyWriteRef.current = "replace";
+      setStage("passport");
+    }
+  }, [journeyComplete, selectedAnimal, stage]);
 
   const startQuiz = () => {
     setAnswers([]);
@@ -379,7 +388,6 @@ export default function App() {
           completedMissionIds={completedMissionIds}
           onBack={() => setStage("reveal")}
           onSelectMission={openMission}
-          onOpenGuardianship={() => setStage("guardianship")}
           onContinue={() => setStage("guardianship")}
           onRestart={restart}
         />
@@ -404,25 +412,21 @@ export default function App() {
         />
       );
     }
-    if (stage === "guardianship" && selectedAnimal) {
+    if (stage === "guardianship" && selectedAnimal && journeyComplete) {
       return (
         <GuardianshipScreen
           animal={selectedAnimal}
-          complete={completedMissionIds.length === missions.length && missions.length > 0}
+          complete
           onBack={() => {
             setStage("passport");
           }}
           onContinue={() => {
-            setStage(
-              completedMissionIds.length === missions.length && missions.length > 0
-                ? "final"
-                : "passport",
-            );
+            setStage("final");
           }}
         />
       );
     }
-    if (stage === "final" && selectedAnimal) {
+    if (stage === "final" && selectedAnimal && journeyComplete) {
       return (
         <FinalScreen
           animal={selectedAnimal}

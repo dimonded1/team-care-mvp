@@ -6,6 +6,7 @@ import {
   getMissionStatus,
   getOrbitStoryFragments,
   getRecommendedMissionId,
+  isCareJourneyComplete,
 } from "./passportModel";
 
 describe("passport orbit model", () => {
@@ -27,6 +28,13 @@ describe("passport orbit model", () => {
     expect(getActionLabel("available", 3)).toBe("Начать · 3 мин");
     expect(getActionLabel("started", 3)).toBe("Продолжить");
     expect(getActionLabel("completed", 3)).toBe("Пройдено · повторить");
+  });
+
+  it("opens the guardianship explanation only after every real mission is complete", () => {
+    expect(isCareJourneyComplete(missions, [])).toBe(false);
+    expect(isCareJourneyComplete(missions, ["trust", "food", "home"])).toBe(false);
+    expect(isCareJourneyComplete(missions, ["trust", "food", "home", "home"])).toBe(false);
+    expect(isCareJourneyComplete(missions, missions.map((mission) => mission.id))).toBe(true);
   });
 
   it("builds three short story fragments from the selected animal", () => {

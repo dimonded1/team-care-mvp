@@ -46,7 +46,7 @@ describe("matching pairs state", () => {
     expect(resolved.matchedPairIds).toEqual(["new-arrival"]);
     expect(resolved.openCardIds).toEqual([]);
     expect(resolved.feedback?.kind).toBe("match");
-    expect(resolved.feedback?.explanation).toContain("Тишина");
+    expect(resolved.feedback?.explanation).toContain("Дистанция");
   });
 
   it("closes a non-pair after resolution without losing existing progress", () => {
@@ -71,5 +71,19 @@ describe("matching pairs state", () => {
       phase: "checking",
       feedback: { kind: "match", explanation: { invalid: true } },
     })).toEqual(createMatchingPairsState());
+  });
+
+  it("drops match feedback when its pair is not part of restored progress", () => {
+    const restored = restoreMatchingPairsState({
+      deck: carePairDeckOrder,
+      matchedPairIds: [],
+      feedback: {
+        kind: "match",
+        pairId: "cat-contact",
+        explanation: "Старое объяснение",
+      },
+    });
+
+    expect(restored.feedback).toBeNull();
   });
 });

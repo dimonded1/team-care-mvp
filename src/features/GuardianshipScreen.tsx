@@ -95,7 +95,7 @@ export function GuardianshipScreen({
           </article>
         </motion.section>
 
-        <motion.details className="guardianship-brief__details" {...enter(0.1)}>
+        <motion.details className="guardianship-brief__details" open {...enter(0.1)}>
           <summary>Что именно закрывает команда</summary>
           <ul>
             {careDirections.map((direction) => {

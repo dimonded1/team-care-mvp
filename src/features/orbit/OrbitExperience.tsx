@@ -1,9 +1,13 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CheckIcon, HeartIcon } from "../../components/Icons";
+import { CheckIcon } from "../../components/Icons";
 import { assetUrl } from "../../lib/assets";
 import type { Animal, Mission } from "../../types/app";
-import { getMissionStatus, getRecommendedMissionId } from "../passportModel";
+import {
+  getMissionStatus,
+  getRecommendedMissionId,
+  isCareJourneyComplete,
+} from "../passportModel";
 import { hasOrbitBeenVisited, markOrbitVisited, useOrbitAnimation } from "./useOrbitAnimation";
 
 interface OrbitExperienceProps {
@@ -12,7 +16,6 @@ interface OrbitExperienceProps {
   startedMissionIds: Mission["id"][];
   completedMissionIds: Mission["id"][];
   onSelectMission: (missionId: Mission["id"]) => void;
-  onOpenGuardianship: () => void;
   onCompleteOrbit: () => void;
 }
 
@@ -89,7 +92,6 @@ export function OrbitExperience({
   startedMissionIds,
   completedMissionIds,
   onSelectMission,
-  onOpenGuardianship,
   onCompleteOrbit,
 }: OrbitExperienceProps) {
   const reduceMotion = Boolean(useReducedMotion());
@@ -99,7 +101,7 @@ export function OrbitExperience({
   );
   const [selectedPlanetId, setSelectedPlanetId] = useState<Mission["id"] | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const completed = missions.length > 0 && completedMissionIds.length === missions.length;
+  const completed = isCareJourneyComplete(missions, completedMissionIds);
   const recommendedId = getRecommendedMissionId(missions, completedMissionIds);
 
   const configs = useMemo(
@@ -296,11 +298,6 @@ export function OrbitExperience({
           <span>{completedMissionIds.length}/{missions.length}</span>
           <p>{completed ? "Круг заботы собран" : "Планеты светятся ярче после прохождения"}</p>
         </div>
-        <button type="button" className="care-orbit__guardianship" onClick={onOpenGuardianship}>
-          <HeartIcon />
-          <span><strong>Как устроена опека</strong><small>Коротко о визитах и команде</small></span>
-          <i aria-hidden="true">→</i>
-        </button>
         {completed ? (
           <button type="button" className="care-orbit__complete-action" onClick={onCompleteOrbit}>
             Коротко об опеке <span aria-hidden="true">→</span>

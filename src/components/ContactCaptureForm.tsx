@@ -6,9 +6,11 @@ import {
   getContactCaptureMode,
   createContactCaptureRequestTracker,
   createContactCaptureSubmitGate,
+  formatRussianContactPhone,
   isValidContactEmail,
   isValidContactName,
   isValidContactPhone,
+  normalizeContactEmailInput,
   preferredContactOptions,
   submitContactCapture,
   workSphereOptions,
@@ -28,7 +30,7 @@ const initialForm = {
   firstName: "",
   lastName: "",
   middleName: "",
-  phone: "",
+  phone: "+7",
   birthDate: "",
   workSphere: "" as WorkSphere | "",
   email: "",
@@ -48,6 +50,7 @@ export function ContactCaptureForm({ animal }: ContactCaptureFormProps) {
   const [consent, setConsent] = useState(false);
   const [state, setState] = useState<SubmitState>("idle");
   const [error, setError] = useState("");
+  const [touchedContact, setTouchedContact] = useState({ phone: false, email: false });
   const submitGate = useRef(createContactCaptureSubmitGate());
   const requestTracker = useRef(createContactCaptureRequestTracker());
 
@@ -80,6 +83,8 @@ export function ContactCaptureForm({ animal }: ContactCaptureFormProps) {
     && consent
     && mode === "enabled"
     && state !== "submitting";
+  const phoneError = touchedContact.phone && !isValidContactPhone(form.phone);
+  const emailError = touchedContact.email && !isValidContactEmail(form.email);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -202,11 +207,50 @@ export function ContactCaptureForm({ animal }: ContactCaptureFormProps) {
               <div className="contact-capture__fields">
                 <label>
                   <span>Телефон *</span>
-                  <input name="phone" type="tel" autoComplete="tel" inputMode="tel" maxLength={24} required value={form.phone} onChange={(event) => update("phone", event.target.value)} placeholder="+7 900 000-00-00" />
+                  <input
+                    name="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    inputMode="tel"
+                    maxLength={17}
+                    required
+                    value={form.phone}
+                    onChange={(event) => update("phone", formatRussianContactPhone(event.target.value))}
+                    onBlur={() => setTouchedContact((current) => ({ ...current, phone: true }))}
+                    placeholder="+7(999)-777-77-77"
+                    aria-invalid={phoneError}
+                    aria-describedby={phoneError ? "contact-phone-error" : undefined}
+                  />
+                  {phoneError ? (
+                    <small id="contact-phone-error" className="contact-capture__field-error" role="alert">
+                      Введите 10 цифр после +7: +7(999)-777-77-77
+                    </small>
+                  ) : null}
                 </label>
                 <label>
                   <span>Email *</span>
-                  <input name="email" type="email" autoComplete="email" inputMode="email" maxLength={254} required value={form.email} onChange={(event) => update("email", event.target.value)} placeholder="name@example.ru" />
+                  <input
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    inputMode="email"
+                    maxLength={254}
+                    required
+                    value={form.email}
+                    onChange={(event) => update("email", normalizeContactEmailInput(event.target.value))}
+                    onBlur={() => setTouchedContact((current) => ({ ...current, email: true }))}
+                    placeholder="name@example.ru"
+                    pattern="[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}"
+                    aria-invalid={emailError}
+                    aria-describedby={emailError ? "contact-email-error" : undefined}
+                  />
+                  {emailError ? (
+                    <small id="contact-email-error" className="contact-capture__field-error" role="alert">
+                      {form.email.includes("@")
+                        ? "Проверьте адрес после @, например name@example.ru"
+                        : "Добавьте знак @, например name@example.ru"}
+                    </small>
+                  ) : null}
                 </label>
                 <label>
                   <span>Предпочитаемый способ связи *</span>

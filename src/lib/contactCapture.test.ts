@@ -2,10 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createContactCaptureSubmitGate,
   createContactCaptureRequestTracker,
+  formatRussianContactPhone,
   getContactCaptureMode,
   isValidContactEmail,
   isValidContactName,
   isValidContactPhone,
+  normalizeContactEmailInput,
   preferredContactOptions,
   readCampaignTag,
   resolveContactCaptureMode,
@@ -17,7 +19,7 @@ describe("contact capture validation", () => {
   it("accepts normal names and emails", () => {
     expect(isValidContactName(" Анна Иванова ")).toBe(true);
     expect(isValidContactEmail("anna@example.org")).toBe(true);
-    expect(isValidContactPhone("+7 999 123-45-67")).toBe(true);
+    expect(isValidContactPhone("+7(999)-123-45-67")).toBe(true);
   });
 
   it("rejects invalid or oversized values", () => {
@@ -25,6 +27,19 @@ describe("contact capture validation", () => {
     expect(isValidContactName("x".repeat(81))).toBe(false);
     expect(isValidContactEmail("not-an-email")).toBe(false);
     expect(isValidContactPhone("123")).toBe(false);
+    expect(isValidContactPhone("+7 999 123-45-67")).toBe(false);
+  });
+
+  it("formats Russian phone input and keeps a fixed +7 prefix", () => {
+    expect(formatRussianContactPhone("+7")).toBe("+7");
+    expect(formatRussianContactPhone("9991234567")).toBe("+7(999)-123-45-67");
+    expect(formatRussianContactPhone("89991234567")).toBe("+7(999)-123-45-67");
+    expect(formatRussianContactPhone("+7 (999) 123 45 67 89")).toBe("+7(999)-123-45-67");
+  });
+
+  it("removes spaces from email input before validation", () => {
+    expect(normalizeContactEmailInput(" anna @example.org ")).toBe("anna@example.org");
+    expect(isValidContactEmail(normalizeContactEmailInput(" anna @example.org "))).toBe(true);
   });
 
   it("uses fixed Bitrix-compatible enum allowlists", () => {
@@ -89,7 +104,7 @@ describe("contact capture validation", () => {
       firstName: "Анна",
       lastName: "Иванова",
       middleName: "Сергеевна",
-      phone: "+7 999 123-45-67",
+      phone: "+7(999)-123-45-67",
       email: "anna@example.org",
       workSphere: "media",
       preferredContact: "email",

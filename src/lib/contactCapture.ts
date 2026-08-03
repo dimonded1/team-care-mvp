@@ -112,14 +112,39 @@ export function isValidContactEmail(value: string) {
   return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/u.test(email);
 }
 
+export function normalizeContactEmailInput(value: string) {
+  return value.replace(/\s+/g, "").slice(0, 254);
+}
+
 export function isValidContactName(value: string) {
   const name = value.replace(/\s+/g, " ").trim();
   return name.length >= 2 && name.length <= 80;
 }
 
 export function isValidContactPhone(value: string) {
-  const digits = value.replace(/\D/g, "");
-  return digits.length >= 10 && digits.length <= 15;
+  return /^\+7\(\d{3}\)-\d{3}-\d{2}-\d{2}$/u.test(value);
+}
+
+export function formatRussianContactPhone(value: string) {
+  const rawDigits = value.replace(/\D/g, "");
+  const normalizedDigits = rawDigits.startsWith("8") && rawDigits.length > 10
+    ? `7${rawDigits.slice(1)}`
+    : rawDigits;
+  const subscriber = (normalizedDigits.startsWith("7")
+    ? normalizedDigits.slice(1)
+    : normalizedDigits).slice(0, 10);
+
+  let formatted = "+7";
+  if (subscriber.length === 0) return formatted;
+  formatted += `(${subscriber.slice(0, 3)}`;
+  if (subscriber.length < 3) return formatted;
+  formatted += ")";
+  if (subscriber.length === 3) return formatted;
+  formatted += `-${subscriber.slice(3, 6)}`;
+  if (subscriber.length <= 6) return formatted;
+  formatted += `-${subscriber.slice(6, 8)}`;
+  if (subscriber.length <= 8) return formatted;
+  return `${formatted}-${subscriber.slice(8, 10)}`;
 }
 
 export function resolveContactCaptureMode(

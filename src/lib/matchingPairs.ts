@@ -74,14 +74,29 @@ export function restoreMatchingPairsState(value: unknown): MatchingPairsState {
     ? "checking"
     : "idle";
   const feedback = candidate.feedback;
-  state.feedback = feedback
+  if (
+    feedback
     && typeof feedback === "object"
     && "kind" in feedback
-    && (feedback.kind === "match" || feedback.kind === "continue")
     && "explanation" in feedback
     && typeof feedback.explanation === "string"
-      ? feedback as MatchingPairsFeedback
-      : null;
+  ) {
+    if (feedback.kind === "continue") {
+      state.feedback = { kind: "continue", explanation: feedback.explanation };
+    } else if (
+      feedback.kind === "match"
+      && "pairId" in feedback
+      && typeof feedback.pairId === "string"
+      && pairById.has(feedback.pairId)
+      && state.matchedPairIds.includes(feedback.pairId)
+    ) {
+      state.feedback = {
+        kind: "match",
+        pairId: feedback.pairId,
+        explanation: feedback.explanation,
+      };
+    }
+  }
   return state;
 }
 
