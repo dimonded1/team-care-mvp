@@ -16988,6 +16988,7 @@ select:focus-visible {
 
 .walk-maze__board {
   touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 .walk-maze__floor {
@@ -17332,7 +17333,8 @@ select:focus-visible {
   }
 
   .walk-maze__board {
-    width: min(100%, calc(100vw - 28px));
+    width: min(100%, calc(100vw - 48px));
+    margin-inline: auto;
   }
 }
 

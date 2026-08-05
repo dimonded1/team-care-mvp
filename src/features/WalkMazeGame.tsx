@@ -10,6 +10,7 @@ import {
   getWalkElapsedMs,
   getWalkHazardCell,
   isWalkInputLocked,
+  isWalkTapGesture,
   moveWalkMaze,
   type WalkMazeProgress,
 } from "../lib/maze";
@@ -73,7 +74,12 @@ function MazeFloor({ maze }: { maze: WalkMaze }) {
 export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMazeGameProps) {
   const maze = getWalkMaze(mazeId ?? value.mazeId);
   const lockUntil = useRef(0);
-  const pointerStart = useRef<{ x: number; y: number; pointerType: string } | null>(null);
+  const pointerStart = useRef<{
+    x: number;
+    y: number;
+    pointerId: number;
+    pointerType: string;
+  } | null>(null);
   const completionRef = useRef<HTMLParagraphElement>(null);
   const [clockNow, setClockNow] = useState(Date.now);
   const [inputMessage, setInputMessage] = useState("");
@@ -134,18 +140,44 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse") return;
-    pointerStart.current = { x: event.clientX, y: event.clientY, pointerType: event.pointerType };
+    event.preventDefault();
+    pointerStart.current = {
+      x: event.clientX,
+      y: event.clientY,
+      pointerId: event.pointerId,
+      pointerType: event.pointerType,
+    };
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Some embedded iOS browsers may already own the pointer; tap handling remains safe.
+    }
+  };
+
+  const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (pointerStart.current?.pointerId === event.pointerId) event.preventDefault();
+  };
+
+  const onPointerCancel = (event: PointerEvent<HTMLDivElement>) => {
+    if (pointerStart.current?.pointerId !== event.pointerId) return;
+    pointerStart.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   };
 
   const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
     const start = pointerStart.current;
     pointerStart.current = null;
-    if (!start || start.pointerType === "mouse") return;
+    if (!start || start.pointerType === "mouse" || start.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     const deltaX = event.clientX - start.x;
     const deltaY = event.clientY - start.y;
-    const swipeDirection = getWalkDirectionFromVector(deltaX, deltaY, 24);
-    if (swipeDirection) {
-      move(swipeDirection);
+    if (!isWalkTapGesture(deltaX, deltaY)) {
+      setInputMessage("Не смахивайте: просто коснитесь пути сверху, снизу, слева или справа от героя.");
       return;
     }
 
@@ -156,7 +188,7 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
     const y = targetY - (progress.position.y + 0.5);
     const tapDirection = getWalkDirectionFromVector(x, y, 0.35);
     if (!tapDirection) {
-      setInputMessage("Коснитесь соседнего участка маршрута или смахните в нужную сторону.");
+      setInputMessage("Коснитесь пути сверху, снизу, слева или справа от героя.");
       return;
     }
     move(tapDirection);
@@ -186,7 +218,7 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
       <header className="walk-maze__header">
         <p className="section-number">Направление заботы · прогулка</p>
         <h1 id="walk-maze-title">Соберите маршрут заботы</h1>
-        <p>Исследуйте развилки, соберите все точки и возвращайтесь на станцию. На телефоне ведите героя свайпом или касанием пути, на компьютере — стрелками.</p>
+        <p>Исследуйте развилки, соберите все точки и возвращайтесь на станцию. На телефоне касайтесь пути вокруг героя, на компьютере используйте стрелки.</p>
       </header>
 
       <div
@@ -194,8 +226,10 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
         data-danger={hazardDistance <= 2 && !completed ? "near" : "calm"}
         tabIndex={0}
         onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        aria-label="Игровой маршрут. На телефоне смахивайте или касайтесь пути, на компьютере используйте стрелки"
+        onPointerCancel={onPointerCancel}
+        aria-label="Игровой маршрут. На телефоне касайтесь пути вокруг героя, на компьютере используйте стрелки"
       >
         <svg viewBox={`0 0 ${maze.width} ${maze.height}`} role="img" aria-label={`Маршрут ${maze.id}`} preserveAspectRatio="xMidYMid meet">
           <MazeFloor maze={maze} />
@@ -233,7 +267,7 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
         <span>Мягкий ориентир: {Math.max(0, Math.ceil((WALK_FRIENDLY_TIME_MS - elapsed) / 1000))} c</span>
       </div>
       <p className="walk-maze__status" role="status" aria-live="polite">
-        {inputMessage || "Коснитесь пути рядом с героем или смахните в нужную сторону."}
+        {inputMessage || "Коснитесь пути сверху, снизу, слева или справа от героя."}
       </p>
 
       {completed ? (

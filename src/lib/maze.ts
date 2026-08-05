@@ -3,6 +3,7 @@ import { createShuffleSeed } from "./shuffle";
 
 export const WALK_INPUT_LOCK_MS = 170;
 export const WALK_FRIENDLY_TIME_MS = 45_000;
+export const WALK_TAP_DRIFT_PX = 12;
 
 export function isWalkInputLocked(lockUntil: number, now: number): boolean {
   return now < lockUntil;
@@ -17,6 +18,14 @@ export function getWalkDirectionFromVector(
   return Math.abs(x) > Math.abs(y)
     ? x > 0 ? "east" : "west"
     : y > 0 ? "south" : "north";
+}
+
+export function isWalkTapGesture(
+  deltaX: number,
+  deltaY: number,
+  maximumDrift = WALK_TAP_DRIFT_PX,
+) {
+  return Math.hypot(deltaX, deltaY) <= maximumDrift;
 }
 
 export interface WalkMazeProgress {

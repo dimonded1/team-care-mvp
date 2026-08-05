@@ -7,7 +7,7 @@ import {
   type WalkDirection,
   type WalkMaze,
 } from "../data/walkMazes";
-import { WALK_FRIENDLY_TIME_MS, WALK_INPUT_LOCK_MS, completeWalkMazeForTime, createWalkMazeProgress, getNextWalkHazardCell, getWalkCompletionMessage, getWalkDirectionFromVector, getWalkHazardCell, isWalkInputLocked, moveWalkMaze, restoreWalkMazeProgress } from "./maze";
+import { WALK_FRIENDLY_TIME_MS, WALK_INPUT_LOCK_MS, completeWalkMazeForTime, createWalkMazeProgress, getNextWalkHazardCell, getWalkCompletionMessage, getWalkDirectionFromVector, getWalkHazardCell, isWalkInputLocked, isWalkTapGesture, moveWalkMaze, restoreWalkMazeProgress } from "./maze";
 
 const directions = ["north", "east", "south", "west"] as const;
 
@@ -54,12 +54,20 @@ describe("walk maze state", () => {
     expect(isWalkInputLocked(1_170, 1_170)).toBe(false);
   });
 
-  it("maps swipe and tap vectors to one grid direction", () => {
+  it("maps a chosen point to one grid direction", () => {
     expect(getWalkDirectionFromVector(38, 6, 24)).toBe("east");
     expect(getWalkDirectionFromVector(-40, 3, 24)).toBe("west");
     expect(getWalkDirectionFromVector(4, -31, 24)).toBe("north");
     expect(getWalkDirectionFromVector(2, 42, 24)).toBe("south");
     expect(getWalkDirectionFromVector(10, 8, 24)).toBeNull();
+  });
+
+  it("accepts a short touch but rejects a swipe or diagonal drag", () => {
+    expect(isWalkTapGesture(0, 0)).toBe(true);
+    expect(isWalkTapGesture(8, 8)).toBe(true);
+    expect(isWalkTapGesture(13, 0)).toBe(false);
+    expect(isWalkTapGesture(10, 10)).toBe(false);
+    expect(isWalkTapGesture(3, 48)).toBe(false);
   });
 
   it("blocks walls without starting the timer", () => {
