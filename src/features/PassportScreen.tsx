@@ -73,7 +73,11 @@ export function PassportScreen({
               </summary>
               <div>
                 <strong>{roundedScore}% совпадения</strong>
-                <p>{reasons.join(" ")}</p>
+                <ul className="passport-match-reasons">
+                  {reasons.map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
               </div>
             </details>
 

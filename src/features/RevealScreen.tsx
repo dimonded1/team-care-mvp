@@ -69,7 +69,16 @@ export function RevealScreen({ result, onContinue }: RevealScreenProps) {
         </motion.div>
         <div className="reveal-copy">
           <motion.h1 className={nameClass} custom={0.16} variants={itemVariants}>{result.animal.name}</motion.h1>
-          <motion.p custom={0.22} variants={itemVariants}>{result.reasons.join(" ")}</motion.p>
+          <motion.div
+            className="reveal-reasons"
+            custom={0.22}
+            variants={itemVariants}
+            aria-label="Почему вы совпали"
+          >
+            {result.reasons.map((reason) => (
+              <p key={reason}>{reason}</p>
+            ))}
+          </motion.div>
           <motion.div className="screen-actions" custom={0.28} variants={itemVariants}>
             <Button fullWidth className="button--orange" onClick={onContinue}>
               Познакомиться

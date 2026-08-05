@@ -39,14 +39,12 @@ export interface RankedMatch {
   score: number;
 }
 
-const reasonLabels: Record<MatchAxis, string> = {
-  energy: "У вас похожий темп и отношение к движению.",
-  sociability: "Вам обоим важен живой, понятный контакт.",
-  initiative: "Вы умеете мягко делать первый шаг.",
-  patience: "Вы не ждёте мгновенного доверия.",
-  routine: "Ваше постоянство создаёт чувство безопасности.",
-  spaceRespect: "Вы умеете быть рядом и не торопить.",
-  challenge: "Вас не пугают отношения, которым нужно время.",
+export type MatchReasonGroup = "rhythm" | "contact" | "trust";
+
+export const matchReasonGroups: Record<MatchReasonGroup, readonly MatchAxis[]> = {
+  rhythm: ["energy", "routine"],
+  contact: ["sociability", "initiative"],
+  trust: ["patience", "spaceRespect", "challenge"],
 };
 
 const clamp = (value: number) => Math.max(0, Math.min(100, value));
@@ -92,15 +90,106 @@ export function scoreAnimal(user: MatchProfile, animal: Animal): number {
   return Number((100 - distance).toFixed(2));
 }
 
-function getReasons(user: MatchProfile, animal: Animal): string[] {
-  return matchAxes
-    .map((axis) => ({
-      axis,
-      affinity: (100 - Math.abs(user[axis] - animal.matchProfile[axis])) * axisWeights[axis],
-    }))
-    .toSorted((a, b) => b.affinity - a.affinity)
+function reasonAffinity(user: MatchProfile, animal: Animal, axis: MatchAxis): number {
+  const closeness = 100 - Math.abs(user[axis] - animal.matchProfile[axis]);
+  const animalSalience = Math.abs(animal.matchProfile[axis] - 50);
+
+  // Closeness remains the main signal. Salience prevents a perfectly ordinary
+  // axis from drowning out a trait that is genuinely important for this animal.
+  return closeness * 0.78 + animalSalience * 0.17 + axisWeights[axis] * 100 * 0.05;
+}
+
+export function getMatchReasonAxes(
+  user: MatchProfile,
+  animal: Animal,
+): MatchAxis[] {
+  return (Object.entries(matchReasonGroups) as [MatchReasonGroup, readonly MatchAxis[]][])
+    .map(([group, axes]) => {
+      const axis = [...axes].toSorted((a, b) =>
+        reasonAffinity(user, animal, b) - reasonAffinity(user, animal, a)
+        || matchAxes.indexOf(a) - matchAxes.indexOf(b))[0];
+
+      return { group, axis, affinity: reasonAffinity(user, animal, axis) };
+    })
+    .toSorted((a, b) => b.affinity - a.affinity
+      || a.group.localeCompare(b.group))
     .slice(0, 2)
-    .map(({ axis }) => reasonLabels[axis]);
+    .map(({ axis }) => axis);
+}
+
+function getReasonLevel(value: number): "low" | "balanced" | "high" {
+  if (value <= 38) return "low";
+  if (value >= 62) return "high";
+  return "balanced";
+}
+
+function reasonForAxis(axis: MatchAxis, animal: Animal): string {
+  const name = animal.name;
+  const nameGenitive = animal.nameGenitive;
+  const level = getReasonLevel(animal.matchProfile[axis]);
+
+  switch (axis) {
+    case "energy":
+      if (level === "high") {
+        return `${name} любит активный ритм, и по вашим ответам он вам тоже подходит.`;
+      }
+      if (level === "low") {
+        return `${name} ближе спокойный темп, и вам тоже комфортнее без спешки.`;
+      }
+      return `${name} ценит баланс движения и отдыха — такой ритм близок и вам.`;
+    case "routine":
+      if (level === "high") {
+        return `${name} спокойнее в понятном распорядке, а ваше постоянство может стать опорой.`;
+      }
+      if (level === "low") {
+        return `${name} легко принимает смену ритма, и вам тоже близка гибкость.`;
+      }
+      return `${name} подходит устойчивый, но не жёсткий распорядок — как и вам.`;
+    case "sociability":
+      if (level === "high") {
+        return `${name} тянется к общению, и вам обоим важен живой контакт.`;
+      }
+      if (level === "low") {
+        return `${name} выбирает спокойное общение без напора, и вам близок такой формат.`;
+      }
+      return `${name} любит контакт, в котором есть место паузам, — ваши ответы про то же.`;
+    case "initiative":
+      if (level === "high") {
+        return `${name} охотно отвечает на инициативу человека, а вы готовы мягко сделать первый шаг.`;
+      }
+      if (level === "low") {
+        return `Для ${nameGenitive} важно самостоятельно выбрать момент для сближения, а вы готовы дать это пространство.`;
+      }
+      return `${name} легче знакомиться шаг за шагом, и вы готовы поддержать этот темп.`;
+    case "patience":
+      if (level === "high") {
+        return `С ${nameGenitive} особенно важно не торопить доверие, и ваши ответы показывают запас терпения.`;
+      }
+      if (level === "low") {
+        return `${name} легче вступает в понятный контакт, а вы цените взаимный отклик без долгого ожидания.`;
+      }
+      return `${name} нужен естественный темп сближения, и вы готовы замечать его сигналы.`;
+    case "spaceRespect":
+      if (level === "high") {
+        return `Для ${nameGenitive} важно личное пространство, и вы умеете быть рядом без давления.`;
+      }
+      if (level === "low") {
+        return `${name} комфортно чувствует себя рядом с человеком, а вам легко поддерживать близкий контакт.`;
+      }
+      return `${name} важно чередовать общение и паузы, и вы готовы уважать этот баланс.`;
+    case "challenge":
+      if (level === "high") {
+        return `Отношения с ${nameGenitive} могут потребовать времени, и вас не пугает путь маленькими шагами.`;
+      }
+      if (level === "low") {
+        return `${name} готов к достаточно прямому знакомству, и вам близок такой понятный старт.`;
+      }
+      return `${name} раскрывается постепенно, и вам подходит знакомство без гонки за быстрым результатом.`;
+  }
+}
+
+function getReasons(user: MatchProfile, animal: Animal): string[] {
+  return getMatchReasonAxes(user, animal).map((axis) => reasonForAxis(axis, animal));
 }
 
 export function createMatchResult(

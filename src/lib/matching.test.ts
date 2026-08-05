@@ -6,7 +6,9 @@ import {
   CLOSE_MATCH_SCORE_DELTA,
   createMatchResult,
   findMatch,
+  getMatchReasonAxes,
   matchAxes,
+  matchReasonGroups,
   rankMatches,
   scoreAnimal,
 } from "./matching";
@@ -118,6 +120,49 @@ describe("matching", () => {
     const result = findMatch(animals, questions, questions.map(() => false));
     expect(result.reasons).toHaveLength(2);
     expect(result.reasons.every((reason) => reason.endsWith("."))).toBe(true);
+    expect(result.reasons.every((reason) =>
+      reason.includes(result.animal.name)
+      || reason.includes(result.animal.nameGenitive))).toBe(true);
+  });
+
+  it("explains a match through two different semantic groups", () => {
+    const userProfile = buildUserProfile(questions, questions.map((_, index) => index % 2 === 0));
+    const axes = getMatchReasonAxes(userProfile, animals[0]);
+    const groups = axes.map((axis) => Object.entries(matchReasonGroups)
+      .find(([, groupAxes]) => groupAxes.includes(axis))?.[0]);
+
+    expect(axes).toHaveLength(2);
+    expect(new Set(groups)).toHaveLength(2);
+  });
+
+  it("uses the animal profile and identity instead of repeating generic copy", () => {
+    const userProfile = buildUserProfile(questions, questions.map(() => true));
+    const activeAnimal = animals.find(({ matchProfile }) => matchProfile.energy >= 70)!;
+    const cautiousAnimal = animals.find(({ matchProfile }) =>
+      matchProfile.spaceRespect >= 75 && matchProfile.challenge >= 65)!;
+    const activeResult = createMatchResult(userProfile, activeAnimal);
+    const cautiousResult = createMatchResult(userProfile, cautiousAnimal);
+
+    expect(activeResult.reasons).not.toEqual(cautiousResult.reasons);
+    expect([...activeResult.reasons, ...cautiousResult.reasons]).not.toContain(
+      "У вас похожий темп и отношение к движению.",
+    );
+    expect([...activeResult.reasons, ...cautiousResult.reasons]).not.toContain(
+      "Вы не ждёте мгновенного доверия.",
+    );
+  });
+
+  it("changes the explanation when the same animal meets a different user profile", () => {
+    const quietProfile = buildUserProfile(questions, questions.map(() => false));
+    const activeProfile = buildUserProfile(questions, questions.map(() => true));
+    const animal = animals.find((candidate) =>
+      getMatchReasonAxes(quietProfile, candidate).join(",")
+      !== getMatchReasonAxes(activeProfile, candidate).join(","));
+
+    expect(animal).toBeDefined();
+    expect(getMatchReasonAxes(quietProfile, animal!)).not.toEqual(
+      getMatchReasonAxes(activeProfile, animal!),
+    );
   });
 
   it("recomputes the score and reasons when restoring a saved animal", () => {

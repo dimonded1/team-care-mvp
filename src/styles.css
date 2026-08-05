@@ -2687,6 +2687,28 @@ p {
   line-height: 1.48;
 }
 
+.reveal-reasons {
+  display: grid;
+  gap: 0.55rem;
+  max-width: 34rem;
+}
+
+.reveal-reasons p {
+  position: relative;
+  padding-left: 1.15rem;
+}
+
+.reveal-reasons p::before {
+  position: absolute;
+  top: 0.58em;
+  left: 0;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: var(--color-orange, #f76d31);
+  content: "";
+}
+
 .reveal-screen .screen-actions {
   width: min(100%, 410px);
   margin-top: 8px;
@@ -8648,6 +8670,34 @@ p {
   color: rgba(255, 253, 248, 0.72);
   font-size: 13px;
   line-height: 1.55;
+}
+
+.passport-match-reasons {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  color: rgba(255, 253, 248, 0.72);
+  font-size: 13px;
+  line-height: 1.55;
+  list-style: none;
+}
+
+.passport-match-reasons li {
+  position: relative;
+  padding-left: 1.2rem;
+}
+
+.passport-match-reasons li::before {
+  position: absolute;
+  top: 0.55em;
+  left: 0;
+  width: 0.46rem;
+  height: 0.46rem;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  content: "";
+  opacity: 0.72;
 }
 
 .passport-panel .passport-hub__tags {
