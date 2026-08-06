@@ -3,6 +3,7 @@ import { getWalkMaze, type WalkDirection, type WalkMaze } from "../data/walkMaze
 import {
   WALK_FRIENDLY_TIME_MS,
   WALK_INPUT_LOCK_MS,
+  WALK_SWIPE_MIN_DISTANCE_PX,
   completeWalkMazeForTime,
   createWalkMazeProgress,
   getWalkCompletionMessage,
@@ -10,7 +11,6 @@ import {
   getWalkElapsedMs,
   getWalkHazardCell,
   isWalkInputLocked,
-  isWalkTapGesture,
   moveWalkMaze,
   type WalkMazeProgress,
 } from "../lib/maze";
@@ -73,6 +73,7 @@ function MazeFloor({ maze }: { maze: WalkMaze }) {
 
 export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMazeGameProps) {
   const maze = getWalkMaze(mazeId ?? value.mazeId);
+  const boardRef = useRef<HTMLDivElement>(null);
   const lockUntil = useRef(0);
   const pointerStart = useRef<{
     x: number;
@@ -83,6 +84,7 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
   const completionRef = useRef<HTMLParagraphElement>(null);
   const [clockNow, setClockNow] = useState(Date.now);
   const [inputMessage, setInputMessage] = useState("");
+  const [biteNoticeKey, setBiteNoticeKey] = useState(0);
   const [lastDirection, setLastDirection] = useState<WalkDirection>("east");
   const progress = value.mazeId === maze.id ? value : createWalkMazeProgress(maze.id);
   const completed = progress.completedAt !== null;
@@ -111,6 +113,20 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
     return () => window.clearInterval(timer);
   }, [completed, onChange, progress]);
 
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+    const preventBrowserGesture = (event: TouchEvent) => {
+      if (event.touches.length === 1) event.preventDefault();
+    };
+    board.addEventListener("touchstart", preventBrowserGesture, { passive: false });
+    board.addEventListener("touchmove", preventBrowserGesture, { passive: false });
+    return () => {
+      board.removeEventListener("touchstart", preventBrowserGesture);
+      board.removeEventListener("touchmove", preventBrowserGesture);
+    };
+  }, []);
+
   const move = (direction: WalkDirection) => {
     const now = Date.now();
     if (isWalkInputLocked(lockUntil.current, now)) {
@@ -126,8 +142,9 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
     }
     lockUntil.current = now + WALK_INPUT_LOCK_MS;
     setLastDirection(direction);
+    if (result.hazardEncountered) setBiteNoticeKey((current) => current + 1);
     setInputMessage(result.hazardEncountered
-      ? "Клещ замечен вовремя и ушёл с маршрута. Все находки сохранены."
+      ? "Клещ укусил — маршрут начинается заново. Соберите точки ещё раз."
       : result.collectedBonusId
         ? "Точка заботы собрана. Выберите следующий маршрут."
         : result.completed
@@ -176,22 +193,16 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
     }
     const deltaX = event.clientX - start.x;
     const deltaY = event.clientY - start.y;
-    if (!isWalkTapGesture(deltaX, deltaY)) {
-      setInputMessage("Не смахивайте: просто коснитесь пути сверху, снизу, слева или справа от героя.");
+    const swipeDirection = getWalkDirectionFromVector(
+      deltaX,
+      deltaY,
+      WALK_SWIPE_MIN_DISTANCE_PX,
+    );
+    if (!swipeDirection) {
+      setInputMessage("Смахните по полю в сторону следующего шага.");
       return;
     }
-
-    const rect = event.currentTarget.getBoundingClientRect();
-    const targetX = ((event.clientX - rect.left) / rect.width) * maze.width;
-    const targetY = ((event.clientY - rect.top) / rect.height) * maze.height;
-    const x = targetX - (progress.position.x + 0.5);
-    const y = targetY - (progress.position.y + 0.5);
-    const tapDirection = getWalkDirectionFromVector(x, y, 0.35);
-    if (!tapDirection) {
-      setInputMessage("Коснитесь пути сверху, снизу, слева или справа от героя.");
-      return;
-    }
-    move(tapDirection);
+    move(swipeDirection);
   };
 
   useEffect(() => {
@@ -218,10 +229,11 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
       <header className="walk-maze__header">
         <p className="section-number">Направление заботы · прогулка</p>
         <h1 id="walk-maze-title">Соберите маршрут заботы</h1>
-        <p>Исследуйте развилки, соберите все точки и возвращайтесь на станцию. На телефоне касайтесь пути вокруг героя, на компьютере используйте стрелки.</p>
+        <p>Исследуйте развилки, соберите все точки и возвращайтесь на станцию. На телефоне смахивайте по полю, на компьютере используйте стрелки.</p>
       </header>
 
       <div
+        ref={boardRef}
         className="walk-maze__board"
         data-danger={hazardDistance <= 2 && !completed ? "near" : "calm"}
         tabIndex={0}
@@ -229,7 +241,7 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
-        aria-label="Игровой маршрут. На телефоне касайтесь пути вокруг героя, на компьютере используйте стрелки"
+        aria-label="Игровой маршрут. На телефоне смахивайте по полю, на компьютере используйте стрелки"
       >
         <svg viewBox={`0 0 ${maze.width} ${maze.height}`} role="img" aria-label={`Маршрут ${maze.id}`} preserveAspectRatio="xMidYMid meet">
           <MazeFloor maze={maze} />
@@ -260,6 +272,11 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
             r="0.29"
           />
         </svg>
+        {biteNoticeKey > 0 ? (
+          <span key={biteNoticeKey} className="walk-maze__bite" aria-hidden="true">
+            Клещ укусил! Начинаем заново
+          </span>
+        ) : null}
       </div>
 
       <div className="walk-maze__meta" aria-live="polite">
@@ -267,7 +284,7 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
         <span>Мягкий ориентир: {Math.max(0, Math.ceil((WALK_FRIENDLY_TIME_MS - elapsed) / 1000))} c</span>
       </div>
       <p className="walk-maze__status" role="status" aria-live="polite">
-        {inputMessage || "Коснитесь пути сверху, снизу, слева или справа от героя."}
+        {inputMessage || "Смахните по полю в сторону следующего шага."}
       </p>
 
       {completed ? (

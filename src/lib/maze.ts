@@ -3,7 +3,7 @@ import { createShuffleSeed } from "./shuffle";
 
 export const WALK_INPUT_LOCK_MS = 170;
 export const WALK_FRIENDLY_TIME_MS = 45_000;
-export const WALK_TAP_DRIFT_PX = 12;
+export const WALK_SWIPE_MIN_DISTANCE_PX = 24;
 
 export function isWalkInputLocked(lockUntil: number, now: number): boolean {
   return now < lockUntil;
@@ -18,14 +18,6 @@ export function getWalkDirectionFromVector(
   return Math.abs(x) > Math.abs(y)
     ? x > 0 ? "east" : "west"
     : y > 0 ? "south" : "north";
-}
-
-export function isWalkTapGesture(
-  deltaX: number,
-  deltaY: number,
-  maximumDrift = WALK_TAP_DRIFT_PX,
-) {
-  return Math.hypot(deltaX, deltaY) <= maximumDrift;
 }
 
 export interface WalkMazeProgress {
@@ -106,15 +98,6 @@ export function getNextWalkHazardCell(
     : ordered.filter((cell) => cellDistance(cell, playerTarget) === bestDistance);
   const choice = Math.floor(seededFraction(`${progress.hazardSeed}:${progress.hazardStep}:turn`) * pool.length);
   return pool[choice] ?? pool[0] ?? progress.hazardPosition;
-}
-
-function safestHazardRespawn(maze: WalkMaze, player: WalkCell, seed: string): WalkCell {
-  const candidates = maze.hazardRoute.filter((cell) => !sameCell(cell, player));
-  if (candidates.length === 0) return maze.start;
-  const maxDistance = Math.max(...candidates.map((cell) => cellDistance(cell, player)));
-  const safest = candidates.filter((cell) => cellDistance(cell, player) === maxDistance);
-  const choice = Math.floor(seededFraction(seed) * safest.length);
-  return safest[choice] ?? safest[0];
 }
 
 export function createWalkMazeProgress(mazeId: string, hazardSeed = createShuffleSeed()): WalkMazeProgress {
@@ -276,19 +259,31 @@ export function moveWalkMaze(maze: WalkMaze, progress: WalkMazeProgress, directi
       || sameCell(position, nextHazard)
     ),
   );
-  const safeHazardPosition = hazardEncountered
-    ? safestHazardRespawn(maze, position, `${progress.hazardSeed}:${progress.hazardStep}:respawn`)
-    : nextHazard;
+  if (hazardEncountered) {
+    const hazardEncounters = progress.hazardEncounters + 1;
+    const restarted = createWalkMazeProgress(
+      maze.id,
+      `${progress.hazardSeed}:bite:${hazardEncounters}`,
+    );
+    return {
+      progress: { ...restarted, hazardEncounters },
+      moved: true,
+      blocked: null,
+      collectedBonusId: null,
+      hazardEncountered: true,
+      reachedFinish: false,
+      completed: false,
+    };
+  }
   const reachedFinish = position.x === maze.finish.x && position.y === maze.finish.y;
   const completed = reachedFinish && collectedBonusIds.length === maze.bonuses.length;
   const next: WalkMazeProgress = {
     ...progress,
     position,
     collectedBonusIds,
-    hazardPosition: safeHazardPosition,
-    hazardPreviousPosition: hazardEncountered ? null : currentHazard,
+    hazardPosition: nextHazard,
+    hazardPreviousPosition: currentHazard,
     hazardStep: progress.hazardStep + 1,
-    hazardEncounters: progress.hazardEncounters + (hazardEncountered ? 1 : 0),
     elapsedMs,
     startedAt: completed ? null : now,
     completedAt: completed ? now : null,

@@ -7,7 +7,7 @@ import {
   type WalkDirection,
   type WalkMaze,
 } from "../data/walkMazes";
-import { WALK_FRIENDLY_TIME_MS, WALK_INPUT_LOCK_MS, completeWalkMazeForTime, createWalkMazeProgress, getNextWalkHazardCell, getWalkCompletionMessage, getWalkDirectionFromVector, getWalkHazardCell, isWalkInputLocked, isWalkTapGesture, moveWalkMaze, restoreWalkMazeProgress } from "./maze";
+import { WALK_FRIENDLY_TIME_MS, WALK_INPUT_LOCK_MS, WALK_SWIPE_MIN_DISTANCE_PX, completeWalkMazeForTime, createWalkMazeProgress, getNextWalkHazardCell, getWalkCompletionMessage, getWalkDirectionFromVector, getWalkHazardCell, isWalkInputLocked, moveWalkMaze, restoreWalkMazeProgress } from "./maze";
 
 const directions = ["north", "east", "south", "west"] as const;
 
@@ -62,12 +62,11 @@ describe("walk maze state", () => {
     expect(getWalkDirectionFromVector(10, 8, 24)).toBeNull();
   });
 
-  it("accepts a short touch but rejects a swipe or diagonal drag", () => {
-    expect(isWalkTapGesture(0, 0)).toBe(true);
-    expect(isWalkTapGesture(8, 8)).toBe(true);
-    expect(isWalkTapGesture(13, 0)).toBe(false);
-    expect(isWalkTapGesture(10, 10)).toBe(false);
-    expect(isWalkTapGesture(3, 48)).toBe(false);
+  it("requires a deliberate swipe and uses its dominant direction", () => {
+    expect(WALK_SWIPE_MIN_DISTANCE_PX).toBe(24);
+    expect(getWalkDirectionFromVector(12, 7, WALK_SWIPE_MIN_DISTANCE_PX)).toBeNull();
+    expect(getWalkDirectionFromVector(46, 18, WALK_SWIPE_MIN_DISTANCE_PX)).toBe("east");
+    expect(getWalkDirectionFromVector(-18, -48, WALK_SWIPE_MIN_DISTANCE_PX)).toBe("north");
   });
 
   it("blocks walls without starting the timer", () => {
@@ -113,7 +112,7 @@ describe("walk maze state", () => {
     expect(getWalkHazardCell(maze, restored)).toEqual(maze.hazardRoute[0]);
   });
 
-  it("keeps collected points after a soft hazard encounter", () => {
+  it("restarts the whole route after the tick bites", () => {
     const maze = getWalkMaze("park-loop");
     const start = createWalkMazeProgress(maze.id, "encounter-seed");
     const direction = directions.find((item) => !getWalkCell(maze, start.position)?.[item])!;
@@ -126,7 +125,12 @@ describe("walk maze state", () => {
     const result = moveWalkMaze(maze, progress, direction, 1_000);
     expect(result.hazardEncountered).toBe(true);
     expect(result.progress.hazardEncounters).toBe(1);
-    expect(result.progress.collectedBonusIds).toEqual([maze.bonuses[0].id]);
+    expect(result.progress.position).toEqual(maze.start);
+    expect(result.progress.collectedBonusIds).toEqual([]);
+    expect(result.progress.startedAt).toBeNull();
+    expect(result.progress.elapsedMs).toBe(0);
+    expect(result.progress.completedAt).toBeNull();
+    expect(result.progress.hazardPosition).toEqual(maze.hazardRoute[0]);
   });
 
   it("moves the hazard only through open passages and varies choices by saved seed", () => {
@@ -151,7 +155,10 @@ describe("walk maze state", () => {
 
   it("restores safe progress and completes kindly after the time limit", () => {
     const maze = getWalkMaze("park-loop");
-    const started = moveWalkMaze(maze, createWalkMazeProgress(maze.id), "east", 1_000).progress;
+    const started = moveWalkMaze(maze, {
+      ...createWalkMazeProgress(maze.id),
+      hazardPosition: { x: -10, y: -10 },
+    }, "east", 1_000).progress;
     const restored = restoreWalkMazeProgress(JSON.parse(JSON.stringify(started)), maze.id);
     const completed = completeWalkMazeForTime(restored, 46_001);
 
@@ -162,7 +169,11 @@ describe("walk maze state", () => {
 
   it("completes only after collecting every point and reaching the station", () => {
     const maze = getWalkMaze("courtyard-turn");
-    let progress = createWalkMazeProgress(maze.id);
+    let progress = {
+      ...createWalkMazeProgress(maze.id),
+      // This test isolates collection and finish rules; encounters are covered above.
+      hazardPosition: { x: -10, y: -10 },
+    };
     let now = 0;
     for (const target of [...maze.bonuses.map((bonus) => bonus.cell), maze.finish]) {
       for (const direction of findDirections(maze, progress.position, target)) {

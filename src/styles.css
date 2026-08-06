@@ -17300,10 +17300,46 @@ select:focus-visible {
 
 .walk-maze__board {
   width: min(100%, 390px);
+  position: relative;
   padding: 10px;
-  cursor: crosshair;
+  cursor: grab;
   user-select: none;
   -webkit-user-select: none;
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+}
+
+.walk-maze__board:active {
+  cursor: grabbing;
+}
+
+.journey-screen--walk-game {
+  overscroll-behavior: none;
+}
+
+.walk-maze__bite {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 12px 16px;
+  border: 2px solid #fff3d7;
+  border-radius: 999px;
+  background: var(--orange);
+  box-shadow: 0 16px 36px rgba(20, 4, 0, 0.42);
+  color: #fff;
+  font: 800 13px/1.2 var(--font-body);
+  text-align: center;
+  pointer-events: none;
+  animation: walk-bite-notice 900ms ease both;
+}
+
+@keyframes walk-bite-notice {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.82); }
+  16%, 72% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -62%) scale(0.96); }
 }
 
 .walk-maze__board[data-danger="near"] {
@@ -17397,6 +17433,10 @@ select:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .walk-maze__player {
     transition: none;
+  }
+
+  .walk-maze__bite {
+    animation-duration: 1ms;
   }
 }
 
