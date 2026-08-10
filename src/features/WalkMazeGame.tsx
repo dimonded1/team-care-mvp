@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent, type ReactElement } from "react";
+import { memo, useCallback, useEffect, useRef, useState, type PointerEvent, type ReactElement } from "react";
 import { getWalkMaze, type WalkDirection, type WalkMaze } from "../data/walkMazes";
 import {
   WALK_FRIENDLY_TIME_MS,
@@ -37,7 +37,7 @@ const bonusMarks: Record<string, string> = {
   "вода": "◆",
 };
 
-function MazeWalls({ maze }: { maze: WalkMaze }) {
+const MazeWalls = memo(function MazeWalls({ maze }: { maze: WalkMaze }) {
   const lines: ReactElement[] = [];
   for (let y = 0; y < maze.height; y += 1) {
     for (let x = 0; x < maze.width; x += 1) {
@@ -49,9 +49,9 @@ function MazeWalls({ maze }: { maze: WalkMaze }) {
     }
   }
   return <g className="walk-maze__walls" fill="none">{lines}</g>;
-}
+});
 
-function MazeFloor({ maze }: { maze: WalkMaze }) {
+const MazeFloor = memo(function MazeFloor({ maze }: { maze: WalkMaze }) {
   const cells: ReactElement[] = [];
   for (let y = 0; y < maze.height; y += 1) {
     for (let x = 0; x < maze.width; x += 1) {
@@ -69,7 +69,52 @@ function MazeFloor({ maze }: { maze: WalkMaze }) {
     }
   }
   return <g className="walk-maze__floor">{cells}</g>;
+});
+
+interface WalkMazeClockProps {
+  progress: WalkMazeProgress;
+  onExpire: (now: number) => void;
 }
+
+const WalkMazeClock = memo(function WalkMazeClock({
+  progress,
+  onExpire,
+}: WalkMazeClockProps) {
+  const [now, setNow] = useState(Date.now);
+
+  useEffect(() => {
+    if (progress.startedAt === null || progress.completedAt !== null) return;
+    let active = true;
+    const checkClock = () => {
+      if (!active) return;
+      const current = Date.now();
+      if (getWalkElapsedMs(progress, current) >= WALK_FRIENDLY_TIME_MS) {
+        active = false;
+        onExpire(current);
+        return;
+      }
+      setNow(current);
+    };
+    const interval = window.setInterval(checkClock, 1_000);
+    const remaining = Math.max(
+      0,
+      WALK_FRIENDLY_TIME_MS - getWalkElapsedMs(progress, Date.now()),
+    );
+    const expiration = window.setTimeout(checkClock, remaining + 25);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.clearTimeout(expiration);
+    };
+  }, [onExpire, progress]);
+
+  const elapsed = getWalkElapsedMs(progress, now);
+  return (
+    <span>
+      Мягкий ориентир: {Math.max(0, Math.ceil((WALK_FRIENDLY_TIME_MS - elapsed) / 1000))} c
+    </span>
+  );
+});
 
 export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMazeGameProps) {
   const maze = getWalkMaze(mazeId ?? value.mazeId);
@@ -82,12 +127,18 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
     pointerType: string;
   } | null>(null);
   const completionRef = useRef<HTMLParagraphElement>(null);
-  const [clockNow, setClockNow] = useState(Date.now);
   const [inputMessage, setInputMessage] = useState("");
   const [biteNoticeKey, setBiteNoticeKey] = useState(0);
   const [lastDirection, setLastDirection] = useState<WalkDirection>("east");
   const progress = value.mazeId === maze.id ? value : createWalkMazeProgress(maze.id);
+  const progressRef = useRef(progress);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
   const completed = progress.completedAt !== null;
+
+  useEffect(() => {
+    progressRef.current = progress;
+  }, [progress]);
 
   useEffect(() => {
     onReadyChange(completed);
@@ -99,19 +150,14 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
     return () => window.cancelAnimationFrame(frame);
   }, [completed]);
 
-  useEffect(() => {
-    if (progress.startedAt === null || completed) return;
-    const timer = window.setInterval(() => {
-      const now = Date.now();
-      setClockNow(now);
-      const timedProgress = completeWalkMazeForTime(progress, now);
-      if (timedProgress !== progress) {
-        setInputMessage("Время прогулки подошло к ориентиру. Маршрут можно спокойно завершить.");
-        onChange(timedProgress);
-      }
-    }, 250);
-    return () => window.clearInterval(timer);
-  }, [completed, onChange, progress]);
+  const handleTimeExpired = useCallback((now: number) => {
+    const current = progressRef.current;
+    const timedProgress = completeWalkMazeForTime(current, now);
+    if (timedProgress === current) return;
+    progressRef.current = timedProgress;
+    setInputMessage("Время прогулки подошло к ориентиру. Маршрут можно спокойно завершить.");
+    onChangeRef.current(timedProgress);
+  }, []);
 
   useEffect(() => {
     const board = boardRef.current;
@@ -127,19 +173,22 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
     };
   }, []);
 
-  const move = (direction: WalkDirection) => {
+  const move = useCallback((direction: WalkDirection) => {
     const now = Date.now();
     if (isWalkInputLocked(lockUntil.current, now)) {
       setInputMessage("Один шаг уже выполняется.");
       return;
     }
-    const result = moveWalkMaze(maze, progress, direction, now);
+    const result = moveWalkMaze(maze, progressRef.current, direction, now);
     if (!result.moved) {
-      setInputMessage(result.blocked === "bounds"
-        ? "Дальше граница поля."
-        : "Здесь стена — попробуйте другой поворот.");
+      setInputMessage(result.blocked === "complete"
+        ? "Маршрут уже завершён — сохраните круг заботы."
+        : result.blocked === "bounds"
+          ? "Дальше граница поля."
+          : "Здесь стена — попробуйте другой поворот.");
       return;
     }
+    progressRef.current = result.progress;
     lockUntil.current = now + WALK_INPUT_LOCK_MS;
     setLastDirection(direction);
     if (result.hazardEncountered) setBiteNoticeKey((current) => current + 1);
@@ -152,8 +201,8 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
           : result.reachedFinish
             ? "Станция рядом — сначала соберите оставшиеся точки заботы."
             : "Шаг выполнен.");
-    onChange(result.progress);
-  };
+    onChangeRef.current(result.progress);
+  }, [maze]);
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse") return;
@@ -216,13 +265,12 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
     };
     window.addEventListener("keydown", handleWindowKeyDown);
     return () => window.removeEventListener("keydown", handleWindowKeyDown);
-  });
+  }, [move]);
 
   const collected = new Set(progress.collectedBonusIds);
   const allCollected = collected.size === maze.bonuses.length;
   const hazard = getWalkHazardCell(maze, progress);
   const hazardDistance = Math.abs(hazard.x - progress.position.x) + Math.abs(hazard.y - progress.position.y);
-  const elapsed = getWalkElapsedMs(progress, clockNow);
 
   return (
     <section className={`walk-maze${completed ? " walk-maze--complete" : ""}`} data-testid="walk-maze" data-maze-id={maze.id} aria-labelledby="walk-maze-title">
@@ -281,7 +329,7 @@ export function WalkMazeGame({ mazeId, value, onChange, onReadyChange }: WalkMaz
 
       <div className="walk-maze__meta" aria-live="polite">
         <span>Точек заботы: {progress.collectedBonusIds.length} / {maze.bonuses.length}</span>
-        <span>Мягкий ориентир: {Math.max(0, Math.ceil((WALK_FRIENDLY_TIME_MS - elapsed) / 1000))} c</span>
+        <WalkMazeClock progress={progress} onExpire={handleTimeExpired} />
       </div>
       <p className="walk-maze__status" role="status" aria-live="polite">
         {inputMessage || "Смахните по полю в сторону следующего шага."}

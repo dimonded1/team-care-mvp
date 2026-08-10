@@ -167,6 +167,23 @@ describe("walk maze state", () => {
     expect(getWalkCompletionMessage(completed)).toContain("Маршрут пройден");
   });
 
+  it("keeps a completed result immutable under delayed extra input", () => {
+    const maze = getWalkMaze("park-loop");
+    const completed = {
+      ...createWalkMazeProgress(maze.id, "completed-seed"),
+      position: maze.finish,
+      collectedBonusIds: maze.bonuses.map((bonus) => bonus.id),
+      elapsedMs: 12_000,
+      completedAt: 13_000,
+    };
+    const attemptedMove = moveWalkMaze(maze, completed, "west", 13_200);
+
+    expect(attemptedMove.blocked).toBe("complete");
+    expect(attemptedMove.progress).toBe(completed);
+    expect(attemptedMove.completed).toBe(true);
+    expect(completeWalkMazeForTime(completed, 60_000)).toBe(completed);
+  });
+
   it("completes only after collecting every point and reaching the station", () => {
     const maze = getWalkMaze("courtyard-turn");
     let progress = {

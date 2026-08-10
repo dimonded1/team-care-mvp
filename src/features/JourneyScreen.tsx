@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppHeader } from "../components/AppHeader";
 import { Button } from "../components/Button";
 import { FoundationMenu } from "../components/FoundationMenu";
@@ -85,13 +85,21 @@ export function JourneyScreen({
   const matchingProgress = missionProgress.trust
     ? restoreMatchingPairsState(missionProgress.trust)
     : initialMatchingProgress;
-  const mazeProgress = restoreWalkMazeProgress(
-    missionProgress.home,
-    initialMazeProgress.mazeId,
+  const mazeProgress = useMemo(
+    () => restoreWalkMazeProgress(
+      missionProgress.home,
+      initialMazeProgress.mazeId,
+    ),
+    [initialMazeProgress.mazeId, missionProgress.home],
   );
   const displayedOptions = useMemo(
     () => shuffleBySeed(mission.options, `${shuffleSeed}:${mission.id}`),
     [mission.id, mission.options, shuffleSeed],
+  );
+  const handleMazeProgressChange = useCallback(
+    (next: ReturnType<typeof createWalkMazeProgress>) =>
+      onMissionProgressChange("home", next),
+    [onMissionProgressChange],
   );
 
   useEffect(() => {
@@ -167,7 +175,7 @@ export function JourneyScreen({
           ) : isWalkGame ? (
             <WalkMazeGame
               value={mazeProgress}
-              onChange={(next) => onMissionProgressChange("home", next)}
+              onChange={handleMazeProgressChange}
               onReadyChange={setWalkReady}
             />
           ) : isHealthGame ? (

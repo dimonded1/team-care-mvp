@@ -17201,6 +17201,26 @@ select:focus-visible {
   }
 }
 
+@media (hover: none) and (pointer: coarse) {
+  .walk-maze__walls,
+  .walk-maze__player,
+  .walk-maze__hazard circle,
+  .walk-maze__bonus:not(.is-collected),
+  .walk-maze__finish.is-ready {
+    filter: none;
+  }
+
+  .walk-maze__board[data-danger="near"] {
+    box-shadow:
+      inset 0 0 0 3px rgba(255, 253, 248, 0.035),
+      0 0 0 2px rgba(247, 109, 49, 0.22);
+  }
+
+  .walk-maze__bite {
+    box-shadow: 0 8px 18px rgba(20, 4, 0, 0.28);
+  }
+}
+
 @media (max-width: 340px) {
   .matching-care-card {
     min-height: 116px;
