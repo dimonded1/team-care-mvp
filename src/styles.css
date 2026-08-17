@@ -15261,6 +15261,7 @@ p {
 }
 
 .contact-capture__fields label {
+  min-width: 0;
   display: grid;
   gap: 6px;
   color: rgba(255, 253, 248, 0.82);
@@ -15270,6 +15271,8 @@ p {
 
 .contact-capture__fields :is(input, select, textarea) {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 48px;
   padding: 0 14px;
   border: 1px solid rgba(255, 253, 248, 0.16);
@@ -15280,6 +15283,22 @@ p {
   font: inherit;
   font-size: 14px;
   transition: border-color 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
+}
+
+.contact-capture__fields input[type="date"] {
+  display: block;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.contact-capture__fields input[type="date"]::-webkit-date-and-time-value,
+.contact-capture__fields input[type="date"]::-webkit-datetime-edit {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
 }
 
 .contact-capture__fields textarea {
@@ -17692,19 +17711,109 @@ select:focus-visible {
 }
 
 .journey-screen--offline-station {
+  width: min(100%, 880px);
   min-height: 100dvh;
   color: #fffdf8;
 }
 
-.journey-screen--offline-station .journey-layout,
-.journey-screen--offline-station .journey-content {
+.journey-screen--offline-station .journey-layout {
   width: min(100%, 720px);
+  display: block;
+  padding-bottom: 0;
+}
+
+.journey-screen--offline-station .journey-content {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: min(100%, 720px);
+  padding: clamp(18px, 4.5vw, 34px);
+  gap: 16px;
+  border: 1px solid rgba(255, 253, 248, 0.22);
+  border-radius: 34px 34px 34px 14px;
+  color: #fffdf8;
+  background:
+    radial-gradient(circle at 88% 18%, rgba(255, 181, 181, 0.38) 0 44px, transparent 45px),
+    radial-gradient(circle at 10% 91%, rgba(35, 71, 33, 0.17) 0 68px, transparent 69px),
+    linear-gradient(150deg, #f75f2a 0%, #e94b1d 62%, #d94318 100%);
+  box-shadow:
+    0 28px 70px rgba(4, 30, 18, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.journey-screen--offline-station-3 .journey-content {
+  border-color: rgba(35, 71, 33, 0.16);
+  color: var(--green);
+  background:
+    radial-gradient(circle at 89% 13%, rgba(247, 109, 49, 0.94) 0 48px, transparent 49px),
+    radial-gradient(circle at 7% 88%, rgba(255, 181, 181, 0.72) 0 62px, transparent 63px),
+    linear-gradient(145deg, #fffdf8 0%, #fff8ec 58%, #f4eadb 100%);
+}
+
+.journey-screen--offline-station .journey-content::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 178px;
+  right: -34px;
+  width: 116px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(35, 71, 33, 0.16);
+  pointer-events: none;
+}
+
+.journey-screen--offline-station .journey-content::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 212px;
+  right: -62px;
+  width: 180px;
+  height: 54px;
+  border: 1px solid rgba(255, 253, 248, 0.62);
+  border-radius: 50%;
+  rotate: -14deg;
+  pointer-events: none;
+}
+
+.journey-screen--offline-station-3 .journey-content::before {
+  background: rgba(247, 109, 49, 0.13);
+}
+
+.journey-screen--offline-station-3 .journey-content::after {
+  border-color: rgba(35, 71, 33, 0.42);
+}
+
+.journey-screen--offline-station .journey-content > * {
+  position: relative;
+  z-index: 1;
+}
+
+.journey-screen--offline-station .journey-content > .progress-block {
+  margin-bottom: 0;
+  border: 1px solid rgba(35, 71, 33, 0.1);
+  background: rgba(255, 253, 248, 0.94);
+  box-shadow: 0 15px 34px rgba(90, 42, 18, 0.16);
+  backdrop-filter: none;
+}
+
+.journey-screen--offline-station .progress-copy {
+  color: rgba(35, 71, 33, 0.76);
+}
+
+.journey-screen--offline-station .progress-track {
+  background: rgba(35, 71, 33, 0.14);
 }
 
 .offline-station {
   display: grid;
   gap: 14px;
   color: #fffdf8;
+}
+
+.journey-screen--offline-station-3 .offline-station {
+  color: var(--green);
 }
 
 .offline-station__header {
@@ -17723,11 +17832,27 @@ select:focus-visible {
   text-wrap: balance;
 }
 
+.journey-screen--offline-station-3 .offline-station__header h1 {
+  color: var(--green);
+}
+
+.journey-screen--offline-station .offline-station__header .section-number {
+  color: rgba(255, 253, 248, 0.8);
+}
+
+.journey-screen--offline-station-3 .offline-station__header .section-number {
+  color: var(--orange);
+}
+
 .offline-station__header p:last-child {
   margin: 0;
   color: rgba(255, 253, 248, 0.76);
   font-size: 15px;
   line-height: 1.48;
+}
+
+.journey-screen--offline-station-3 .offline-station__header p:last-child {
+  color: rgba(35, 71, 33, 0.72);
 }
 
 .offline-station__number {
@@ -17772,10 +17897,11 @@ select:focus-visible {
   align-items: center;
   gap: 12px;
   padding: 15px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(35, 71, 33, 0.12);
   border-radius: 22px 22px 22px 9px;
-  background: rgba(255, 255, 255, 0.075);
-  box-shadow: 0 16px 38px rgba(2, 20, 10, 0.18);
+  color: var(--green);
+  background: rgba(255, 253, 248, 0.96);
+  box-shadow: 0 16px 38px rgba(73, 35, 18, 0.18);
 }
 
 .offline-station__task > span,
@@ -17803,7 +17929,7 @@ select:focus-visible {
 .offline-station__waiting p,
 .offline-station__result p {
   margin: 0;
-  color: rgba(255, 253, 248, 0.75);
+  color: rgba(35, 71, 33, 0.72);
   font-size: 14px;
   line-height: 1.45;
 }
@@ -17823,9 +17949,11 @@ select:focus-visible {
   align-items: center;
   gap: 11px;
   padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 17px;
-  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 253, 248, 0.18);
+  border-radius: 18px 18px 18px 7px;
+  color: #fffdf8;
+  background: rgba(20, 56, 34, 0.92);
+  box-shadow: 0 10px 24px rgba(13, 47, 29, 0.16);
 }
 
 .offline-station__steps li > span {
@@ -17833,9 +17961,10 @@ select:focus-visible {
   height: 32px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255, 181, 181, 0.4);
+  border: 1px solid rgba(255, 181, 181, 0.72);
   border-radius: 50%;
-  color: var(--pink);
+  color: var(--green);
+  background: var(--pink);
   font: 700 12px/1 var(--font-display);
 }
 
@@ -17846,21 +17975,51 @@ select:focus-visible {
 }
 
 .offline-station__waiting {
-  border-style: dashed;
+  border: 2px dashed rgba(35, 71, 33, 0.34);
+  background: #ffb5b5;
 }
 
 .offline-station__waiting > span {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--orange);
   color: #fffdf8;
 }
 
 .offline-station__result {
-  border-color: rgba(140, 219, 145, 0.42);
-  background: rgba(140, 219, 145, 0.13);
+  border-color: rgba(35, 71, 33, 0.24);
+  background: #cde9c9;
 }
 
 .offline-station__result > span {
-  background: #8cdb91;
+  color: #fff;
+  background: var(--green);
+}
+
+.journey-screen--offline-station .impact-row::before {
+  background: rgba(255, 253, 248, 0.32);
+}
+
+.journey-screen--offline-station .impact > span {
+  border-color: rgba(255, 253, 248, 0.42);
+  background: rgba(35, 71, 33, 0.42);
+  color: #fff;
+}
+
+.journey-screen--offline-station .impact small {
+  color: rgba(255, 253, 248, 0.82);
+}
+
+.journey-screen--offline-station-3 .impact-row::before {
+  background: rgba(35, 71, 33, 0.2);
+}
+
+.journey-screen--offline-station-3 .impact > span {
+  border-color: rgba(35, 71, 33, 0.3);
+  background: rgba(255, 253, 248, 0.82);
+  color: var(--green);
+}
+
+.journey-screen--offline-station-3 .impact small {
+  color: rgba(35, 71, 33, 0.72);
 }
 
 .offline-station__result svg {

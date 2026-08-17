@@ -165,7 +165,7 @@ export function JourneyScreen({
     : completedMissionIds.length + (missionReady ? 1 : 0);
 
   return (
-    <main className={`screen journey-screen${isOfflineStation ? " journey-screen--offline-station" : ""}${isVisitGame ? " journey-screen--visit-game" : ""}${isWalkGame ? " journey-screen--day-game journey-screen--walk-game" : ""}${isHealthGame ? " journey-screen--health-game" : ""}${isTrustGame ? " journey-screen--trust-game" : ""}`}>
+    <main className={`screen journey-screen${isOfflineStation ? ` journey-screen--offline-station journey-screen--offline-station-${eventStation?.number}` : ""}${isVisitGame ? " journey-screen--visit-game" : ""}${isWalkGame ? " journey-screen--day-game journey-screen--walk-game" : ""}${isHealthGame ? " journey-screen--health-game" : ""}${isTrustGame ? " journey-screen--trust-game" : ""}`}>
       <AppHeader
         onBack={onBack}
         right={isOfflineStation || isVisitGame || isWalkGame || isHealthGame || isTrustGame ? <FoundationMenu onRestart={onRestart} /> : `Орбита: ${animal.name}`}

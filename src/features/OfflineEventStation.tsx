@@ -128,7 +128,7 @@ export function OfflineEventStation({
   };
 
   return (
-    <section className={`offline-station${verified ? " offline-station--verified" : ""}`}>
+    <section className={`offline-station offline-station--${station.number}${verified ? " offline-station--verified" : ""}`}>
       <header className="offline-station__header">
         <button
           ref={stationButtonRef}

@@ -144,7 +144,7 @@ export function FinalScreen({ animal, experienceMode, onBack, onRestart }: Final
           <p className="card-preview-hint">Скачайте картинку или сразу отправьте её в сторис и сообщения.</p>
         </section>
         <div className="final-actions">
-          <a className="button button--orange button--full" href={isFourPawsEvent(experienceMode) ? "https://fond-nika.ru/how-to-help/" : animal.profileUrl} target="_blank" rel="noreferrer">
+          <a className="button button--orange button--full" href={isFourPawsEvent(experienceMode) ? "https://fond-nika.ru/programs/opeka/" : animal.profileUrl} target="_blank" rel="noreferrer">
             {isFourPawsEvent(experienceMode) ? "Подробнее об опеке" : `Стать опекуном ${animal.nameGenitive}`}
           </a>
           <ContactCaptureForm
