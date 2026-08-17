@@ -76,6 +76,27 @@ function openNeighbours(maze: WalkMaze, cell: WalkCell): WalkCell[] {
     .filter((neighbour) => isWalkCellInBounds(maze, neighbour) && Boolean(getWalkCell(maze, neighbour)));
 }
 
+function getInitialWalkHazardCell(maze: WalkMaze): WalkCell {
+  const distanceByCell = new Map<string, number>();
+  const queue: Array<{ cell: WalkCell; distance: number }> = [
+    { cell: maze.start, distance: 0 },
+  ];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    const key = `${current.cell.x},${current.cell.y}`;
+    if (distanceByCell.has(key)) continue;
+    distanceByCell.set(key, current.distance);
+    for (const neighbour of openNeighbours(maze, current.cell)) {
+      queue.push({ cell: neighbour, distance: current.distance + 1 });
+    }
+  }
+  return maze.hazardRoute.reduce((farthest, cell) => {
+    const farthestDistance = distanceByCell.get(`${farthest.x},${farthest.y}`) ?? -1;
+    const cellPathDistance = distanceByCell.get(`${cell.x},${cell.y}`) ?? -1;
+    return cellPathDistance > farthestDistance ? cell : farthest;
+  }, maze.finish);
+}
+
 export function getNextWalkHazardCell(
   maze: WalkMaze,
   progress: WalkMazeProgress,
@@ -106,7 +127,7 @@ export function createWalkMazeProgress(mazeId: string, hazardSeed = createShuffl
     mazeId: maze.id,
     position: { ...maze.start },
     collectedBonusIds: [],
-    hazardPosition: { ...(maze.hazardRoute[0] ?? maze.finish) },
+    hazardPosition: { ...getInitialWalkHazardCell(maze) },
     hazardPreviousPosition: null,
     hazardStep: 0,
     hazardSeed,
@@ -145,14 +166,23 @@ export function restoreWalkMazeProgress(value: unknown, mazeId: string): WalkMaz
       ? Math.max(0, Math.min((candidate as { hazardIndex: number }).hazardIndex, maze.hazardRoute.length - 1))
       : 0;
   const rawHazardPosition = candidate.hazardPosition;
-  const hazardPosition = rawHazardPosition
+  const restoredHazardPosition = rawHazardPosition
     && typeof rawHazardPosition.x === "number"
     && typeof rawHazardPosition.y === "number"
     && Number.isInteger(rawHazardPosition.x)
     && Number.isInteger(rawHazardPosition.y)
     && isWalkCellInBounds(maze, rawHazardPosition)
       ? { x: rawHazardPosition.x, y: rawHazardPosition.y }
-      : { ...(maze.hazardRoute[legacyHazardIndex] ?? maze.finish) };
+      : legacyHazardIndex > 0
+        ? { ...(maze.hazardRoute[legacyHazardIndex] ?? getInitialWalkHazardCell(maze)) }
+        : { ...getInitialWalkHazardCell(maze) };
+  const isPristineProgress = startedAt === null
+    && completedAt === null
+    && elapsedMs === 0
+    && collectedBonusIds.length === 0;
+  const hazardPosition = isPristineProgress
+    ? { ...getInitialWalkHazardCell(maze) }
+    : restoredHazardPosition;
   const rawPreviousPosition = candidate.hazardPreviousPosition;
   const hazardPreviousPosition = rawPreviousPosition
     && typeof rawPreviousPosition.x === "number"
@@ -302,7 +332,7 @@ export function moveWalkMaze(maze: WalkMaze, progress: WalkMazeProgress, directi
 export function getWalkHazardCell(maze: WalkMaze, progress: WalkMazeProgress): WalkCell {
   return isWalkCellInBounds(maze, progress.hazardPosition)
     ? progress.hazardPosition
-    : maze.hazardRoute[0] ?? maze.start;
+    : getInitialWalkHazardCell(maze);
 }
 
 export function getWalkCompletionMessage(progress: WalkMazeProgress): string {

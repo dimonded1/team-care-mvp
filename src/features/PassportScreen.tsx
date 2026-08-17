@@ -2,9 +2,10 @@ import { AppHeader } from "../components/AppHeader";
 import { Button } from "../components/Button";
 import { FoundationMenu } from "../components/FoundationMenu";
 import { HeartIcon } from "../components/Icons";
-import type { MatchResult, Mission } from "../types/app";
+import type { ExperienceMode, MatchResult, Mission } from "../types/app";
 import { getMissionStatus, isCareJourneyComplete } from "./passportModel";
 import { OrbitExperience } from "./orbit/OrbitExperience";
+import { isFourPawsEvent } from "../lib/experience";
 
 interface PassportScreenProps {
   result: MatchResult;
@@ -15,6 +16,7 @@ interface PassportScreenProps {
   onSelectMission: (missionId: Mission["id"]) => void;
   onContinue: () => void;
   onRestart: () => void;
+  experienceMode: ExperienceMode;
 }
 
 export function PassportScreen({
@@ -26,6 +28,7 @@ export function PassportScreen({
   onSelectMission,
   onContinue,
   onRestart,
+  experienceMode,
 }: PassportScreenProps) {
   const { animal, reasons, score } = result;
   const complete = isCareJourneyComplete(missions, completedMissionIds);
@@ -54,6 +57,7 @@ export function PassportScreen({
           completedMissionIds={completedMissionIds}
           onSelectMission={onSelectMission}
           onCompleteOrbit={onContinue}
+          experienceMode={experienceMode}
         />
 
         <section id="animal-passport" className="passport-panels" aria-labelledby="animal-passport-title">
@@ -121,17 +125,25 @@ export function PassportScreen({
             <HeartIcon />
           </div>
           <div className="passport-goal__copy">
-            <p>Круг опеки</p>
-            <h2 id="passport-goal-title">Быть рядом с {animal.name} регулярно</h2>
+            <p>{isFourPawsEvent(experienceMode) ? "Маршрут мероприятия" : "Круг опеки"}</p>
+            <h2 id="passport-goal-title">
+              {isFourPawsEvent(experienceMode)
+                ? `Пройти четыре станции вместе с ${animal.name}`
+                : `Быть рядом с ${animal.name} регулярно`}
+            </h2>
             <span>
               {complete
-                ? "Все четыре направления пройдены. Осталось коротко узнать, как устроена опека."
-                : `Пройдите ещё ${missions.length - completedMissionIds.length} из ${missions.length} кругов в любом удобном порядке.`}
+                ? isFourPawsEvent(experienceMode)
+                  ? "Все четыре станции пройдены. Карточка участника и финальные действия уже доступны."
+                  : "Все четыре направления пройдены. Осталось коротко узнать, как устроена опека."
+                : isFourPawsEvent(experienceMode)
+                  ? `Следуйте по номерам: осталось ${missions.length - completedMissionIds.length} из ${missions.length} станций.`
+                  : `Пройдите ещё ${missions.length - completedMissionIds.length} из ${missions.length} кругов в любом удобном порядке.`}
             </span>
           </div>
           {complete ? (
             <Button className="button--orange passport-goal__action" onClick={onContinue}>
-              Коротко об опеке
+              {isFourPawsEvent(experienceMode) ? "К финалу маршрута" : "Коротко об опеке"}
             </Button>
           ) : (
             <button

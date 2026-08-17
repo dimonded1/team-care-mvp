@@ -251,6 +251,28 @@ test("event campaign adds the second interest and is recorded in the source desc
   assert.equal(unknownCampaign.SOURCE_DESCRIPTION, "Стенд «Команда заботы» · метка: newsletter");
 });
 
+test("four-paws event is written to the contact comment with the matched animal", () => {
+  const config = createBitrixConfig(configuredEnv);
+  const request = mapContactCapture({
+    firstName: "Анна",
+    lastName: "Иванова",
+    middleName: "Сергеевна",
+    phone: "+7 900 000-00-00",
+    email: "anna@example.org",
+    workSphere: "media",
+    preferredContact: "telegram",
+    animalId: "bitrix-435307",
+    animalName: "Фисташка",
+    campaign: "4-lapy",
+    consent: true,
+  }, config);
+
+  assert.equal(
+    request.payload.fields.COMMENTS,
+    "Интерес к программе опеки. Мероприятие: 4 лапы. Подопечный: Фисташка (bitrix-435307).",
+  );
+});
+
 test("a broken campaign mark is dropped instead of costing the visitor a submission", () => {
   const config = createBitrixConfig({
     ...configuredEnv,

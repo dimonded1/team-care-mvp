@@ -6,11 +6,17 @@ import { FoundationMenu } from "../components/FoundationMenu";
 import { CheckIcon } from "../components/Icons";
 import { JourneyPetScene } from "../components/JourneyPetScene";
 import { Progress } from "../components/Progress";
-import type { Animal, Mission } from "../types/app";
+import type { Animal, ExperienceMode, Mission } from "../types/app";
 import { createShuffleSeed, shuffleBySeed } from "../lib/shuffle";
 import type { StoredSession } from "../types/app";
 import { carePairDeckOrder } from "../data/carePairs";
 import { walkMazes } from "../data/walkMazes";
+import { getEventStation } from "../data/eventStations";
+import { isFourPawsEvent } from "../lib/experience";
+import {
+  createOfflineStationProgress,
+  restoreOfflineStationProgress,
+} from "../lib/offlineStation";
 import {
   createMatchingPairsState,
   restoreMatchingPairsState,
@@ -31,6 +37,7 @@ import {
   restoreVisitGameProgress,
 } from "./VisitCareGame";
 import { WalkMazeGame } from "./WalkMazeGame";
+import { OfflineEventStation } from "./OfflineEventStation";
 
 interface JourneyScreenProps {
   animal: Animal;
@@ -38,6 +45,7 @@ interface JourneyScreenProps {
   missionIndex: number;
   completedMissionIds: Mission["id"][];
   missionProgress: StoredSession["missionProgress"];
+  experienceMode: ExperienceMode;
   onBack: () => void;
   onCompleteMission: (mission: Mission) => void;
   onMissionProgressChange: (missionId: Mission["id"], progress: unknown) => void;
@@ -50,17 +58,17 @@ export function JourneyScreen({
   missionIndex,
   completedMissionIds,
   missionProgress,
+  experienceMode,
   onBack,
   onCompleteMission,
   onMissionProgressChange,
   onRestart,
 }: JourneyScreenProps) {
   const mission = missions[missionIndex];
+  const eventStation = isFourPawsEvent(experienceMode) ? getEventStation(mission.id) : null;
+  const isOfflineStation = eventStation?.mode === "offline";
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [visitReady, setVisitReady] = useState(false);
-  const [walkReady, setWalkReady] = useState(false);
-  const [healthReady, setHealthReady] = useState(false);
-  const [trustReady, setTrustReady] = useState(false);
+  const [readyMissionId, setReadyMissionId] = useState<Mission["id"] | null>(null);
   const reduceMotion = useReducedMotion();
   const [shuffleSeed] = useState(createShuffleSeed);
   const [initialVisitProgress] = useState(createInitialVisitGameProgress);
@@ -92,6 +100,7 @@ export function JourneyScreen({
     ),
     [initialMazeProgress.mazeId, missionProgress.home],
   );
+  const offlineProgress = restoreOfflineStationProgress(missionProgress[mission.id]);
   const displayedOptions = useMemo(
     () => shuffleBySeed(mission.options, `${shuffleSeed}:${mission.id}`),
     [mission.id, mission.options, shuffleSeed],
@@ -104,15 +113,21 @@ export function JourneyScreen({
 
   useEffect(() => {
     setSelectedId(null);
-    setVisitReady(false);
-    setWalkReady(false);
-    setHealthReady(false);
-    setTrustReady(false);
+  }, [mission.id]);
+
+  const handleReadyChange = useCallback((ready: boolean) => {
+    setReadyMissionId((current) => ready
+      ? mission.id
+      : current === mission.id
+        ? null
+        : current);
   }, [mission.id]);
 
   useEffect(() => {
     if (missionProgress[mission.id]) return;
-    const initialProgress = mission.id === "food"
+    const initialProgress = isOfflineStation
+      ? createOfflineStationProgress()
+      : mission.id === "food"
       ? visitProgress
       : mission.id === "health"
         ? healthProgress
@@ -122,6 +137,7 @@ export function JourneyScreen({
     onMissionProgressChange(mission.id, initialProgress);
   }, [
     healthProgress,
+    isOfflineStation,
     matchingProgress,
     mazeProgress,
     mission.id,
@@ -131,33 +147,32 @@ export function JourneyScreen({
   ]);
 
   const selected = mission.options.find((option) => option.id === selectedId) ?? null;
-  const isVisitGame = mission.id === "food";
+  const isVisitGame = !isOfflineStation && mission.id === "food";
   const isHealthGame = mission.id === "health";
-  const isTrustGame = mission.id === "trust";
+  const isTrustGame = !isOfflineStation && mission.id === "trust";
   const isWalkGame = mission.id === "home";
   const missionAlreadyCompleted = completedMissionIds.includes(mission.id);
-  const missionReady = isVisitGame
-    ? visitReady
-    : isHealthGame
-      ? healthReady
-      : isTrustGame
-        ? trustReady
-        : isWalkGame
-          ? walkReady
-        : Boolean(selected?.correct);
+  const isInteractiveGame = isOfflineStation
+    || isVisitGame
+    || isHealthGame
+    || isTrustGame
+    || isWalkGame;
+  const missionReady = isInteractiveGame
+    ? readyMissionId === mission.id
+    : Boolean(selected?.correct);
   const visibleCompletedCount = missionAlreadyCompleted
     ? completedMissionIds.length
     : completedMissionIds.length + (missionReady ? 1 : 0);
 
   return (
-    <main className={`screen journey-screen${isVisitGame ? " journey-screen--visit-game" : ""}${isWalkGame ? " journey-screen--day-game journey-screen--walk-game" : ""}${isHealthGame ? " journey-screen--health-game" : ""}${isTrustGame ? " journey-screen--trust-game" : ""}`}>
+    <main className={`screen journey-screen${isOfflineStation ? " journey-screen--offline-station" : ""}${isVisitGame ? " journey-screen--visit-game" : ""}${isWalkGame ? " journey-screen--day-game journey-screen--walk-game" : ""}${isHealthGame ? " journey-screen--health-game" : ""}${isTrustGame ? " journey-screen--trust-game" : ""}`}>
       <AppHeader
         onBack={onBack}
-        right={isVisitGame || isWalkGame || isHealthGame || isTrustGame ? <FoundationMenu onRestart={onRestart} /> : `Орбита: ${animal.name}`}
-        light={isVisitGame || isWalkGame || isHealthGame || isTrustGame}
+        right={isOfflineStation || isVisitGame || isWalkGame || isHealthGame || isTrustGame ? <FoundationMenu onRestart={onRestart} /> : `Орбита: ${animal.name}`}
+        light={isOfflineStation || isVisitGame || isWalkGame || isHealthGame || isTrustGame}
       />
       <div className="journey-layout">
-        {!isVisitGame && !isWalkGame && !isHealthGame && !isTrustGame ? (
+        {!isOfflineStation && !isVisitGame && !isWalkGame && !isHealthGame && !isTrustGame ? (
           <aside className="journey-animal">
             <JourneyPetScene animal={animal} mission={mission} />
           </aside>
@@ -165,31 +180,44 @@ export function JourneyScreen({
 
         <section className="journey-content">
           <Progress value={visibleCompletedCount} total={missions.length} label="Исследовано" />
-          {isVisitGame ? (
+          {isOfflineStation && eventStation ? (
+            <OfflineEventStation
+              station={eventStation}
+              value={offlineProgress}
+              onChange={(next) => onMissionProgressChange(mission.id, next)}
+              onReadyChange={handleReadyChange}
+            />
+          ) : isVisitGame ? (
             <VisitCareGame
               animal={animal}
               progress={visitProgress}
               onProgressChange={(next) => onMissionProgressChange("food", next)}
-              onReadyChange={setVisitReady}
+              onReadyChange={handleReadyChange}
             />
           ) : isWalkGame ? (
             <WalkMazeGame
               value={mazeProgress}
               onChange={handleMazeProgressChange}
-              onReadyChange={setWalkReady}
+              onReadyChange={handleReadyChange}
+              stationLabel={eventStation
+                ? `Станция ${String(eventStation.number).padStart(2, "0")} · ${eventStation.title}`
+                : undefined}
             />
           ) : isHealthGame ? (
             <HealthCareGame
               animal={animal}
               progress={healthProgress}
               onProgressChange={(next) => onMissionProgressChange("health", next)}
-              onReadyChange={setHealthReady}
+              onReadyChange={handleReadyChange}
+              stationLabel={eventStation
+                ? `Станция ${String(eventStation.number).padStart(2, "0")} · ${eventStation.title}`
+                : undefined}
             />
           ) : isTrustGame ? (
             <MatchingCareGame
               value={matchingProgress}
               onChange={(next) => onMissionProgressChange("trust", next)}
-              onReadyChange={setTrustReady}
+              onReadyChange={handleReadyChange}
             />
           ) : (
             <motion.div
@@ -239,6 +267,9 @@ export function JourneyScreen({
               const active = item.id === mission.id;
               const complete = completedMissionIds.includes(item.id) || (active && missionReady);
               const newlyCompleted = active && missionReady && !completedMissionIds.includes(item.id);
+              const impactLabel = isFourPawsEvent(experienceMode)
+                ? getEventStation(item.id)?.shortTitle ?? item.impactLabel
+                : item.impactLabel;
               return (
                 <div
                   key={item.id}
@@ -259,7 +290,7 @@ export function JourneyScreen({
                   >
                     {complete ? <CheckIcon /> : ""}
                   </motion.span>
-                  <small>{item.impactLabel}</small>
+                  <small>{impactLabel}</small>
                 </div>
               );
             })}
@@ -276,7 +307,11 @@ export function JourneyScreen({
             onCompleteMission(mission);
           }}
         >
-          {missionAlreadyCompleted ? "Вернуться к орбите" : "Сохранить круг заботы"}
+          {missionAlreadyCompleted
+            ? "Вернуться к маршруту"
+            : isOfflineStation
+              ? "Продолжить маршрут"
+              : "Сохранить круг заботы"}
         </Button>
       </div>
     </main>

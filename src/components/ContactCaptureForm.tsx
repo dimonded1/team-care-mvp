@@ -2,7 +2,6 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { CheckIcon } from "./Icons";
 import {
-  getCampaignTag,
   getContactCaptureMode,
   createContactCaptureRequestTracker,
   createContactCaptureSubmitGate,
@@ -22,6 +21,7 @@ import type { Animal } from "../types/app";
 
 interface ContactCaptureFormProps {
   animal: Animal;
+  campaign?: string;
 }
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
@@ -43,7 +43,7 @@ const initialForm = {
   maxMessenger: "",
 };
 
-export function ContactCaptureForm({ animal }: ContactCaptureFormProps) {
+export function ContactCaptureForm({ animal, campaign }: ContactCaptureFormProps) {
   const reduceMotion = useReducedMotion();
   const [mode, setMode] = useState<ContactCaptureMode>("disabled");
   const [form, setForm] = useState(initialForm);
@@ -112,7 +112,7 @@ export function ContactCaptureForm({ animal }: ContactCaptureFormProps) {
         maxMessenger: form.maxMessenger || undefined,
         animalId: animal.id,
         animalName: animal.name,
-        campaign: getCampaignTag() || undefined,
+        campaign,
         consent: true,
       }, requestId);
       requestTracker.current.reset();

@@ -64,6 +64,8 @@ export interface Mission {
   impactLabel: string;
 }
 
+export type ExperienceMode = "standard" | "four-paws-event";
+
 export type Stage =
   | "boot"
   | "welcome"
@@ -76,6 +78,7 @@ export type Stage =
 
 export interface StoredSession {
   version: 3;
+  experienceMode?: ExperienceMode;
   stage: Exclude<Stage, "boot">;
   answers: boolean[];
   animalId: string | null;

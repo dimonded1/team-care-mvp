@@ -54,8 +54,6 @@ export function createContactCaptureSubmitGate() {
   };
 }
 
-const CAMPAIGN_STORAGE_KEY = "nika-team-care-campaign";
-
 export function normalizeCampaignTag(value: string) {
   const tag = value.trim().toLowerCase();
   return /^[a-z0-9_-]{1,40}$/u.test(tag) ? tag : "";
@@ -66,24 +64,6 @@ export function readCampaignTag(
 ) {
   const params = new URLSearchParams(search);
   return normalizeCampaignTag(params.get("e") ?? params.get("utm_campaign") ?? "");
-}
-
-/**
- * The mark arrives once, in the URL behind the QR code, and the visitor then plays
- * through several stages before the form appears — so it is kept for the session.
- */
-export function getCampaignTag() {
-  if (typeof window === "undefined") return "";
-  const fromUrl = readCampaignTag();
-  try {
-    if (fromUrl) {
-      window.sessionStorage.setItem(CAMPAIGN_STORAGE_KEY, fromUrl);
-      return fromUrl;
-    }
-    return normalizeCampaignTag(window.sessionStorage.getItem(CAMPAIGN_STORAGE_KEY) ?? "");
-  } catch {
-    return fromUrl;
-  }
 }
 
 export const workSphereOptions: ReadonlyArray<{ id: WorkSphere; label: string }> = [

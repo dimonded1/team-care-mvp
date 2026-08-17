@@ -30,6 +30,7 @@ interface HealthCareGameProps {
   onReadyChange: (ready: boolean) => void;
   progress?: HealthGameProgress;
   onProgressChange?: (progress: HealthGameProgress) => void;
+  stationLabel?: string;
 }
 
 export interface HealthGameProgress {
@@ -387,6 +388,7 @@ export function HealthCareGame({
   onReadyChange,
   progress,
   onProgressChange,
+  stationLabel,
 }: HealthCareGameProps) {
   const reduceMotion = useReducedMotion();
   const [internalProgress, setInternalProgress] = useState(() =>
@@ -509,7 +511,7 @@ export function HealthCareGame({
     >
       <header className="health-game__header">
         <div>
-          <p className="section-number">Круг заботы · 04</p>
+          <p className="section-number">{stationLabel ?? "Круг заботы · 04"}</p>
           <h1>Подготовьте визит к ветеринару</h1>
           <p>Осмотрите питомца вместе с командой: опекун замечает изменения, выбирает безопасный первый шаг и помогает передать врачу точные наблюдения.</p>
         </div>

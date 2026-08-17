@@ -3,6 +3,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckIcon } from "../../components/Icons";
 import { assetUrl } from "../../lib/assets";
 import type { Animal, Mission } from "../../types/app";
+import type { ExperienceMode } from "../../types/app";
+import { getEventStation } from "../../data/eventStations";
+import { isFourPawsEvent, isMissionUnlocked } from "../../lib/experience";
 import {
   getMissionStatus,
   getRecommendedMissionId,
@@ -17,6 +20,7 @@ interface OrbitExperienceProps {
   completedMissionIds: Mission["id"][];
   onSelectMission: (missionId: Mission["id"]) => void;
   onCompleteOrbit: () => void;
+  experienceMode: ExperienceMode;
 }
 
 type OrbitUiState =
@@ -93,6 +97,7 @@ export function OrbitExperience({
   completedMissionIds,
   onSelectMission,
   onCompleteOrbit,
+  experienceMode,
 }: OrbitExperienceProps) {
   const reduceMotion = Boolean(useReducedMotion());
   const previouslyVisited = useRef(hasOrbitBeenVisited()).current;
@@ -140,7 +145,7 @@ export function OrbitExperience({
   }, [reduceMotion, uiState]);
 
   const selectPlanet = (missionId: Mission["id"]) => {
-    if (isTransitioning || uiState === "entering") return;
+    if (isTransitioning) return;
     setIsTransitioning(true);
     setSelectedPlanetId(missionId);
     setUiState("openingGame");
@@ -149,7 +154,7 @@ export function OrbitExperience({
 
   return (
     <section
-      className={`care-orbit care-orbit--${uiState}${completed ? " care-orbit--complete" : ""}`}
+      className={`care-orbit care-orbit--${uiState}${completed ? " care-orbit--complete" : ""}${isFourPawsEvent(experienceMode) ? " care-orbit--event" : ""}`}
       aria-labelledby="care-orbit-title"
       data-orbit-state={uiState}
     >
@@ -162,9 +167,15 @@ export function OrbitExperience({
       />
 
       <header className="care-orbit__heading">
-        <p>Орбита подопечного</p>
-        <h1 id="care-orbit-title">Выберите планету заботы</h1>
-        <span>Коснитесь планеты, чтобы открыть мини-игру</span>
+        <p>{isFourPawsEvent(experienceMode) ? "Мероприятие «4 лапы»" : "Орбита подопечного"}</p>
+        <h1 id="care-orbit-title">
+          {isFourPawsEvent(experienceMode) ? "Маршрут из четырёх станций" : "Выберите планету заботы"}
+        </h1>
+        <span>
+          {isFourPawsEvent(experienceMode)
+            ? "Проходите станции по номерам — две онлайн и две у стенда"
+            : "Коснитесь планеты, чтобы открыть мини-игру"}
+        </span>
       </header>
 
       <div className="care-orbit__scene">
@@ -213,7 +224,16 @@ export function OrbitExperience({
         <div className="care-orbit__planets">
           {missions.map((mission, index) => {
             const planet = presentation[mission.id];
+            const eventStation = isFourPawsEvent(experienceMode) ? getEventStation(mission.id) : null;
             const status = getMissionStatus(mission.id, startedMissionIds, completedMissionIds);
+            const locked = !isMissionUnlocked(
+              missions,
+              completedMissionIds,
+              mission.id,
+              experienceMode,
+            );
+            const title = eventStation?.title ?? planet.title;
+            const description = eventStation?.description ?? planet.description;
             const selected = mission.id === selectedPlanetId;
             const dimmed = selectedPlanetId !== null && !selected;
             const recommended = mission.id === recommendedId && status === "available";
@@ -229,13 +249,14 @@ export function OrbitExperience({
               >
                 <motion.button
                   type="button"
-                  className={`care-planet care-planet--${mission.id} care-planet--${status}${recommended ? " care-planet--recommended" : ""}`}
+                  className={`care-planet care-planet--${mission.id} care-planet--${status}${recommended ? " care-planet--recommended" : ""}${locked ? " care-planet--locked" : ""}${eventStation ? ` care-planet--${eventStation.mode}` : ""}`}
                   data-testid={`mission-node-${mission.id}`}
                   data-orbit-planet={mission.id}
                   data-mission-id={mission.id}
                   data-mission-status={status}
-                  aria-label={`${planet.title}. ${stateLabel[status]}. ${planet.description}`}
+                  aria-label={`${eventStation ? `Станция ${eventStation.number}. ` : ""}${title}. ${locked ? "Пока закрыто" : stateLabel[status]}. ${description}`}
                   aria-pressed={selected}
+                  disabled={locked}
                   onClick={() => selectPlanet(mission.id)}
                   initial={
                     previouslyVisited || reduceMotion
@@ -282,8 +303,9 @@ export function OrbitExperience({
                     {status === "completed" ? <i><CheckIcon /></i> : null}
                   </span>
                   <span className="care-planet__label">
-                    <strong>{planet.title}</strong>
-                    <small>{stateLabel[status]}</small>
+                    {eventStation ? <em>№{eventStation.number} · {eventStation.mode === "offline" ? "офлайн" : "онлайн"}</em> : null}
+                    <strong>{eventStation?.shortTitle ?? planet.title}</strong>
+                    <small>{locked ? "Сначала предыдущая" : stateLabel[status]}</small>
                   </span>
                 </motion.button>
               </div>
@@ -296,11 +318,13 @@ export function OrbitExperience({
       <div className="care-orbit__footer">
         <div className="care-orbit__progress" aria-label={`Пройдено ${completedMissionIds.length} из ${missions.length}`}>
           <span>{completedMissionIds.length}/{missions.length}</span>
-          <p>{completed ? "Круг заботы собран" : "Планеты светятся ярче после прохождения"}</p>
+          <p>{completed
+            ? isFourPawsEvent(experienceMode) ? "Все четыре станции пройдены" : "Круг заботы собран"
+            : isFourPawsEvent(experienceMode) ? "Бумажные и цифровые печати собираются по порядку" : "Планеты светятся ярче после прохождения"}</p>
         </div>
         {completed ? (
           <button type="button" className="care-orbit__complete-action" onClick={onCompleteOrbit}>
-            Коротко об опеке <span aria-hidden="true">→</span>
+            {isFourPawsEvent(experienceMode) ? "К финалу" : "Коротко об опеке"} <span aria-hidden="true">→</span>
           </button>
         ) : null}
       </div>

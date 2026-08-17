@@ -36,6 +36,7 @@ describe("session storage", () => {
 
     expect(loadSession()).toMatchObject({
       version: 3,
+      experienceMode: "standard",
       stage: "journey",
       activeMissionId: "trust",
       startedMissionIds: ["food", "health", "trust"],
@@ -58,10 +59,31 @@ describe("session storage", () => {
 
     expect(loadSession()).toMatchObject({
       version: 3,
+      experienceMode: "standard",
       startedMissionIds: ["trust", "food"],
       completedMissionIds: ["food"],
       missionProgress: { food: { step: 2 } },
     });
+  });
+
+  it("preserves a valid event experience and defaults unknown modes to standard", () => {
+    const makeSession = (experienceMode: unknown) => ({
+      version: 3,
+      experienceMode,
+      stage: "passport",
+      answers: Array(11).fill(true),
+      animalId: "bitrix-test-animal",
+      activeMissionId: null,
+      startedMissionIds: [],
+      completedMissionIds: [],
+      missionProgress: {},
+      updatedAt: "2026-08-17T00:00:00.000Z",
+    });
+    values.set("nika-team-care-mvp-v1", JSON.stringify(makeSession("four-paws-event")));
+    expect(loadSession()?.experienceMode).toBe("four-paws-event");
+
+    values.set("nika-team-care-mvp-v1", JSON.stringify(makeSession("broken")));
+    expect(loadSession()?.experienceMode).toBe("standard");
   });
 
   it("routes a legacy final session through the required guardianship explanation", () => {

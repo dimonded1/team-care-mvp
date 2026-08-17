@@ -33,8 +33,16 @@ import {
 import { createSessionHistory, type SessionHistory } from "./lib/history";
 import { createMatchResult, findMatch } from "./lib/matching";
 import { assetUrl } from "./lib/assets";
-import type { Mission, Stage, StoredSession } from "./types/app";
+import type { ExperienceMode, Mission, Stage, StoredSession } from "./types/app";
 import { isCareJourneyComplete } from "./features/passportModel";
+import {
+  getMissionsForExperience,
+  isFourPawsEvent,
+  isMissionUnlocked,
+  reconcileRestoredMissionAccess,
+  reconcileSessionExperience,
+  resolveExperienceMode,
+} from "./lib/experience";
 
 function preload(src: string): Promise<void> {
   return new Promise((resolve) => {
@@ -56,7 +64,19 @@ const restorableStages = new Set<StoredSession["stage"]>([
 ]);
 const availableAnimalIds = animals.map((animal) => animal.id);
 
+function reconcileRestoredAppSession(
+  session: StoredSession,
+  experienceMode: ExperienceMode,
+): StoredSession {
+  const selectedAnimal = animals.find((animal) => animal.id === session.animalId);
+  const missions = selectedAnimal
+    ? getMissionsForExperience(getMissions(selectedAnimal), experienceMode)
+    : [];
+  return reconcileRestoredMissionAccess(session, missions, experienceMode);
+}
+
 export default function App() {
+  const [experienceMode] = useState(resolveExperienceMode);
   const [stage, setStage] = useState<Stage>("boot");
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [animalId, setAnimalId] = useState<string | null>(null);
@@ -100,7 +120,10 @@ export default function App() {
 
   useEffect(() => {
     let active = true;
-    const saved = normalizeSessionForJourney(loadSession(), questions.length);
+    const loadedSession = normalizeSessionForJourney(loadSession(), questions.length);
+    const saved = loadedSession
+      ? reconcileSessionExperience(loadedSession, experienceMode, questions.length)
+      : null;
     const minimumBoot = new Promise((resolve) => window.setTimeout(resolve, 650));
     const logo = Promise.race([
       preload(assetUrl("assets/brand/logo-nika-green.jpg")),
@@ -116,11 +139,12 @@ export default function App() {
         const rematchedAnimalId = restoredAnswers.length === questions.length
           ? findMatch(animals, questions, restoredAnswers).animal.id
           : null;
-        const restored = reconcileSessionWithAnimalCatalog(
+        const catalogSession = reconcileSessionWithAnimalCatalog(
           { ...saved, answers: restoredAnswers },
           availableAnimalIds,
           rematchedAnimalId,
         );
+        const restored = reconcileRestoredAppSession(catalogSession, experienceMode);
         setAnswers(restored.answers);
         setAnimalId(restored.animalId);
         setActiveMissionId(restored.activeMissionId);
@@ -138,11 +162,13 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [experienceMode]);
 
   useEffect(() => sessionHistoryRef.current?.listen((session) => {
-    const restored = normalizeSessionForJourney(session, questions.length);
-    if (!restored) return;
+    const normalized = normalizeSessionForJourney(session, questions.length);
+    if (!normalized) return;
+    const reconciled = reconcileSessionExperience(normalized, experienceMode, questions.length);
+    const restored = reconcileRestoredAppSession(reconciled, experienceMode);
     historyWriteRef.current = "none";
     setAnswers(restored.answers);
     setAnimalId(restored.animalId);
@@ -151,7 +177,7 @@ export default function App() {
     setCompletedMissionIds(restored.completedMissionIds);
     setMissionProgress(restored.missionProgress);
     setStage(restored.stage);
-  }), []);
+  }), [experienceMode]);
 
   const matchResult = useMemo(() => {
     if (answers.length < questions.length) return null;
@@ -163,8 +189,10 @@ export default function App() {
 
   const selectedAnimal = matchResult?.animal ?? animals.find((animal) => animal.id === animalId) ?? null;
   const missions = useMemo(
-    () => (selectedAnimal ? getMissions(selectedAnimal) : []),
-    [selectedAnimal],
+    () => (selectedAnimal
+      ? getMissionsForExperience(getMissions(selectedAnimal), experienceMode)
+      : []),
+    [experienceMode, selectedAnimal],
   );
   const activeMissionIndex = activeMissionId
     ? missions.findIndex((mission) => mission.id === activeMissionId)
@@ -175,6 +203,7 @@ export default function App() {
     if (stage === "boot" || !sessionReady) return;
     const session: StoredSession = {
       version: 3,
+      experienceMode,
       stage,
       answers,
       animalId,
@@ -207,6 +236,7 @@ export default function App() {
     completedMissionIds,
     missionProgress,
     sessionReady,
+    experienceMode,
   ]);
 
   useEffect(() => {
@@ -255,19 +285,30 @@ export default function App() {
   };
 
   const completeMission = (mission: Mission) => {
+    const nextCompletedMissionIds = completedMissionIds.includes(mission.id)
+      ? completedMissionIds
+      : [...completedMissionIds, mission.id];
     setStartedMissionIds((current) =>
       current.includes(mission.id) ? current : [...current, mission.id],
     );
-    setCompletedMissionIds((current) =>
-      current.includes(mission.id) ? current : [...current, mission.id],
-    );
+    setCompletedMissionIds(nextCompletedMissionIds);
     setActiveMissionId(null);
-    setStage("passport");
+    setStage(
+      isFourPawsEvent(experienceMode)
+      && isCareJourneyComplete(missions, nextCompletedMissionIds)
+        ? "final"
+        : "passport",
+    );
   };
 
   const openMission = (missionId: Mission["id"]) => {
     const missionIndex = missions.findIndex((mission) => mission.id === missionId);
-    if (missionIndex < 0) return;
+    if (missionIndex < 0 || !isMissionUnlocked(
+      missions,
+      completedMissionIds,
+      missionId,
+      experienceMode,
+    )) return;
     setActiveMissionId(missionId);
     setStartedMissionIds((current) =>
       current.includes(missionId) ? current : [...current, missionId],
@@ -388,8 +429,9 @@ export default function App() {
           completedMissionIds={completedMissionIds}
           onBack={() => setStage("reveal")}
           onSelectMission={openMission}
-          onContinue={() => setStage("guardianship")}
+          onContinue={() => setStage(isFourPawsEvent(experienceMode) ? "final" : "guardianship")}
           onRestart={restart}
+          experienceMode={experienceMode}
         />
       );
     }
@@ -401,6 +443,7 @@ export default function App() {
           missionIndex={activeMissionIndex}
           completedMissionIds={completedMissionIds}
           missionProgress={missionProgress}
+          experienceMode={experienceMode}
           onBack={() => {
             if (sessionHistoryRef.current?.back()) return;
             setActiveMissionId(null);
@@ -412,7 +455,7 @@ export default function App() {
         />
       );
     }
-    if (stage === "guardianship" && selectedAnimal && journeyComplete) {
+    if (stage === "guardianship" && selectedAnimal && journeyComplete && !isFourPawsEvent(experienceMode)) {
       return (
         <GuardianshipScreen
           animal={selectedAnimal}
@@ -430,7 +473,8 @@ export default function App() {
       return (
         <FinalScreen
           animal={selectedAnimal}
-          onBack={() => setStage("guardianship")}
+          experienceMode={experienceMode}
+          onBack={() => setStage(isFourPawsEvent(experienceMode) ? "passport" : "guardianship")}
           onRestart={restart}
         />
       );

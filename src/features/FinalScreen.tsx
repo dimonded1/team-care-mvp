@@ -4,12 +4,14 @@ import { Button } from "../components/Button";
 import { CheckIcon, DownloadIcon, HeartIcon, ShareIcon } from "../components/Icons";
 import { ContactCaptureForm } from "../components/ContactCaptureForm";
 import { createResultCard } from "../lib/card";
-import type { Animal } from "../types/app";
+import type { Animal, ExperienceMode } from "../types/app";
+import { getContactCampaignForExperience, isFourPawsEvent } from "../lib/experience";
 
 interface FinalScreenProps {
   animal: Animal;
   onBack: () => void;
   onRestart: () => void;
+  experienceMode: ExperienceMode;
 }
 
 type CardState =
@@ -19,7 +21,7 @@ type CardState =
 
 type ActionFeedback = "idle" | "saved" | "shared";
 
-export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
+export function FinalScreen({ animal, experienceMode, onBack, onRestart }: FinalScreenProps) {
   const [card, setCard] = useState<CardState>({ status: "loading" });
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback>("idle");
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,14 +91,16 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
   };
 
   return (
-    <main className="screen final-screen">
-      <AppHeader onBack={onBack} right="Карточка готова" light />
+    <main className={`screen final-screen${isFourPawsEvent(experienceMode) ? " final-screen--event" : ""}`}>
+      <AppHeader onBack={onBack} right={isFourPawsEvent(experienceMode) ? "4/4 станции" : "Карточка готова"} light />
       <div className="final-layout">
         <section className="final-copy">
           <div className="final-check"><HeartIcon /></div>
-          <span className="screen-eyebrow">Помощь продолжается</span>
-          <h1>Познакомьте друзей: {animal.name}</h1>
-          <p>Готовая сторис поможет большему числу людей узнать о подопечном фонда и его поиске дома.</p>
+          <span className="screen-eyebrow">{isFourPawsEvent(experienceMode) ? "Маршрут завершён" : "Помощь продолжается"}</span>
+          <h1>{isFourPawsEvent(experienceMode) ? `Все четыре станции пройдены с ${animal.name}` : `Познакомьте друзей: ${animal.name}`}</h1>
+          <p>{isFourPawsEvent(experienceMode)
+            ? "Покажите этот экран волонтёру, оставьте контакты и сохраните карточку своего подопечного."
+            : "Готовая сторис поможет большему числу людей узнать о подопечном фонда и его поиске дома."}</p>
         </section>
 
         <section className="card-preview-section" aria-live="polite">
@@ -140,10 +144,13 @@ export function FinalScreen({ animal, onBack, onRestart }: FinalScreenProps) {
           <p className="card-preview-hint">Скачайте картинку или сразу отправьте её в сторис и сообщения.</p>
         </section>
         <div className="final-actions">
-          <a className="button button--orange button--full" href={animal.profileUrl} target="_blank" rel="noreferrer">
-            Стать опекуном {animal.nameGenitive}
+          <a className="button button--orange button--full" href={isFourPawsEvent(experienceMode) ? "https://fond-nika.ru/how-to-help/" : animal.profileUrl} target="_blank" rel="noreferrer">
+            {isFourPawsEvent(experienceMode) ? "Подробнее об опеке" : `Стать опекуном ${animal.nameGenitive}`}
           </a>
-          <ContactCaptureForm animal={animal} />
+          <ContactCaptureForm
+            animal={animal}
+            campaign={getContactCampaignForExperience(experienceMode)}
+          />
           <span className="visually-hidden" aria-live="polite">
             {actionFeedback === "saved" ? "Карточка сохранена" : null}
             {actionFeedback === "shared" ? "Карточка отправлена" : null}

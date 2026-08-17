@@ -3,6 +3,7 @@ import {
   getWalkCell,
   getWalkMaze,
   getWalkNeighbour,
+  walkMazes,
   type WalkCell,
   type WalkDirection,
   type WalkMaze,
@@ -86,7 +87,11 @@ describe("walk maze state", () => {
 
   it("starts after a successful move, collects bonuses and serializes cleanly", () => {
     const maze = getWalkMaze("park-loop");
-    let progress = createWalkMazeProgress(maze.id);
+    let progress = {
+      ...createWalkMazeProgress(maze.id),
+      // Hazard encounters have their own tests; keep this assertion about collection only.
+      hazardPosition: { x: -10, y: -10 },
+    };
     const route = findDirections(maze, maze.start, maze.bonuses[0].cell);
     route.forEach((direction, step) => {
       progress = moveWalkMaze(maze, progress, direction, 100 + step * 170).progress;
@@ -109,7 +114,16 @@ describe("walk maze state", () => {
     expect(restored.hazardStep).toBe(0);
     expect(restored.hazardSeed).toContain("legacy:");
     expect(restored.hazardEncounters).toBe(0);
-    expect(getWalkHazardCell(maze, restored)).toEqual(maze.hazardRoute[0]);
+    expect(getWalkHazardCell(maze, restored)).not.toEqual(maze.start);
+    expect(cellDistanceForTest(maze.start, getWalkHazardCell(maze, restored))).toBeGreaterThanOrEqual(4);
+  });
+
+  it("starts the hazard far enough away on every map", () => {
+    for (const maze of walkMazes) {
+      const progress = createWalkMazeProgress(maze.id, "safe-start");
+      expect(progress.hazardPosition).not.toEqual(maze.start);
+      expect(cellDistanceForTest(maze.start, progress.hazardPosition)).toBeGreaterThanOrEqual(4);
+    }
   });
 
   it("restarts the whole route after the tick bites", () => {
@@ -130,7 +144,8 @@ describe("walk maze state", () => {
     expect(result.progress.startedAt).toBeNull();
     expect(result.progress.elapsedMs).toBe(0);
     expect(result.progress.completedAt).toBeNull();
-    expect(result.progress.hazardPosition).toEqual(maze.hazardRoute[0]);
+    expect(result.progress.hazardPosition).not.toEqual(maze.start);
+    expect(cellDistanceForTest(maze.start, result.progress.hazardPosition)).toBeGreaterThanOrEqual(4);
   });
 
   it("moves the hazard only through open passages and varies choices by saved seed", () => {

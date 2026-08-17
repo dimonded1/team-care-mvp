@@ -17619,6 +17619,342 @@ select:focus-visible {
   box-shadow: 0 0 0 3px rgba(247, 109, 49, 0.14);
 }
 
+/* Four-paws event: the normal orbit stays intact; this layer only annotates
+   the numbered hybrid route and its two volunteer-verified offline stations. */
+.care-orbit--event .care-orbit__heading span {
+  max-width: 560px;
+}
+
+.care-orbit--event .care-planet__label em {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--pink);
+  font: 750 8px/1.1 var(--font-display);
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.care-orbit--event .care-planet__label {
+  width: 116px;
+  min-width: 0;
+}
+
+.care-orbit--event .care-planet__label strong {
+  max-width: 100%;
+  line-height: 1.12;
+  text-align: center;
+  text-wrap: balance;
+}
+
+@media (max-width: 420px) {
+  .care-orbit--event .care-planet__label {
+    width: 102px;
+  }
+
+  .care-orbit--event .care-planet__label strong {
+    font-size: 9px;
+  }
+}
+
+.care-planet--offline .care-planet__body {
+  border-style: dashed;
+}
+
+.care-planet--online .care-planet__body {
+  box-shadow:
+    0 0 0 3px rgba(255, 253, 248, 0.1),
+    0 0 24px rgba(247, 109, 49, 0.3);
+}
+
+.care-planet--locked,
+.care-planet--locked:hover {
+  cursor: not-allowed;
+  filter: saturate(0.35);
+  opacity: 0.54;
+}
+
+.care-planet--locked .care-planet__body::after {
+  content: "";
+  position: absolute;
+  inset: 33%;
+  border: 2px solid rgba(255, 253, 248, 0.82);
+  border-radius: 50% 50% 42% 42%;
+  background: rgba(20, 56, 34, 0.88);
+  box-shadow: inset 0 5px 0 -2px rgba(255, 255, 255, 0.16);
+}
+
+.app:has(.journey-screen--offline-station),
+.screen-frame:has(.journey-screen--offline-station) {
+  background:
+    radial-gradient(circle at 16% 15%, rgba(255, 181, 181, 0.17), transparent 22rem),
+    radial-gradient(circle at 88% 66%, rgba(247, 109, 49, 0.14), transparent 24rem),
+    linear-gradient(150deg, #1d4227 0%, var(--night-green) 62%, #11331f 100%);
+}
+
+.journey-screen--offline-station {
+  min-height: 100dvh;
+  color: #fffdf8;
+}
+
+.journey-screen--offline-station .journey-layout,
+.journey-screen--offline-station .journey-content {
+  width: min(100%, 720px);
+}
+
+.offline-station {
+  display: grid;
+  gap: 14px;
+  color: #fffdf8;
+}
+
+.offline-station__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.offline-station__header h1 {
+  max-width: 620px;
+  margin: 4px 0 8px;
+  color: #fffdf8;
+  font: 660 clamp(27px, 7.6vw, 44px)/1 var(--font-display);
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.offline-station__header p:last-child {
+  margin: 0;
+  color: rgba(255, 253, 248, 0.76);
+  font-size: 15px;
+  line-height: 1.48;
+}
+
+.offline-station__number {
+  width: 66px;
+  height: 66px;
+  display: grid;
+  place-items: center;
+  grid-template-columns: auto auto;
+  gap: 2px;
+  border: 2px solid rgba(255, 255, 255, 0.24);
+  border-radius: 50% 50% 44% 50%;
+  color: #fff;
+  background:
+    radial-gradient(circle at 32% 24%, #ff9b71, var(--orange) 62%, #cf4f1d);
+  box-shadow:
+    0 13px 32px rgba(247, 109, 49, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  font: 700 27px/1 var(--font-display);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.offline-station__number span {
+  font-size: 12px;
+}
+
+.offline-station__number.is-holding {
+  animation: volunteer-hold 1.8s linear both;
+}
+
+@keyframes volunteer-hold {
+  from { box-shadow: 0 0 0 0 rgba(255, 181, 181, 0.72); }
+  to { box-shadow: 0 0 0 13px rgba(255, 181, 181, 0); }
+}
+
+.offline-station__task,
+.offline-station__waiting,
+.offline-station__result {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 22px 22px 22px 9px;
+  background: rgba(255, 255, 255, 0.075);
+  box-shadow: 0 16px 38px rgba(2, 20, 10, 0.18);
+}
+
+.offline-station__task > span,
+.offline-station__waiting > span,
+.offline-station__result > span {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--night-green);
+  background: var(--pink);
+  font-size: 22px;
+}
+
+.offline-station__task strong,
+.offline-station__waiting strong,
+.offline-station__result strong {
+  display: block;
+  margin-bottom: 4px;
+  font: 650 15px/1.2 var(--font-display);
+}
+
+.offline-station__task p,
+.offline-station__waiting p,
+.offline-station__result p {
+  margin: 0;
+  color: rgba(255, 253, 248, 0.75);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.offline-station__steps {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.offline-station__steps li {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.offline-station__steps li > span {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 181, 181, 0.4);
+  border-radius: 50%;
+  color: var(--pink);
+  font: 700 12px/1 var(--font-display);
+}
+
+.offline-station__steps p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.offline-station__waiting {
+  border-style: dashed;
+}
+
+.offline-station__waiting > span {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fffdf8;
+}
+
+.offline-station__result {
+  border-color: rgba(140, 219, 145, 0.42);
+  background: rgba(140, 219, 145, 0.13);
+}
+
+.offline-station__result > span {
+  background: #8cdb91;
+}
+
+.offline-station__result svg {
+  width: 24px;
+  height: 24px;
+}
+
+.offline-station__volunteer-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: end center;
+  padding: 20px max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgba(2, 20, 10, 0.74);
+  backdrop-filter: blur(8px);
+}
+
+.offline-station__volunteer-panel > div {
+  width: min(100%, 460px);
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 28px 28px 28px 12px;
+  background: #173a25;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.42);
+}
+
+.offline-station__volunteer-panel h2 {
+  margin: 5px 0 8px;
+  color: #fffdf8;
+  font: 650 23px/1.08 var(--font-display);
+}
+
+.offline-station__volunteer-panel p:not(.section-number) {
+  margin: 0 0 16px;
+  color: rgba(255, 253, 248, 0.76);
+  line-height: 1.5;
+}
+
+.offline-station__volunteer-panel .text-button {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 7px;
+  color: rgba(255, 253, 248, 0.76);
+}
+
+/* Low-end Android: confine board repaints and avoid restarting decorative
+   hazard motion while keeping the player's 170 ms step readable. */
+.walk-maze__board {
+  contain: layout paint;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .walk-maze__hazard :is(circle, text) {
+    transition: none;
+  }
+
+  .journey-screen--walk-game .progress-block,
+  .journey-screen--walk-game .walk-maze__meta {
+    backdrop-filter: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .offline-station__header {
+    grid-template-columns: 58px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .offline-station__number {
+    width: 56px;
+    height: 56px;
+    font-size: 23px;
+  }
+
+  .offline-station__header h1 {
+    font-size: clamp(25px, 7.3vw, 34px);
+  }
+
+  .offline-station__task,
+  .offline-station__waiting,
+  .offline-station__result {
+    padding: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .offline-station__number.is-holding {
+    animation: none;
+    outline: 4px solid var(--pink);
+    outline-offset: 4px;
+  }
+}
+
 .contact-capture__field-error {
   display: block;
   margin-top: 6px;

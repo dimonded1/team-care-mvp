@@ -1,4 +1,4 @@
-import type { Mission, StoredSession } from "../types/app";
+import type { ExperienceMode, Mission, StoredSession } from "../types/app";
 
 const STORAGE_KEY = "nika-team-care-mvp-v1";
 const RECENT_MATCHES_KEY = "nika-team-care-recent-matches-v1";
@@ -42,6 +42,10 @@ function normalizeMissionProgress(value: unknown): StoredSession["missionProgres
 
 function isStoredStage(value: unknown): value is StoredSession["stage"] {
   return typeof value === "string" && restorableStages.includes(value as StoredSession["stage"]);
+}
+
+function normalizeExperienceMode(value: unknown): ExperienceMode {
+  return value === "four-paws-event" ? "four-paws-event" : "standard";
 }
 
 function normalizeCommon(value: Record<string, unknown>) {
@@ -88,6 +92,7 @@ export function normalizeStoredSession(value: unknown): StoredSession | null {
       return {
         version: 3,
         ...common,
+        experienceMode: normalizeExperienceMode(record.experienceMode),
         stage: common.stage === "journey" && !activeMissionId
           ? "passport"
           : record.version === 2 && common.stage === "final"
@@ -109,6 +114,7 @@ export function normalizeStoredSession(value: unknown): StoredSession | null {
       return {
         version: 3,
         ...common,
+        experienceMode: "standard",
         activeMissionId,
         startedMissionIds: normalizeMissionIds([
           ...completedMissionIds,

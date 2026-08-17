@@ -246,6 +246,7 @@ export function mapContactCapture(input, config, { now = new Date() } = {}) {
   if (!allowedPreferredContacts.has(preferredContact)) throw new TypeError("preferredContact is not allowed");
 
   const campaign = normalizeCampaignTag(input.campaign);
+  const eventComment = campaign === "4-lapy" ? "Мероприятие: 4 лапы. " : "";
 
   const fields = config.contacts.fields;
   const workSphereEnumId = config.contacts.workSphereEnums[workSphere];
@@ -270,7 +271,7 @@ export function mapContactCapture(input, config, { now = new Date() } = {}) {
     SECOND_NAME: middleName,
     PHONE: [{ VALUE: phone, VALUE_TYPE: "MOBILE" }],
     EMAIL: [{ VALUE: email, VALUE_TYPE: "WORK" }],
-    COMMENTS: `Интерес к программе опеки. Подопечный: ${animalName} (${animalId}).`,
+    COMMENTS: `Интерес к программе опеки. ${eventComment}Подопечный: ${animalName} (${animalId}).`,
     [fields.workSphere]: workSphereEnumId,
     [fields.preferredContact]: preferredContactEnumId,
     [fields.interest]: interestEnumIds,

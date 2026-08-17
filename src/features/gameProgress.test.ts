@@ -8,6 +8,8 @@ import {
   createInitialVisitGameProgress,
   restoreVisitGameProgress,
 } from "./VisitCareGame";
+import { healthZones } from "../data/healthSituations";
+import { visitSituations } from "../data/visitSituations";
 
 describe("preserved mission progress", () => {
   it("restores a partial Visit mission from legacy progress", () => {
@@ -48,5 +50,23 @@ describe("preserved mission progress", () => {
     expect(restored.activeZoneId).toBe(activeZoneId);
     expect(restored.selectedChoiceId).toBeNull();
     expect(restored.completedZoneIds).toEqual(["eyes"]);
+  });
+
+  it("preserves completed Visit and Health progress after refresh", () => {
+    const animal = animals[0];
+    const visit = restoreVisitGameProgress({
+      version: 2,
+      step: visitSituations.length,
+      shuffleSeed: "completed-visit",
+      selectedActionId: null,
+    });
+    const healthFallback = createInitialHealthGameProgress(animal.species);
+    const health = restoreHealthGameProgress({
+      ...healthFallback,
+      completedZoneIds: healthZones.map((zone) => zone.id),
+    }, animal.species, healthFallback);
+
+    expect(visit.step).toBe(visitSituations.length);
+    expect(health.completedZoneIds).toEqual(healthZones.map((zone) => zone.id));
   });
 });
