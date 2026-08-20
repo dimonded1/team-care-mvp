@@ -35,6 +35,16 @@ export interface ContactCapturePayload {
   consent: true;
 }
 
+export interface ContactCaptureRequiredFields {
+  firstName: string;
+  lastName: string;
+  middleName: string;
+  phone: string;
+  email: string;
+  workSphere: string;
+  preferredContact: string;
+}
+
 /**
  * Keeps a submit attempt synchronous until the request settles. This prevents
  * two browser submit events from racing React's asynchronous state update.
@@ -103,6 +113,16 @@ export function isValidContactName(value: string) {
 
 export function isValidContactPhone(value: string) {
   return /^\+7\(\d{3}\)-\d{3}-\d{2}-\d{2}$/u.test(value);
+}
+
+export function isContactCaptureRequiredStepComplete(value: ContactCaptureRequiredFields) {
+  return isValidContactName(value.firstName)
+    && isValidContactName(value.lastName)
+    && isValidContactName(value.middleName)
+    && isValidContactPhone(value.phone)
+    && isValidContactEmail(value.email)
+    && Boolean(value.workSphere)
+    && Boolean(value.preferredContact);
 }
 
 export function formatRussianContactPhone(value: string) {

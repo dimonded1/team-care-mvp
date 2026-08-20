@@ -1,11 +1,12 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { CheckIcon } from "./Icons";
+import { CheckIcon, ShareIcon } from "./Icons";
 import {
   getContactCaptureMode,
   createContactCaptureRequestTracker,
   createContactCaptureSubmitGate,
   formatRussianContactPhone,
+  isContactCaptureRequiredStepComplete,
   isValidContactEmail,
   isValidContactName,
   isValidContactPhone,
@@ -25,6 +26,7 @@ interface ContactCaptureFormProps {
 }
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
+type ContactFormStep = "required" | "optional";
 
 const initialForm = {
   firstName: "",
@@ -50,9 +52,13 @@ export function ContactCaptureForm({ animal, campaign }: ContactCaptureFormProps
   const [consent, setConsent] = useState(false);
   const [state, setState] = useState<SubmitState>("idle");
   const [error, setError] = useState("");
+  const [formStep, setFormStep] = useState<ContactFormStep>("required");
+  const [requiredAttempted, setRequiredAttempted] = useState(false);
+  const [stepError, setStepError] = useState("");
   const [touchedContact, setTouchedContact] = useState({ phone: false, email: false });
   const submitGate = useRef(createContactCaptureSubmitGate());
   const requestTracker = useRef(createContactCaptureRequestTracker());
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -73,18 +79,30 @@ export function ContactCaptureForm({ animal, campaign }: ContactCaptureFormProps
     setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const canSubmit = isValidContactName(form.firstName)
-    && isValidContactName(form.lastName)
-    && isValidContactName(form.middleName)
-    && isValidContactPhone(form.phone)
-    && isValidContactEmail(form.email)
-    && Boolean(form.workSphere)
-    && Boolean(form.preferredContact)
+  const requiredStepComplete = isContactCaptureRequiredStepComplete(form);
+  const canSubmit = requiredStepComplete
     && consent
     && mode === "enabled"
     && state !== "submitting";
   const phoneError = touchedContact.phone && !isValidContactPhone(form.phone);
   const emailError = touchedContact.email && !isValidContactEmail(form.email);
+
+  const moveToStep = (nextStep: ContactFormStep) => {
+    setFormStep(nextStep);
+    setStepError("");
+    window.requestAnimationFrame(() => stepHeadingRef.current?.focus());
+  };
+
+  const advanceToOptional = () => {
+    setRequiredAttempted(true);
+    setTouchedContact({ phone: true, email: true });
+    if (!requiredStepComplete) {
+      setStepError("Заполните обязательные поля — мы сохраним введённое на этом экране.");
+      window.requestAnimationFrame(() => stepHeadingRef.current?.focus());
+      return;
+    }
+    moveToStep("optional");
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -184,146 +202,163 @@ export function ContactCaptureForm({ animal, campaign }: ContactCaptureFormProps
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <fieldset className="contact-capture__group">
-              <legend>Как к вам обращаться</legend>
-              <div className="contact-capture__fields contact-capture__fields--identity">
-                <label>
-                  <span>Фамилия *</span>
-                  <input name="lastName" autoComplete="family-name" maxLength={80} required value={form.lastName} onChange={(event) => update("lastName", event.target.value)} />
-                </label>
-                <label>
-                  <span>Имя *</span>
-                  <input name="firstName" autoComplete="given-name" maxLength={80} required value={form.firstName} onChange={(event) => update("firstName", event.target.value)} />
-                </label>
-                <label>
-                  <span>Отчество *</span>
-                  <input name="middleName" autoComplete="additional-name" maxLength={80} required value={form.middleName} onChange={(event) => update("middleName", event.target.value)} />
-                </label>
-              </div>
-            </fieldset>
-
-            <fieldset className="contact-capture__group">
-              <legend>Как с вами связаться</legend>
-              <div className="contact-capture__fields">
-                <label>
-                  <span>Телефон *</span>
-                  <input
-                    name="phone"
-                    type="tel"
-                    autoComplete="tel"
-                    inputMode="tel"
-                    maxLength={17}
-                    required
-                    value={form.phone}
-                    onChange={(event) => update("phone", formatRussianContactPhone(event.target.value))}
-                    onBlur={() => setTouchedContact((current) => ({ ...current, phone: true }))}
-                    placeholder="+7(999)-777-77-77"
-                    aria-invalid={phoneError}
-                    aria-describedby={phoneError ? "contact-phone-error" : undefined}
-                  />
-                  {phoneError ? (
-                    <small id="contact-phone-error" className="contact-capture__field-error" role="alert">
-                      Введите 10 цифр после +7: +7(999)-777-77-77
-                    </small>
-                  ) : null}
-                </label>
-                <label>
-                  <span>Email *</span>
-                  <input
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    inputMode="email"
-                    maxLength={254}
-                    required
-                    value={form.email}
-                    onChange={(event) => update("email", normalizeContactEmailInput(event.target.value))}
-                    onBlur={() => setTouchedContact((current) => ({ ...current, email: true }))}
-                    placeholder="name@example.ru"
-                    pattern="[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}"
-                    aria-invalid={emailError}
-                    aria-describedby={emailError ? "contact-email-error" : undefined}
-                  />
-                  {emailError ? (
-                    <small id="contact-email-error" className="contact-capture__field-error" role="alert">
-                      {form.email.includes("@")
-                        ? "Проверьте адрес после @, например name@example.ru"
-                        : "Добавьте знак @, например name@example.ru"}
-                    </small>
-                  ) : null}
-                </label>
-                <label>
-                  <span>Предпочитаемый способ связи *</span>
-                  <select name="preferredContact" required value={form.preferredContact} onChange={(event) => update("preferredContact", event.target.value)}>
-                    <option value="">Выберите способ</option>
-                    {preferredContactOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-                  </select>
-                </label>
-                <label>
-                  <span>Telegram</span>
-                  <input name="telegram" maxLength={120} value={form.telegram} onChange={(event) => update("telegram", event.target.value)} placeholder="@username" />
-                </label>
-                <label>
-                  <span>MAX</span>
-                  <input name="maxMessenger" maxLength={120} value={form.maxMessenger} onChange={(event) => update("maxMessenger", event.target.value)} placeholder="Ник или ссылка, если есть" />
-                </label>
-              </div>
-            </fieldset>
-
-            <fieldset className="contact-capture__group">
-              <legend>Немного о вас</legend>
-              <div className="contact-capture__fields">
-                <label>
-                  <span>Дата рождения</span>
-                  <input name="birthDate" type="date" autoComplete="bday" max={new Date().toISOString().slice(0, 10)} value={form.birthDate} onChange={(event) => update("birthDate", event.target.value)} />
-                </label>
-                <label>
-                  <span>Сфера работы *</span>
-                  <select name="workSphere" required value={form.workSphere} onChange={(event) => update("workSphere", event.target.value)}>
-                    <option value="">Выберите сферу</option>
-                    {workSphereOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-                  </select>
-                </label>
-                <label className="contact-capture__wide">
-                  <span>Адрес</span>
-                  <input name="address" autoComplete="street-address" maxLength={300} value={form.address} onChange={(event) => update("address", event.target.value)} placeholder="Город и адрес, если хотите указать" />
-                </label>
-                <label className="contact-capture__wide">
-                  <span>О себе</span>
-                  <textarea name="about" rows={3} maxLength={1500} value={form.about} onChange={(event) => update("about", event.target.value)} placeholder="Расскажите коротко о себе" />
-                </label>
-                <label>
-                  <span>Хобби</span>
-                  <textarea name="hobbies" rows={2} maxLength={500} value={form.hobbies} onChange={(event) => update("hobbies", event.target.value)} />
-                </label>
-                <label>
-                  <span>Питомцы</span>
-                  <textarea name="pets" rows={2} maxLength={500} value={form.pets} onChange={(event) => update("pets", event.target.value)} placeholder="Есть ли питомцы сейчас" />
-                </label>
-              </div>
-            </fieldset>
-
-            <label className="contact-capture__consent">
-              <input
-                type="checkbox"
-                checked={consent}
-                onChange={(event) => {
-                  requestTracker.current.reset();
-                  setConsent(event.target.checked);
-                }}
-                required
-              />
-              <span>
-                Я соглашаюсь на обработку персональных данных и ознакомился(-ась) с{" "}
-                <a href="#legal/privacy">политикой конфиденциальности</a>.
+            <div className="contact-capture__stepper" aria-label="Шаги анкеты">
+              <span className="is-active" aria-current={formStep === "required" ? "step" : undefined}>
+                <b>1</b> Главное
               </span>
-            </label>
+              <i aria-hidden="true" />
+              <span className={formStep === "optional" ? "is-active" : ""} aria-current={formStep === "optional" ? "step" : undefined}>
+                <b>2</b> Дополнительно
+              </span>
+            </div>
 
-            {state === "error" ? <p className="contact-capture__error" role="alert">{error}</p> : null}
+            <AnimatePresence mode="wait" initial={false}>
+              {formStep === "required" ? (
+                <motion.div
+                  key="required"
+                  className="contact-capture__step"
+                  initial={{ opacity: 0, x: reduceMotion ? 0 : -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: reduceMotion ? 0 : -8 }}
+                  transition={{ duration: reduceMotion ? 0.01 : 0.2 }}
+                >
+                  <div className="contact-capture__step-heading">
+                    <span>Шаг 1 из 2 · только необходимое</span>
+                    <h3 ref={formStep === "required" ? stepHeadingRef : undefined} tabIndex={-1}>Как с вами связаться</h3>
+                    <p>Сначала — контакты и удобный способ ответа. Остальное можно добавить на следующем шаге.</p>
+                  </div>
 
-            <button className="button button--secondary button--full contact-capture__submit" type="submit" disabled={!canSubmit}>
-              {mode === "preview" ? "Отправка доступна на сервере" : state === "submitting" ? "Отправляем…" : "Оставить контакты"}
-            </button>
+                  <fieldset className="contact-capture__group">
+                    <legend>Как к вам обращаться</legend>
+                    <div className="contact-capture__fields contact-capture__fields--identity">
+                      <label>
+                        <span>Фамилия *</span>
+                        <input name="lastName" autoComplete="family-name" maxLength={80} required value={form.lastName} aria-invalid={requiredAttempted && !isValidContactName(form.lastName)} onChange={(event) => update("lastName", event.target.value)} />
+                      </label>
+                      <label>
+                        <span>Имя *</span>
+                        <input name="firstName" autoComplete="given-name" maxLength={80} required value={form.firstName} aria-invalid={requiredAttempted && !isValidContactName(form.firstName)} onChange={(event) => update("firstName", event.target.value)} />
+                      </label>
+                      <label>
+                        <span>Отчество *</span>
+                        <input name="middleName" autoComplete="additional-name" maxLength={80} required value={form.middleName} aria-invalid={requiredAttempted && !isValidContactName(form.middleName)} onChange={(event) => update("middleName", event.target.value)} />
+                      </label>
+                    </div>
+                  </fieldset>
+
+                  <fieldset className="contact-capture__group">
+                    <legend>Контакты</legend>
+                    <div className="contact-capture__fields">
+                      <label>
+                        <span>Телефон *</span>
+                        <input
+                          name="phone"
+                          type="tel"
+                          autoComplete="tel"
+                          inputMode="tel"
+                          maxLength={17}
+                          required
+                          value={form.phone}
+                          onChange={(event) => update("phone", formatRussianContactPhone(event.target.value))}
+                          onBlur={() => setTouchedContact((current) => ({ ...current, phone: true }))}
+                          placeholder="+7(999)-777-77-77"
+                          aria-invalid={phoneError}
+                          aria-describedby={phoneError ? "contact-phone-error" : undefined}
+                        />
+                        {phoneError ? <small id="contact-phone-error" className="contact-capture__field-error" role="alert">Введите 10 цифр после +7: +7(999)-777-77-77</small> : null}
+                      </label>
+                      <label>
+                        <span>Email *</span>
+                        <input
+                          name="email"
+                          type="email"
+                          autoComplete="email"
+                          inputMode="email"
+                          maxLength={254}
+                          required
+                          value={form.email}
+                          onChange={(event) => update("email", normalizeContactEmailInput(event.target.value))}
+                          onBlur={() => setTouchedContact((current) => ({ ...current, email: true }))}
+                          placeholder="name@example.ru"
+                          pattern="[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}"
+                          aria-invalid={emailError}
+                          aria-describedby={emailError ? "contact-email-error" : undefined}
+                        />
+                        {emailError ? <small id="contact-email-error" className="contact-capture__field-error" role="alert">{form.email.includes("@") ? "Проверьте адрес после @, например name@example.ru" : "Добавьте знак @, например name@example.ru"}</small> : null}
+                      </label>
+                      <label>
+                        <span>Как удобнее ответить *</span>
+                        <select name="preferredContact" required value={form.preferredContact} aria-invalid={requiredAttempted && !form.preferredContact} onChange={(event) => update("preferredContact", event.target.value)}>
+                          <option value="">Выберите способ</option>
+                          {preferredContactOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                        </select>
+                      </label>
+                      <label>
+                        <span>Сфера работы *</span>
+                        <select name="workSphere" required value={form.workSphere} aria-invalid={requiredAttempted && !form.workSphere} onChange={(event) => update("workSphere", event.target.value)}>
+                          <option value="">Выберите сферу</option>
+                          {workSphereOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                        </select>
+                      </label>
+                    </div>
+                  </fieldset>
+
+                  {stepError ? <p className="contact-capture__step-error" role="alert">{stepError}</p> : null}
+                  <button className="button button--secondary button--full contact-capture__next" type="button" onClick={advanceToOptional}>
+                    Продолжить <span aria-hidden="true">→</span>
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="optional"
+                  className="contact-capture__step"
+                  initial={{ opacity: 0, x: reduceMotion ? 0 : 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: reduceMotion ? 0 : 8 }}
+                  transition={{ duration: reduceMotion ? 0.01 : 0.2 }}
+                >
+                  <div className="contact-capture__step-heading">
+                    <span>Шаг 2 из 2 · по желанию</span>
+                    <h3 ref={formStep === "optional" ? stepHeadingRef : undefined} tabIndex={-1}>Расскажите немного о себе</h3>
+                    <p>Дополнительные ответы помогут фонду предложить удобный формат участия. Их можно пропустить.</p>
+                  </div>
+
+                  <fieldset className="contact-capture__group">
+                    <legend>Другие способы связи</legend>
+                    <div className="contact-capture__fields">
+                      <label><span>Telegram</span><input name="telegram" maxLength={120} value={form.telegram} onChange={(event) => update("telegram", event.target.value)} placeholder="@username" /></label>
+                      <label><span>MAX</span><input name="maxMessenger" maxLength={120} value={form.maxMessenger} onChange={(event) => update("maxMessenger", event.target.value)} placeholder="Ник или ссылка, если есть" /></label>
+                    </div>
+                  </fieldset>
+
+                  <fieldset className="contact-capture__group">
+                    <legend>Немного о вас</legend>
+                    <div className="contact-capture__fields">
+                      <label><span>Дата рождения</span><input name="birthDate" type="date" autoComplete="bday" max={new Date().toISOString().slice(0, 10)} value={form.birthDate} onChange={(event) => update("birthDate", event.target.value)} /></label>
+                      <label className="contact-capture__wide"><span>Адрес</span><input name="address" autoComplete="street-address" maxLength={300} value={form.address} onChange={(event) => update("address", event.target.value)} placeholder="Город и адрес, если хотите указать" /></label>
+                      <label className="contact-capture__wide"><span>О себе</span><textarea name="about" rows={3} maxLength={1500} value={form.about} onChange={(event) => update("about", event.target.value)} placeholder="Расскажите коротко о себе" /></label>
+                      <label><span>Хобби</span><textarea name="hobbies" rows={2} maxLength={500} value={form.hobbies} onChange={(event) => update("hobbies", event.target.value)} /></label>
+                      <label><span>Питомцы</span><textarea name="pets" rows={2} maxLength={500} value={form.pets} onChange={(event) => update("pets", event.target.value)} placeholder="Есть ли питомцы сейчас" /></label>
+                    </div>
+                  </fieldset>
+
+                  <label className="contact-capture__consent">
+                    <input type="checkbox" checked={consent} onChange={(event) => { requestTracker.current.reset(); setConsent(event.target.checked); }} required />
+                    <span>Я соглашаюсь на обработку персональных данных и ознакомился(-ась) с <a href="#legal/privacy">политикой конфиденциальности</a>.</span>
+                  </label>
+
+                  {state === "error" ? <p className="contact-capture__error" role="alert">{error}</p> : null}
+
+                  <div className="contact-capture__actions">
+                    <button className="text-button contact-capture__back" type="button" onClick={() => moveToStep("required")}>← Назад к контактам</button>
+                    <button className="button button--secondary button--full contact-capture__submit" type="submit" disabled={!canSubmit}>
+                      {mode === "enabled" && state !== "submitting" ? <ShareIcon /> : null}
+                      {mode === "preview" ? "Отправка доступна на сервере" : state === "submitting" ? "Отправляем…" : "Поделиться контактами"}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.form>
         )}
       </AnimatePresence>

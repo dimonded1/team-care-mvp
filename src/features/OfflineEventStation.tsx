@@ -12,6 +12,7 @@ import {
   verifyOfflineStation,
   type OfflineStationProgress,
 } from "../lib/offlineStation";
+import { assetUrl } from "../lib/assets";
 
 interface OfflineEventStationProps {
   station: EventStation;
@@ -30,6 +31,9 @@ export function OfflineEventStation({
 }: OfflineEventStationProps) {
   const progress = restoreOfflineStationProgress(value);
   const verified = progress.status === "verified";
+  const planetImage = station.number === 1
+    ? assetUrl("assets/orbit-planets/trust.webp")
+    : assetUrl("assets/orbit-planets/visit.webp");
   const [volunteerPanelOpen, setVolunteerPanelOpen] = useState(false);
   const [holding, setHolding] = useState(false);
   const holdTimerRef = useRef<number | null>(null);
@@ -130,25 +134,28 @@ export function OfflineEventStation({
   return (
     <section className={`offline-station offline-station--${station.number}${verified ? " offline-station--verified" : ""}`}>
       <header className="offline-station__header">
-        <button
-          ref={stationButtonRef}
-          type="button"
-          className={`offline-station__number${holding ? " is-holding" : ""}`}
-          onPointerDown={handlePointerDown}
-          onPointerUp={cancelHold}
-          onPointerCancel={cancelHold}
-          onPointerLeave={cancelHold}
-          onKeyDown={handleKeyDown}
-          onKeyUp={cancelHold}
-          aria-label={`Станция ${station.number}`}
-        >
-          <span>№</span>{station.number}
-        </button>
-        <div>
-          <p className="section-number">Офлайн-станция · около 30 секунд</p>
+        <div className="offline-station__heading">
+          <div className="offline-station__meta">
+            <button
+              ref={stationButtonRef}
+              type="button"
+              className={`offline-station__number${holding ? " is-holding" : ""}`}
+              onPointerDown={handlePointerDown}
+              onPointerUp={cancelHold}
+              onPointerCancel={cancelHold}
+              onPointerLeave={cancelHold}
+              onKeyDown={handleKeyDown}
+              onKeyUp={cancelHold}
+              aria-label={`Станция ${station.number}`}
+            >
+              <span>№</span>{station.number}
+            </button>
+            <p className="section-number">Офлайн · около 30 секунд</p>
+          </div>
           <h1>{station.title}</h1>
           <p>{station.description}</p>
         </div>
+        <img className="offline-station__planet" src={planetImage} alt="" aria-hidden="true" />
       </header>
 
       <div className="offline-station__task">

@@ -4,6 +4,7 @@ import {
   createContactCaptureRequestTracker,
   formatRussianContactPhone,
   getContactCaptureMode,
+  isContactCaptureRequiredStepComplete,
   isValidContactEmail,
   isValidContactName,
   isValidContactPhone,
@@ -51,6 +52,22 @@ describe("contact capture validation", () => {
       "whatsapp",
       "max",
     ]);
+  });
+
+  it("opens the optional contact step only after all required fields are valid", () => {
+    const required = {
+      firstName: "Анна",
+      lastName: "Иванова",
+      middleName: "Сергеевна",
+      phone: "+7(999)-123-45-67",
+      email: "anna@example.org",
+      workSphere: "media",
+      preferredContact: "email",
+    };
+
+    expect(isContactCaptureRequiredStepComplete(required)).toBe(true);
+    expect(isContactCaptureRequiredStepComplete({ ...required, phone: "+7" })).toBe(false);
+    expect(isContactCaptureRequiredStepComplete({ ...required, workSphere: "" })).toBe(false);
   });
 
   it("reads the campaign mark from the QR link and ignores a broken one", () => {

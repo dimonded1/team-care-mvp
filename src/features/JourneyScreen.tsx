@@ -300,7 +300,7 @@ export function JourneyScreen({
 
       <div className="screen-actions sticky-actions">
         <Button
-          className="button--orange"
+          className={isOfflineStation ? "offline-station__continue" : "button--orange"}
           fullWidth
           disabled={!missionReady && !missionAlreadyCompleted}
           onClick={() => {
@@ -310,7 +310,9 @@ export function JourneyScreen({
           {missionAlreadyCompleted
             ? "Вернуться к маршруту"
             : isOfflineStation
-              ? "Продолжить маршрут"
+              ? missionReady
+                ? "Продолжить маршрут"
+                : "Сначала выполните задание"
               : "Сохранить круг заботы"}
         </Button>
       </div>
