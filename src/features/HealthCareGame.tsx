@@ -333,7 +333,7 @@ function SituationPanel({
               data-testid="health-continue"
               onClick={onContinue}
             >
-              Запомнить и продолжить <span aria-hidden="true">→</span>
+              Продолжить <span aria-hidden="true">→</span>
             </button>
           </motion.div>
         ) : null}

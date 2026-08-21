@@ -2414,12 +2414,35 @@ p {
 
 .progress-copy {
   margin-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
+  min-height: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 16px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
+  line-height: 1.2;
+}
+
+.progress-copy > span {
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+}
+
+.progress-copy > span:last-child {
+  justify-content: flex-end;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.progress-copy--counter {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.progress-copy--counter > span {
+  justify-content: flex-end;
 }
 
 .progress-track {
@@ -15516,6 +15539,25 @@ p {
   line-height: 1.4;
 }
 
+.contact-capture__fallback-actions {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.contact-capture__fallback-actions .button,
+.contact-capture__fallback-actions .text-button {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+}
+
+.contact-capture__fallback-actions .text-button {
+  display: flex;
+  align-items: center;
+  color: rgba(255, 253, 248, 0.76);
+}
+
 @media (min-width: 760px) {
   .final-layout {
     align-items: start;
@@ -16573,12 +16615,19 @@ select:focus-visible {
 
 .quiz-screen .progress-block,
 .journey-content > .progress-block {
-  padding: 8px 10px 10px;
+  padding: 11px 14px 12px;
+  display: grid;
+  gap: 9px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.055);
   box-shadow: 0 10px 28px rgba(3, 25, 14, 0.12);
   backdrop-filter: blur(10px);
+}
+
+.quiz-screen .progress-copy,
+.journey-content > .progress-block .progress-copy {
+  margin: 0;
 }
 
 .quiz-screen .progress-track,
@@ -16907,6 +16956,11 @@ select:focus-visible {
   width: fit-content;
   min-width: 180px;
   margin-top: 12px;
+}
+
+.contact-capture__success > div:only-child .contact-capture__fallback-actions .button {
+  width: 100%;
+  margin-top: 0;
 }
 
 @media (max-width: 620px) {
@@ -18197,6 +18251,40 @@ select:focus-visible {
   margin: 14px auto 0;
   padding: 0 0 max(8px, env(safe-area-inset-bottom));
   background: transparent;
+}
+
+.journey-screen:is(
+  .journey-screen--visit-game,
+  .journey-screen--day-game,
+  .journey-screen--health-game,
+  .journey-screen--trust-game,
+  .journey-screen--offline-station
+) .journey-content > .progress-block {
+  margin: 0 0 16px;
+}
+
+.journey-screen .screen-actions .button {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 18px;
+  line-height: 1.15;
+  text-align: center;
+}
+
+:is(.visit-feedback__continue, .health-feedback__continue) {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.15;
+  text-align: center;
 }
 
 .offline-station__continue {

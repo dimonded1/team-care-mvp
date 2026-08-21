@@ -155,19 +155,31 @@ export function resolveContactCaptureMode(
   return hostname.endsWith(".github.io") ? "preview" : "disabled";
 }
 
-export async function getContactCaptureMode(signal?: AbortSignal): Promise<ContactCaptureMode> {
-  try {
-    const response = await fetch("/api/public-config", {
-      method: "GET",
-      headers: { accept: "application/json" },
-      signal,
-    });
-    if (!response.ok) return "unavailable";
-    const body = await response.json();
-    return resolveContactCaptureMode(body?.contactCaptureEnabled === true);
-  } catch {
-    return "unavailable";
+export async function getContactCaptureMode(
+  signal?: AbortSignal,
+  attempts = 2,
+): Promise<ContactCaptureMode> {
+  const attemptCount = Math.max(1, attempts);
+  for (let attempt = 0; attempt < attemptCount; attempt += 1) {
+    try {
+      const response = await fetch("/api/public-config", {
+        method: "GET",
+        headers: { accept: "application/json" },
+        cache: "no-store",
+        signal,
+      });
+      if (!response.ok) {
+        if (response.status >= 500 && attempt + 1 < attemptCount) continue;
+        return "unavailable";
+      }
+      const body = await response.json();
+      return resolveContactCaptureMode(body?.contactCaptureEnabled === true);
+    } catch (error) {
+      if (signal?.aborted) return "unavailable";
+      if (attempt + 1 >= attemptCount) return "unavailable";
+    }
   }
+  return "unavailable";
 }
 
 function createContactCaptureRequestId() {

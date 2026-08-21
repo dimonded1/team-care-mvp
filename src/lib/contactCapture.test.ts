@@ -94,6 +94,25 @@ describe("contact capture validation", () => {
     vi.unstubAllGlobals();
   });
 
+  it("retries a transient public config failure before hiding the form", async () => {
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new TypeError("mobile network changed"))
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ contactCaptureEnabled: true }),
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getContactCaptureMode()).resolves.toBe("enabled");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/public-config", expect.objectContaining({
+      cache: "no-store",
+    }));
+
+    vi.unstubAllGlobals();
+  });
+
   it("blocks a synchronous double submit until the active request settles", () => {
     const gate = createContactCaptureSubmitGate();
 

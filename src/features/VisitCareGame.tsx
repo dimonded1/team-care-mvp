@@ -279,8 +279,8 @@ export function VisitCareGame({
                     onClick={continueAfterFeedback}
                   >
                     {selected.correct
-                      ? step === visitSituations.length - 1 ? "Завершить визит" : "Следующий шаг"
-                      : "Выбрать другой шаг"}
+                      ? "Продолжить"
+                      : "Выбрать другой вариант"}
                   </button>
                 </motion.div>
               ) : null}

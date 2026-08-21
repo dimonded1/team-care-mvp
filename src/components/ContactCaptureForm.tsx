@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { CheckIcon, ShareIcon } from "./Icons";
 import {
   getContactCaptureMode,
@@ -55,22 +55,31 @@ export function ContactCaptureForm({ animal, campaign }: ContactCaptureFormProps
   const [formStep, setFormStep] = useState<ContactFormStep>("required");
   const [requiredAttempted, setRequiredAttempted] = useState(false);
   const [stepError, setStepError] = useState("");
+  const [configChecking, setConfigChecking] = useState(false);
   const [touchedContact, setTouchedContact] = useState({ phone: false, email: false });
   const submitGate = useRef(createContactCaptureSubmitGate());
   const requestTracker = useRef(createContactCaptureRequestTracker());
   const stepHeadingRef = useRef<HTMLHeadingElement>(null);
+  const configControllerRef = useRef<AbortController | null>(null);
+
+  const checkAvailability = useCallback(() => {
+    configControllerRef.current?.abort();
+    const controller = new AbortController();
+    configControllerRef.current = controller;
+    setConfigChecking(true);
+    getContactCaptureMode(controller.signal).then((nextMode) => {
+      if (!controller.signal.aborted) setMode(nextMode);
+    }).finally(() => {
+      if (!controller.signal.aborted) setConfigChecking(false);
+    });
+  }, []);
 
   useEffect(() => {
-    const controller = new AbortController();
-    let active = true;
-    getContactCaptureMode(controller.signal).then((nextMode) => {
-      if (active) setMode(nextMode);
-    });
+    checkAvailability();
     return () => {
-      active = false;
-      controller.abort();
+      configControllerRef.current?.abort();
     };
-  }, []);
+  }, [checkAvailability]);
 
   if (mode === "disabled") return null;
 
@@ -175,8 +184,13 @@ export function ContactCaptureForm({ animal, campaign }: ContactCaptureFormProps
           >
             <div>
               <strong>Форма временно недоступна</strong>
-              <p>Пожалуйста, напишите фонду напрямую — персональные данные на этой странице не сохраняются.</p>
-              <a className="button button--secondary" href="mailto:info@fond-nika.ru">Написать фонду</a>
+              <p>Похоже, мобильная сеть прервалась во время проверки. Попробуйте подключиться ещё раз — введённые данные здесь не сохраняются.</p>
+              <div className="contact-capture__fallback-actions">
+                <button className="button button--secondary" type="button" onClick={checkAvailability} disabled={configChecking}>
+                  {configChecking ? "Проверяем…" : "Проверить ещё раз"}
+                </button>
+                <a className="text-button" href="mailto:info@fond-nika.ru">Написать фонду</a>
+              </div>
             </div>
           </motion.div>
         ) : state === "success" ? (
