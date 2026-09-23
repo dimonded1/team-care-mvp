@@ -14,14 +14,20 @@ import {
 
 const root = resolve(fileURLToPath(new URL("../dist", import.meta.url)));
 const port = Number(process.env.PORT || 8080);
-const rateLimit = Number(process.env.CONTACT_CAPTURE_RATE_LIMIT || 5);
-const rateWindowMs = Number(process.env.CONTACT_CAPTURE_RATE_WINDOW_MS || 600_000);
+const configuredRateLimit = Number(process.env.CONTACT_CAPTURE_RATE_LIMIT || 60);
+const configuredRateWindowMs = Number(process.env.CONTACT_CAPTURE_RATE_WINDOW_MS || 600_000);
+const rateLimit = Number.isFinite(configuredRateLimit) && configuredRateLimit > 0
+  ? configuredRateLimit
+  : 60;
+const rateWindowMs = Number.isFinite(configuredRateWindowMs) && configuredRateWindowMs > 0
+  ? configuredRateWindowMs
+  : 600_000;
 const configuredOrigins = parseAllowedOrigins(process.env.APP_ALLOWED_ORIGINS);
 const trustProxy = String(process.env.APP_TRUST_PROXY).toLowerCase() === "true";
 const contactService = createContactCaptureService();
 const limiter = createSlidingWindowRateLimiter({
-  limit: Number.isFinite(rateLimit) && rateLimit > 0 ? rateLimit : 5,
-  windowMs: Number.isFinite(rateWindowMs) && rateWindowMs > 0 ? rateWindowMs : 600_000,
+  limit: rateLimit,
+  windowMs: rateWindowMs,
 });
 const requestDeduplicator = createRequestIdDeduplicator();
 
@@ -110,7 +116,10 @@ async function handleApi(request, response, url) {
       sendJson(response, 405, { error: "method_not_allowed" }, { allow: "GET" });
       return;
     }
-    sendJson(response, 200, { contactCaptureEnabled: contactService.isEnabled() });
+    sendJson(response, 200, {
+      contactCaptureEnabled: contactService.isEnabled(),
+      contactCaptureStatus: contactService.getStatus(),
+    });
     return;
   }
 
@@ -129,8 +138,11 @@ async function handleApi(request, response, url) {
     sendJson(response, 403, { error: "origin_not_allowed" });
     return true;
   }
-  if (!limiter.consume(clientAddress(request))) {
-    sendJson(response, 429, { error: "too_many_requests" }, { "retry-after": "600" });
+  const limiterKey = clientAddress(request);
+  if (!limiter.consume(limiterKey)) {
+    sendJson(response, 429, { error: "too_many_requests" }, {
+      "retry-after": String(Math.ceil(rateWindowMs / 1_000)),
+    });
     return true;
   }
 
@@ -139,15 +151,23 @@ async function handleApi(request, response, url) {
   try {
     const payload = await readJsonBody(request);
     if (!requestDeduplicator.claim(requestId)) {
-      sendJson(response, 201, { status: "accepted" });
+      if (requestDeduplicator.getState(requestId) === "completed") {
+        sendJson(response, 201, { status: "accepted" });
+      } else {
+        sendJson(response, 409, { error: "contact_capture_pending" });
+      }
       return true;
     }
     requestClaimed = Boolean(requestId);
     await contactService.submit(payload);
+    if (requestClaimed) requestDeduplicator.complete(requestId);
     sendJson(response, 201, { status: "accepted" });
   } catch (error) {
     if (requestClaimed) requestDeduplicator.release(requestId);
     const status = Number(error?.status) || 502;
+    // A temporary Bitrix/configuration failure must not exhaust all retries for
+    // visitors who already completed the form correctly.
+    if (status >= 500) limiter.refund(limiterKey);
     sendJson(response, status, {
       error: status === 400
         ? "invalid_contact_request"

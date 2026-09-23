@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { AnimalPhoto } from "../components/AnimalPhoto";
 import { AppHeader } from "../components/AppHeader";
 import { Button } from "../components/Button";
+import { FoundationMenu } from "../components/FoundationMenu";
 import {
   FoodIcon,
   HealthIcon,
@@ -44,7 +45,7 @@ export function GuardianshipScreen({
 
   return (
     <main className="screen guardianship-screen guardianship-brief">
-      <AppHeader onBack={onBack} right="Меню" light />
+      <AppHeader onBack={onBack} right={<FoundationMenu />} light />
 
       <div className="guardianship-brief__stars" aria-hidden="true" />
       <div className="guardianship-brief__content">
@@ -62,7 +63,7 @@ export function GuardianshipScreen({
             <h1>Быть рядом, пока не найдётся дом</h1>
             <p>
               Опека — это регулярная адресная помощь конкретному животному.
-              Вы следите за историей {animal.name} и поддерживаете {animal.sex === "девочка" ? "её" : "его"} вместе с фондом.
+              Вы следите за историей {animal.nameGenitive} и поддерживаете {animal.sex === "девочка" ? "её" : "его"} вместе с фондом.
             </p>
           </div>
         </motion.section>

@@ -208,8 +208,8 @@ test("contact mapper creates a consented Bitrix contact with allowlisted profile
     { VALUE: "anna@example.org", VALUE_TYPE: "WORK" },
   ]);
   assert.deepEqual(request.payload.fields.UF_CRM_1773242372621, ["501"]);
-  assert.equal(request.payload.fields.UF_CRM_WORK, "603");
-  assert.equal(request.payload.fields.UF_CRM_PREFERRED, "704");
+  assert.deepEqual(request.payload.fields.UF_CRM_WORK, ["603"]);
+  assert.deepEqual(request.payload.fields.UF_CRM_PREFERRED, ["704"]);
   assert.equal(request.payload.fields.UF_CRM_TELEGRAM, "https://t.me/anna_nika");
   assert.equal(request.payload.fields.BIRTHDATE, "1990-05-10");
   assert.equal(request.payload.fields.UF_CRM_1771837766068, true);

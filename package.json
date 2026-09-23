@@ -10,9 +10,11 @@
     "preview": "vite preview --host 0.0.0.0",
     "start": "node --env-file-if-exists=.env server/index.mjs",
     "test": "vitest run",
-    "test:server": "node --test integrations/bitrix/bitrix.node-test.mjs server/contact-capture.node-test.mjs",
+    "test:server": "node --test integrations/bitrix/bitrix.node-test.mjs server/contact-capture.node-test.mjs server/contact-flow.node-test.mjs",
     "test:watch": "vitest",
-    "smoke": "node scripts/cdp-smoke.mjs"
+    "smoke": "node scripts/current-game-smoke.mjs",
+    "smoke:legacy": "node scripts/cdp-smoke.mjs",
+    "smoke:current": "node scripts/current-game-smoke.mjs"
   },
   "dependencies": {
     "framer-motion": "12.42.2",

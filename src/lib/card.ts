@@ -1,5 +1,6 @@
 import type { Animal } from "../types/app";
 import { assetUrl } from "./assets";
+import { loadCardImage, waitForCardResource } from "./cardResources";
 
 const CARD_WIDTH = 1080;
 const CARD_HEIGHT = 1920;
@@ -52,21 +53,12 @@ export function getResultCardLayout() {
     safeArea: { left: 64, top: 56, width: 952, height: 1808 },
     logo: { left: 64, top: 56, width: 74, height: 104 },
     badge: { left: 752, top: 72, width: 264, height: 66 },
-    accent: { left: 60, top: 218, width: 956, height: 244 },
-    photo: { left: 28, top: 476, width: 1024, height: 1014 },
-    name: { left: 58, top: 1258, width: 958, height: 196 },
+    accent: { left: 60, top: 218, width: 956, height: 182 },
+    photo: { left: 28, top: 560, width: 1024, height: 1014 },
+    name: { left: 64, top: 1342, width: 952, height: 196 },
     copy: { left: 64, top: 1588, width: 952, height: 92 },
     callout: { left: 64, top: 1732, width: 952, height: 108 },
   } as const;
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error(`Не удалось загрузить изображение: ${src}`));
-    image.src = src;
-  });
 }
 
 function roundedRectPath(
@@ -295,7 +287,7 @@ function drawBrand(
   context.fillText("ФОНД НИКА", 158, 81);
   context.font = '650 15px "Raleway", Arial, sans-serif';
   context.globalAlpha = 0.72;
-  context.fillText("ПОМОЩЬ БЕЗДОМНЫМ ЖИВОТНЫМ", 158, 119);
+  context.fillText("ПОМОЩЬ ЖИВОТНЫМ", 158, 119);
   context.restore();
 }
 
@@ -328,12 +320,12 @@ function drawHeadline(
   context.fillStyle = COLORS.cream;
 
   const accent = content.accent.toLocaleUpperCase("ru");
-  setFittedFont(context, accent, layout.accent.width, 142, 78, "Unbounded", 800);
+  setFittedFont(context, accent, layout.accent.width, 110, 78, "Unbounded", 800);
   context.fillText(accent, layout.accent.left, layout.accent.top);
 
   const message = content.message.toLocaleUpperCase("ru");
-  setFittedFont(context, message, layout.accent.width, 72, 46, "Unbounded", 700);
-  context.fillText(message, layout.accent.left, layout.accent.top + 151);
+  setFittedFont(context, message, layout.accent.width, 58, 46, "Unbounded", 700);
+  context.fillText(message, layout.accent.left, layout.accent.top + 118);
   context.restore();
 }
 
@@ -418,6 +410,8 @@ function drawName(
   const name = content.name;
   context.save();
   context.textBaseline = "top";
+  context.textAlign = "center";
+  const centerX = layout.name.left + layout.name.width / 2;
   const fontSize = setFittedFont(
     context,
     name,
@@ -430,9 +424,9 @@ function drawName(
   context.lineJoin = "round";
   context.strokeStyle = COLORS.greenDeep;
   context.lineWidth = Math.max(9, fontSize * 0.075);
-  context.strokeText(name, layout.name.left, layout.name.top);
+  context.strokeText(name, centerX, layout.name.top);
   context.fillStyle = COLORS.cream;
-  context.fillText(name, layout.name.left, layout.name.top);
+  context.fillText(name, centerX, layout.name.top);
   context.restore();
 }
 
@@ -466,13 +460,15 @@ async function ensureCardFonts(): Promise<void> {
   await document.fonts.ready;
 }
 
-export async function createShareCard(content: ResultCardContent): Promise<Blob> {
+export async function createShareCard(content: ResultCardContent, signal?: AbortSignal): Promise<Blob> {
+  if (signal?.aborted) throw signal.reason ?? new Error("Создание карточки отменено");
   const layout = getResultCardLayout();
   const [photo, logo] = await Promise.all([
-    loadImage(content.photo),
-    loadImage(assetUrl("assets/brand/logo-nika-white.png")),
-    ensureCardFonts(),
+    loadCardImage(content.photo, signal),
+    loadCardImage(assetUrl("assets/brand/logo-nika-white.png"), signal),
+    waitForCardResource(ensureCardFonts(), signal),
   ]);
+  if (signal?.aborted) throw signal.reason ?? new Error("Создание карточки отменено");
 
   const canvas = document.createElement("canvas");
   canvas.width = CARD_WIDTH;
@@ -489,7 +485,7 @@ export async function createShareCard(content: ResultCardContent): Promise<Blob>
   drawStatus(context, content, layout);
   drawFooter(context, content, layout);
 
-  return new Promise((resolve, reject) => {
+  return waitForCardResource(new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
         if (blob) resolve(blob);
@@ -498,12 +494,13 @@ export async function createShareCard(content: ResultCardContent): Promise<Blob>
       "image/png",
       1,
     );
-  });
+  }), signal);
 }
 
 export async function createResultCard(
   animal: Animal,
   overrides: ResultCardOverrides = {},
+  signal?: AbortSignal,
 ): Promise<Blob> {
-  return createShareCard(getResultCardContent(animal, overrides));
+  return createShareCard(getResultCardContent(animal, overrides), signal);
 }

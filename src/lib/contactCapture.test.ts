@@ -113,6 +113,22 @@ describe("contact capture validation", () => {
     vi.unstubAllGlobals();
   });
 
+  it("shows the fallback when the server reports an incomplete Bitrix configuration", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        contactCaptureEnabled: false,
+        contactCaptureStatus: "unavailable",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getContactCaptureMode()).resolves.toBe("unavailable");
+
+    vi.unstubAllGlobals();
+  });
+
   it("blocks a synchronous double submit until the active request settles", () => {
     const gate = createContactCaptureSubmitGate();
 

@@ -2,6 +2,18 @@ import { describe, expect, it } from "vitest";
 import { getLegalDocumentIdFromHash, legalDocuments } from "./legalDocuments";
 
 describe("local legal documents", () => {
+  it("uses the foundation name supplied for September 16, 2026", () => {
+    for (const document of legalDocuments) {
+      expect(document.html).not.toMatch(/помощи бездомным животным|фонда ПБЖ|фонду ПБЖ/i);
+      expect(document.html).toContain("помощи животным «НИКА»");
+    }
+    const requisites = legalDocuments.find((document) => document.id === "requisites")!.html;
+    expect(requisites).toContain("БФ «НИКА»");
+    expect(requisites).toContain("64.99");
+    expect(requisites).toContain("7735129412");
+    expect(requisites).toContain("1117799013353");
+  });
+
   it("bundles all four internal documents", () => {
     expect(legalDocuments.map((document) => document.id)).toEqual([
       "offer",

@@ -78,7 +78,7 @@ test("contact service sends only a validated mapped request", async () => {
   assert.match(call.url, /crm\.contact\.add\.json$/);
   assert.equal(JSON.stringify(call).includes("server-only-secret"), false);
   assert.equal(JSON.parse(call.options.body).fields.NAME, "Анна");
-  assert.equal(JSON.parse(call.options.body).fields.UF_CRM_WORK, "603");
+  assert.deepEqual(JSON.parse(call.options.body).fields.UF_CRM_WORK, ["603"]);
 });
 
 test("disabled contact service never calls Bitrix", async () => {
@@ -88,7 +88,18 @@ test("disabled contact service never calls Bitrix", async () => {
   });
 
   assert.equal(service.isEnabled(), false);
+  assert.equal(service.getStatus(), "disabled");
   await assert.rejects(service.submit(validPayload), /disabled/i);
+});
+
+test("contact service stays unavailable when its Bitrix field map is incomplete", () => {
+  const service = createContactCaptureService({
+    env: { ...env, BITRIX_CONTACT_FIELD_WORK_SPHERE: "" },
+    fetch: () => assert.fail("fetch must not be called"),
+  });
+
+  assert.equal(service.isEnabled(), false);
+  assert.equal(service.getStatus(), "unavailable");
 });
 
 test("rate limiter uses a bounded sliding window", () => {
@@ -106,6 +117,15 @@ test("rate limiter uses a bounded sliding window", () => {
   assert.equal(limiter.consume("ip"), true);
 });
 
+test("rate limiter can refund a failed upstream submission", () => {
+  const limiter = createSlidingWindowRateLimiter({ limit: 1 });
+
+  assert.equal(limiter.consume("ip"), true);
+  assert.equal(limiter.consume("ip"), false);
+  limiter.refund("ip");
+  assert.equal(limiter.consume("ip"), true);
+});
+
 test("request ID deduplicator suppresses retries without retaining contact data", () => {
   let timestamp = 1_000;
   const deduplicator = createRequestIdDeduplicator({
@@ -116,6 +136,9 @@ test("request ID deduplicator suppresses retries without retaining contact data"
 
   assert.equal(deduplicator.claim("request-1"), true);
   assert.equal(deduplicator.claim("request-1"), false);
+  assert.equal(deduplicator.getState("request-1"), "pending");
+  deduplicator.complete("request-1");
+  assert.equal(deduplicator.getState("request-1"), "completed");
   assert.equal(deduplicator.claim("request-2"), true);
   deduplicator.release("request-2");
   assert.equal(deduplicator.claim("request-2"), true);

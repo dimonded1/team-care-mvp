@@ -6,6 +6,7 @@ import { LegalCenter } from "./components/LegalCenter";
 import { OrbitField } from "./components/OrbitField";
 import { Progress } from "./components/Progress";
 import { SiteFooter } from "./components/SiteFooter";
+import { CareBots } from "./components/CareBots";
 import { SwipeQuestion } from "./components/SwipeQuestion";
 import { animals } from "./data/animals";
 import { getMissions } from "./data/missions";
@@ -262,7 +263,11 @@ export default function App() {
     setStage("quiz");
   };
 
+  // Exit animations can keep an old question mounted after history navigation.
+  const currentQuizRef = useRef({ stage, answers });
+  currentQuizRef.current = { stage, answers };
   const answerQuestion = (answer: boolean) => {
+    if (currentQuizRef.current.stage !== "quiz" || currentQuizRef.current.answers !== answers) return;
     const nextAnswers = [...answers, answer];
     setAnswers(nextAnswers);
     if (nextAnswers.length === questions.length) {
@@ -427,6 +432,7 @@ export default function App() {
           missions={missions}
           startedMissionIds={startedMissionIds}
           completedMissionIds={completedMissionIds}
+          missionProgress={missionProgress}
           onBack={() => setStage("reveal")}
           onSelectMission={openMission}
           onContinue={() => setStage(isFourPawsEvent(experienceMode) ? "final" : "guardianship")}
@@ -497,6 +503,7 @@ export default function App() {
         </motion.div>
       </AnimatePresence>
       <SiteFooter onOpenLegal={openLegalDocument} />
+      {stage !== "boot" && stage !== "quiz" && stage !== "journey" && !legalDocumentId ? <CareBots key={stage} /> : null}
       <AnimatePresence>
         {legalDocumentId && (
           <LegalCenter

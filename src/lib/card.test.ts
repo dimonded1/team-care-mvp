@@ -3,6 +3,17 @@ import { animals } from "../data/animals";
 import { getResultCardContent, getResultCardLayout } from "./card";
 
 describe("result card geometry", () => {
+  it("balances the photo group between the headline and footer rule", () => {
+    const { accent, photo, name, canvas, callout } = getResultCardLayout();
+    const above = photo.top - (accent.top + accent.height);
+    // The orange backing extends 16px below the photograph.
+    const below = callout.top + 18 - (photo.top + photo.height + 16);
+    expect(above).toBe(below);
+    expect(above).toBeGreaterThan(0);
+    expect(name.left + name.width / 2).toBe(canvas.width / 2);
+    expect(name.top - photo.top).toBe(782);
+  });
+
   it("uses an exact 9:16 story canvas", () => {
     const { canvas } = getResultCardLayout();
 

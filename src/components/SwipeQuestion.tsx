@@ -22,6 +22,7 @@ export function SwipeQuestion({
   const [direction, setDirection] = useState<Direction>(null);
   const reduceMotion = useReducedMotion();
   const lockedRef = useRef(false);
+  const mountedRef = useRef(true);
   const reducedMotionTimerRef = useRef<number | null>(null);
   const swipeAreaRef = useRef<HTMLDivElement>(null);
   const touchGestureRef = useRef<{
@@ -58,7 +59,9 @@ export function SwipeQuestion({
       stiffness: 360,
       damping: 30,
       velocity,
-    }).then(() => onAnswer(value));
+    }).then(() => {
+      if (mountedRef.current) onAnswer(value);
+    });
   }, [onAnswer, reduceMotion, x]);
 
   useEffect(() => {
@@ -78,11 +81,16 @@ export function SwipeQuestion({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [answer]);
 
-  useEffect(() => () => {
-    if (reducedMotionTimerRef.current !== null) {
-      window.clearTimeout(reducedMotionTimerRef.current);
-    }
-  }, []);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      x.stop();
+      if (reducedMotionTimerRef.current !== null) {
+        window.clearTimeout(reducedMotionTimerRef.current);
+      }
+    };
+  }, [x]);
 
   useEffect(() => {
     const surface = swipeAreaRef.current;
@@ -223,7 +231,7 @@ export function SwipeQuestion({
           <CloseIcon />
           <span>Нет</span>
         </button>
-        <p>{showGestureGuide ? "Потяните карточку" : "Или выберите ответ"}</p>
+        <p>Выберите ответ</p>
         <button
           className="swipe-control swipe-control--yes"
           type="button"

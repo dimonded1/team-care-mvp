@@ -1,0 +1,15 @@
+.care-bots { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); z-index: 35; }
+.care-bots__trigger { display: grid; place-items: center; width: 52px; height: 52px; padding: 0; border: 1px solid #ffffff30; border-radius: 50%; background: #234721; color: #fff; box-shadow: 0 4px 14px #00190f30; cursor: pointer; }
+.care-bots__trigger svg { pointer-events: none; }
+.app:has(.care-bots) { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+.app:has(.foundation-menu-panel) .care-bots { visibility: hidden; }
+.care-bots__links { position: absolute; right: 0; bottom: 66px; display: flex; flex-direction: column; gap: 12px; width: max-content; max-width: calc(100vw - 32px); }
+.care-bots__links[hidden] { display: none; }
+.care-bots__links a { display: flex; justify-content: flex-end; align-items: center; gap: 12px; min-height: 48px; color: #234721; text-decoration: none; }
+.care-bots__links a span { padding: 12px 18px; border-radius: 999px; background: #fffdf8; box-shadow: 0 4px 16px #00190f26; font: 750 16px/1.25 var(--font-body); }
+.care-bots__links img { flex: 0 0 48px; width: 48px; height: 48px; object-fit: contain; border-radius: 50%; }
+.care-bots :is(button,a):focus-visible { outline: 3px solid #ffb5b5; outline-offset: 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  .care-bots__links:not([hidden]) { animation: care-bots-enter 180ms ease-out; }
+  @keyframes care-bots-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+}

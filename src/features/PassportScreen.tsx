@@ -2,8 +2,8 @@ import { AppHeader } from "../components/AppHeader";
 import { Button } from "../components/Button";
 import { FoundationMenu } from "../components/FoundationMenu";
 import { HeartIcon } from "../components/Icons";
-import type { ExperienceMode, MatchResult, Mission } from "../types/app";
-import { getMissionStatus, isCareJourneyComplete } from "./passportModel";
+import type { ExperienceMode, MatchResult, Mission, StoredSession } from "../types/app";
+import { getMissionStatus, getReadyMissionIds, isCareJourneyComplete } from "./passportModel";
 import { OrbitExperience } from "./orbit/OrbitExperience";
 import { isFourPawsEvent } from "../lib/experience";
 
@@ -12,6 +12,7 @@ interface PassportScreenProps {
   missions: Mission[];
   startedMissionIds: Mission["id"][];
   completedMissionIds: Mission["id"][];
+  missionProgress: StoredSession["missionProgress"];
   onBack: () => void;
   onSelectMission: (missionId: Mission["id"]) => void;
   onContinue: () => void;
@@ -24,6 +25,7 @@ export function PassportScreen({
   missions,
   startedMissionIds,
   completedMissionIds,
+  missionProgress,
   onBack,
   onSelectMission,
   onContinue,
@@ -33,9 +35,10 @@ export function PassportScreen({
   const { animal, reasons, score } = result;
   const complete = isCareJourneyComplete(missions, completedMissionIds);
   const roundedScore = Math.round(score);
+  const readyMissionIds = isFourPawsEvent(experienceMode) ? [] : getReadyMissionIds(missionProgress);
   const missionStatuses = missions.map((mission) => ({
     id: mission.id,
-    status: getMissionStatus(mission.id, startedMissionIds, completedMissionIds),
+    status: getMissionStatus(mission.id, startedMissionIds, completedMissionIds, readyMissionIds),
   }));
 
   const scrollToMissions = () => {
@@ -55,6 +58,7 @@ export function PassportScreen({
           missions={missions}
           startedMissionIds={startedMissionIds}
           completedMissionIds={completedMissionIds}
+          readyMissionIds={readyMissionIds}
           onSelectMission={onSelectMission}
           onCompleteOrbit={onContinue}
           experienceMode={experienceMode}
@@ -129,7 +133,7 @@ export function PassportScreen({
             <h2 id="passport-goal-title">
               {isFourPawsEvent(experienceMode)
                 ? `Пройти четыре станции вместе с ${animal.name}`
-                : `Быть рядом с ${animal.name} регулярно`}
+                : `Круг заботы для ${animal.nameGenitive}`}
             </h2>
             <span>
               {complete

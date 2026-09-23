@@ -272,8 +272,10 @@ export function mapContactCapture(input, config, { now = new Date() } = {}) {
     PHONE: [{ VALUE: phone, VALUE_TYPE: "MOBILE" }],
     EMAIL: [{ VALUE: email, VALUE_TYPE: "WORK" }],
     COMMENTS: `Интерес к программе опеки. ${eventComment}Подопечный: ${animalName} (${animalId}).`,
-    [fields.workSphere]: workSphereEnumId,
-    [fields.preferredContact]: preferredContactEnumId,
+    // Both fields are configured as multiple enumerations in Bitrix. Even
+    // though the form selects one value, the REST contract requires arrays.
+    [fields.workSphere]: [workSphereEnumId],
+    [fields.preferredContact]: [preferredContactEnumId],
     [fields.interest]: interestEnumIds,
     [fields.consent]: true,
     [fields.consentAt]: date,

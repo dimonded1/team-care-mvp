@@ -18,6 +18,7 @@ interface OrbitExperienceProps {
   missions: Mission[];
   startedMissionIds: Mission["id"][];
   completedMissionIds: Mission["id"][];
+  readyMissionIds?: Mission["id"][];
   onSelectMission: (missionId: Mission["id"]) => void;
   onCompleteOrbit: () => void;
   experienceMode: ExperienceMode;
@@ -87,6 +88,7 @@ const presentation = {
 const stateLabel = {
   available: "Не начато",
   started: "В процессе",
+  ready: "Готово к сохранению",
   completed: "Пройдено",
 } as const;
 
@@ -95,6 +97,7 @@ export function OrbitExperience({
   missions,
   startedMissionIds,
   completedMissionIds,
+  readyMissionIds = [],
   onSelectMission,
   onCompleteOrbit,
   experienceMode,
@@ -106,6 +109,10 @@ export function OrbitExperience({
   );
   const [selectedPlanetId, setSelectedPlanetId] = useState<Mission["id"] | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionTimer = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (transitionTimer.current !== null) window.clearTimeout(transitionTimer.current);
+  }, []);
   const completed = isCareJourneyComplete(missions, completedMissionIds);
   const recommendedId = getRecommendedMissionId(missions, completedMissionIds);
 
@@ -145,11 +152,16 @@ export function OrbitExperience({
   }, [reduceMotion, uiState]);
 
   const selectPlanet = (missionId: Mission["id"]) => {
-    if (isTransitioning) return;
+    if (transitionTimer.current !== null) return;
     setIsTransitioning(true);
     setSelectedPlanetId(missionId);
     setUiState("openingGame");
-    window.setTimeout(() => onSelectMission(missionId), reduceMotion ? 80 : 360);
+    transitionTimer.current = window.setTimeout(() => {
+      transitionTimer.current = null;
+      setIsTransitioning(false);
+      setUiState("orbiting");
+      onSelectMission(missionId);
+    }, reduceMotion ? 80 : 280);
   };
 
   return (
@@ -225,7 +237,7 @@ export function OrbitExperience({
           {missions.map((mission, index) => {
             const planet = presentation[mission.id];
             const eventStation = isFourPawsEvent(experienceMode) ? getEventStation(mission.id) : null;
-            const status = getMissionStatus(mission.id, startedMissionIds, completedMissionIds);
+            const status = getMissionStatus(mission.id, startedMissionIds, completedMissionIds, readyMissionIds);
             const locked = !isMissionUnlocked(
               missions,
               completedMissionIds,
@@ -328,6 +340,19 @@ export function OrbitExperience({
           </button>
         ) : null}
       </div>
+      {!isFourPawsEvent(experienceMode) ? (
+        <details className="care-orbit__station-list">
+          <summary>Станции списком</summary>
+          <p>Результат игры сохраняется автоматически. Если станция готова, откройте её и подтвердите прохождение.</p>
+          {missions.map((mission, index) => {
+            const status = getMissionStatus(mission.id, startedMissionIds, completedMissionIds, readyMissionIds);
+            return <button key={mission.id} type="button" disabled={isTransitioning} onClick={() => selectPlanet(mission.id)}>
+              <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+              <strong>{presentation[mission.id].title}</strong><small>{stateLabel[status]}</small>
+            </button>;
+          })}
+        </details>
+      ) : null}
     </section>
   );
 }

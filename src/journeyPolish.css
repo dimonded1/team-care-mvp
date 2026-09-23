@@ -1,0 +1,59 @@
+/* Small shared refinements of the existing care journey. */
+/* Keep only the decorative cards absolute. The real question determines the
+   stack height when browser text enlargement or a long translation needs it. */
+.swipe-stack .swipe-card:not(.swipe-card--back) {
+  position: relative;
+  inset: auto;
+  width: calc(100% - 24px);
+  min-height: inherit;
+  margin-inline: 12px;
+}
+.swipe-stack .swipe-question { flex-shrink: 0; overflow-wrap: anywhere; }
+.swipe-controls > p { min-width: 0; overflow-wrap: anywhere; }
+.station-save-hint { margin: 0 0 10px; color: #fffdf8; text-align: center; font: 600 14px/1.45 var(--font-body); }
+.care-orbit__station-list { position: relative; z-index: 2; margin: 16px auto 0; max-width: 620px; width: 100%; text-align: left; color: #fffdf8; }
+.care-orbit__station-list summary { min-height: 48px; padding: 14px; border: 1px solid #789c7c; border-radius: 16px; font: 750 16px/1.4 var(--font-body); cursor: pointer; }
+.care-orbit__station-list p { font: 500 14px/1.5 var(--font-body); }
+.care-orbit__station-list button { width: 100%; display: grid; grid-template-columns: 32px 1fr; gap: 4px 12px; min-height: 64px; margin-top: 8px; padding: 12px 14px; background: #173a25; border: 1px solid #789c7c; border-radius: 16px; color: #fffdf8; text-align: left; cursor: pointer; }
+.care-orbit__station-list button > span { grid-row: span 2; align-self: center; color: #ffb5b5; }
+.care-orbit__station-list button strong { font: 750 16px/1.4 var(--font-body); }
+.care-orbit__station-list button small { font: 550 14px/1.4 var(--font-body); }
+.care-orbit:not(.care-orbit--event) .care-planet--ready .care-planet__body { outline: 2px dashed #ffb5b5; outline-offset: 3px; border-radius: 50%; }
+.care-orbit:not(.care-orbit--event) .care-planet__label strong { font-size: 14px; }
+.care-orbit:not(.care-orbit--event) .care-planet__label small { font: 650 12px/1.35 var(--font-body); white-space: normal; }
+.screen:not(.journey-screen--offline-station) .app-header .icon-button { background: var(--orange); border-color: #ff9a6e; color: white; }
+.visit-game__takeaways { padding-left: 20px; margin: 20px 0 0; display: grid; gap: 14px; }
+.visit-game__takeaways li { font: 500 16px/1.5 var(--font-body); }
+.visit-game__takeaways :is(strong, span) { display: block; }
+.visit-game__takeaways strong { color: #ffb5b5; }
+.visit-game .visit-feedback { padding: 18px; border-radius: 18px; }
+.visit-game .visit-feedback :is(strong,span), .health-game .health-feedback p { font-size: 16px; line-height: 1.5; }
+.health-game__zone-list { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; margin-top: 12px; }
+.health-game .health-game__map { display: block; }
+.health-game__zone-list button { display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; min-height: 64px; padding: 8px 4px; border: 1px solid #88a78a; border-radius: 14px; background: #173a25; color: #fffdf8; font: 650 14px/1.25 var(--font-body); }
+.health-game__zone-list button[aria-pressed="true"] { background: #ffb5b5; color: #234721; border: 2px solid #f76d31; }
+.health-game__zone-list button:disabled { opacity: .7; }
+.health-game__zone-list svg { width: 16px; height: 16px; }
+.health-game[data-health-phase="complete"] .health-game__map { display: none; }
+.health-game[data-health-phase="complete"] .health-game__board { grid-template-columns: minmax(0,1fr); }
+.walk-maze .walk-maze__brief { font-size: 14px; line-height: 1.45; color: #ffdac7; }
+.walk-maze .walk-maze__hazard circle { fill: #672a1e; stroke: #ffb5b5; stroke-width: .065; }
+.walk-maze .walk-maze__finish-mark { font-weight: 900; fill: #fffdf8; }
+.walk-maze--complete .walk-maze__board { opacity: .8; cursor: auto; }
+.walk-maze .walk-maze__completion { font: 650 16px/1.5 var(--font-body); border: 1px solid #ffb5b5; border-radius: 18px; padding: 18px; }
+.journey-screen :is(button, [tabindex]):focus-visible, .care-orbit__station-list :is(button,summary):focus-visible { outline: 3px solid #ffb5b5; outline-offset: 4px; }
+@media (max-width: 600px) {
+  .visit-game .visit-game__scene { min-height: 0; height: clamp(160px,24svh,220px); }
+  .visit-game .visit-game__character { width: 135px; height: 165px; bottom: 22px; right: 16%; }
+  .visit-game .visit-game__character img { width: 100%; height: 100%; object-fit: contain; }
+  .visit-game .visit-game__header h1, .health-game .health-game__header h1 { font-size: clamp(24px,7vw,32px); line-height: 1.15; }
+  .visit-game .visit-game__header > p:last-child, .health-game .health-game__header p { font-size: 14px; line-height: 1.45; }
+  .health-game[data-health-phase] .health-silhouette { min-height: 0; height: auto; padding: 8px; }
+  .health-game[data-health-phase] .health-silhouette__pet-stage { width: min(100%,260px); height: 390px; min-height: 0; margin-inline: auto; }
+  .health-game[data-health-phase="situation"] .health-silhouette { display: none; }
+  .health-game .health-game__board { gap: 14px; }
+  .health-game .health-game__panel { padding: 0; }
+  .screen .final-utility-action { font-size: 14px; min-height: 48px; }
+  .screen .card-preview-hint { font-size: 14px; line-height: 1.5; }
+}
+@media (prefers-reduced-motion: reduce) { .journey-screen *, .care-orbit__station-list * { scroll-behavior: auto; } }

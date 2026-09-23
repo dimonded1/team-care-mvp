@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState, type PointerEvent, type ReactElement } from "react";
 import { getWalkMaze, type WalkDirection, type WalkMaze } from "../data/walkMazes";
+import { recordJourneyDiagnostic } from "../lib/journeyDiagnostics";
 import {
   WALK_FRIENDLY_TIME_MS,
   WALK_INPUT_LOCK_MS,
@@ -211,6 +212,7 @@ export function WalkMazeGame({
     const current = progressRef.current;
     const timedProgress = completeWalkMazeForTime(current, now);
     if (timedProgress === current) return;
+    recordJourneyDiagnostic("walk.completed-time");
     progressRef.current = timedProgress;
     setInputMessage("Время прогулки подошло к ориентиру. Маршрут можно спокойно завершить.");
     publishProgress(timedProgress, true);
@@ -218,7 +220,7 @@ export function WalkMazeGame({
 
   useEffect(() => {
     const board = boardRef.current;
-    if (!board) return;
+    if (!board || completed) return;
     const preventBrowserGesture = (event: TouchEvent) => {
       if (event.touches.length === 1) event.preventDefault();
     };
@@ -228,7 +230,17 @@ export function WalkMazeGame({
       board.removeEventListener("touchstart", preventBrowserGesture);
       board.removeEventListener("touchmove", preventBrowserGesture);
     };
-  }, []);
+  }, [completed]);
+
+  useEffect(() => {
+    if (!completed) return;
+    const pointer = pointerStart.current;
+    pointerStart.current = null;
+    lockUntil.current = 0;
+    if (pointer && boardRef.current?.hasPointerCapture(pointer.pointerId)) {
+      boardRef.current.releasePointerCapture(pointer.pointerId);
+    }
+  }, [completed]);
 
   const move = useCallback((direction: WalkDirection) => {
     const now = Date.now();
@@ -246,6 +258,7 @@ export function WalkMazeGame({
       return;
     }
     lockUntil.current = now + WALK_INPUT_LOCK_MS;
+    if (result.completed) recordJourneyDiagnostic("walk.completed-finish");
     setLastDirection(direction);
     if (result.hazardEncountered) setBiteNoticeKey((current) => current + 1);
     setInputMessage(result.hazardEncountered
@@ -264,7 +277,7 @@ export function WalkMazeGame({
   }, [maze, publishProgress]);
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.pointerType === "mouse") return;
+    if (completed || event.pointerType === "mouse") return;
     event.preventDefault();
     pointerStart.current = {
       x: event.clientX,
@@ -294,7 +307,7 @@ export function WalkMazeGame({
   const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
     const start = pointerStart.current;
     pointerStart.current = null;
-    if (!start || start.pointerType === "mouse" || start.pointerId !== event.pointerId) return;
+    if (completed || !start || start.pointerType === "mouse" || start.pointerId !== event.pointerId) return;
     event.preventDefault();
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -314,8 +327,10 @@ export function WalkMazeGame({
   };
 
   useEffect(() => {
+    if (completed) return;
     const handleWindowKeyDown = (event: globalThis.KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
       if (target?.matches("input, textarea, select, button, a")) return;
       const direction = keyDirections[event.key];
       if (!direction) return;
@@ -324,7 +339,7 @@ export function WalkMazeGame({
     };
     window.addEventListener("keydown", handleWindowKeyDown);
     return () => window.removeEventListener("keydown", handleWindowKeyDown);
-  }, [move]);
+  }, [completed, move]);
 
   const collected = new Set(progress.collectedBonusIds);
   const allCollected = collected.size === maze.bonuses.length;
@@ -335,13 +350,15 @@ export function WalkMazeGame({
     <section className={`walk-maze${completed ? " walk-maze--complete" : ""}`} data-testid="walk-maze" data-maze-id={maze.id} aria-labelledby="walk-maze-title">
       <header className="walk-maze__header">
         <p className="section-number">{stationLabel ?? "Направление заботы · прогулка"}</p>
-        <h1 id="walk-maze-title">Соберите маршрут заботы</h1>
-        <p>Исследуйте развилки, соберите все точки и возвращайтесь на станцию. На телефоне смахивайте по полю, на компьютере используйте стрелки.</p>
+        <h1 id="walk-maze-title">{completed ? "Прогулка завершена" : "Соберите маршрут заботы"}</h1>
+        <p>{completed ? "Спасибо за прогулку! Сохраните станцию, чтобы продолжить путешествие." : "Соберите 5 точек и вернитесь к домику. На телефоне смахивайте по полю, на компьютере используйте стрелки."}</p>
+        {!completed && progress.startedAt === null ? <p className="walk-maze__brief">Избегайте клеща: после укуса маршрут начнётся заново. Ориентир — 45 секунд с первого шага; по времени можно спокойно закончить.</p> : null}
       </header>
 
       <div
         ref={boardRef}
         className="walk-maze__board"
+        style={completed ? { touchAction: "pan-y pinch-zoom" } : undefined}
         data-danger={hazardDistance <= 2 && !completed ? "near" : "calm"}
         tabIndex={0}
         onPointerDown={onPointerDown}
@@ -365,6 +382,9 @@ export function WalkMazeGame({
           ))}
           {!completed ? (
             <g className="walk-maze__hazard" data-testid="walk-maze-hazard">
+              <g stroke="#ffb5b5" strokeWidth=".08" aria-hidden="true">
+                {[-1, 1].flatMap((side) => [-0.14, 0.14].map((offset) => <line key={`${side}:${offset}`} x1={hazard.x + .5 + side * .15} y1={hazard.y + .5 + offset} x2={hazard.x + .5 + side * .35} y2={hazard.y + .5 + offset * 2} />))}
+              </g>
               <circle cx={hazard.x + 0.5} cy={hazard.y + 0.5} r="0.2">
                 <title>Клещ на маршруте</title>
               </circle>
@@ -396,7 +416,7 @@ export function WalkMazeGame({
         />
       </div>
       <p className="walk-maze__status" role="status" aria-live="polite">
-        {inputMessage || "Смахните по полю в сторону следующего шага."}
+        {completed ? "Результат сохранён. Осталось подтвердить станцию кнопкой ниже." : inputMessage || "Смахните по полю в сторону следующего шага."}
       </p>
 
       {completed ? (

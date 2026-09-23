@@ -173,6 +173,7 @@ export async function getContactCaptureMode(
         return "unavailable";
       }
       const body = await response.json();
+      if (body?.contactCaptureStatus === "unavailable") return "unavailable";
       return resolveContactCaptureMode(body?.contactCaptureEnabled === true);
     } catch (error) {
       if (signal?.aborted) return "unavailable";
@@ -202,24 +203,41 @@ export function createContactCaptureRequestTracker(
   };
 }
 
+export const CONTACT_SUBMIT_TIMEOUT_MS = 25_000;
+
 export async function submitContactCapture(
   payload: ContactCapturePayload,
   requestId: string = createContactCaptureRequestId(),
 ) {
-  const response = await fetch("/api/contact-capture", {
-    method: "POST",
-    headers: {
-      accept: "application/json",
-      "content-type": "application/json",
-      "x-request-id": requestId,
-    },
-    body: JSON.stringify(payload),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), CONTACT_SUBMIT_TIMEOUT_MS);
+  try {
+    const response = await fetch("/api/contact-capture", {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        "x-request-id": requestId,
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
 
-  if (response.status === 429) {
-    throw new Error("Слишком много попыток. Попробуйте ещё раз немного позже.");
-  }
-  if (!response.ok) {
-    throw new Error("Не получилось отправить контакты. Попробуйте ещё раз позже.");
+    if (response.status === 409) {
+      throw new Error("Предыдущая отправка ещё обрабатывается. Подождите немного и повторите попытку.");
+    }
+    if (response.status === 429) {
+      throw new Error("Слишком много попыток. Попробуйте ещё раз немного позже.");
+    }
+    if (!response.ok) {
+      throw new Error("Не получилось отправить контакты. Попробуйте ещё раз позже.");
+    }
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error("Не удалось дождаться ответа. Проверьте интернет и попробуйте ещё раз — введённые данные остались в форме.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 }

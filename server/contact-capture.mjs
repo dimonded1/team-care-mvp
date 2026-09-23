@@ -3,12 +3,13 @@ import {
   isBitrixFeatureEnabled,
   mapContactCapture,
   sendToBitrix,
+  validateBitrixConfig,
 } from "../integrations/bitrix/index.mjs";
 
 export const CONTACT_BODY_LIMIT_BYTES = 16 * 1024;
 
 export function createSlidingWindowRateLimiter({
-  limit = 5,
+  limit = 60,
   windowMs = 10 * 60 * 1000,
   now = () => Date.now(),
 } = {}) {
@@ -32,6 +33,12 @@ export function createSlidingWindowRateLimiter({
       }
       return true;
     },
+    refund(key) {
+      const values = buckets.get(key);
+      if (!values?.length) return;
+      values.pop();
+      if (values.length === 0) buckets.delete(key);
+    },
   };
 }
 
@@ -44,8 +51,8 @@ export function createRequestIdDeduplicator({
   const requests = new Map();
 
   function prune(timestamp) {
-    for (const [requestId, seenAt] of requests) {
-      if (timestamp - seenAt >= ttlMs) requests.delete(requestId);
+    for (const [requestId, request] of requests) {
+      if (timestamp - request.claimedAt >= ttlMs) requests.delete(requestId);
     }
     while (requests.size > maxEntries) requests.delete(requests.keys().next().value);
   }
@@ -56,9 +63,19 @@ export function createRequestIdDeduplicator({
       const timestamp = now();
       prune(timestamp);
       if (requests.has(requestId)) return false;
-      requests.set(requestId, timestamp);
+      requests.set(requestId, { claimedAt: timestamp, state: "pending" });
       prune(timestamp);
       return true;
+    },
+    complete(requestId) {
+      if (!requestId || requestId.length > 128) return;
+      const request = requests.get(requestId);
+      if (request) request.state = "completed";
+    },
+    getState(requestId) {
+      if (!requestId || requestId.length > 128) return null;
+      prune(now());
+      return requests.get(requestId)?.state ?? null;
     },
     release(requestId) {
       if (requestId) requests.delete(requestId);
@@ -101,10 +118,24 @@ export function createContactCaptureService({
   now = () => new Date(),
 } = {}) {
   const config = createBitrixConfig(env);
+  const featureEnabled = isBitrixFeatureEnabled(config, "contacts");
+  let configurationReady = false;
+  if (featureEnabled) {
+    try {
+      validateBitrixConfig(config, "contacts");
+      configurationReady = true;
+    } catch {
+      configurationReady = false;
+    }
+  }
 
   return {
+    getStatus() {
+      if (!featureEnabled) return "disabled";
+      return configurationReady ? "enabled" : "unavailable";
+    },
     isEnabled() {
-      return isBitrixFeatureEnabled(config, "contacts");
+      return configurationReady;
     },
     async submit(payload) {
       let request;

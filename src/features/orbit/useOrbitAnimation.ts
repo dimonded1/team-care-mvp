@@ -65,6 +65,10 @@ export function useOrbitAnimation({
       ? new ResizeObserver(([entry]) => {
           orbitSize.width = entry.contentRect.width;
           orbitSize.height = entry.contentRect.height;
+          if (paused || reducedMotion || entering) {
+            window.cancelAnimationFrame(frame);
+            frame = window.requestAnimationFrame(render);
+          }
         })
       : null;
     if (resizeObserver && orbitHost) resizeObserver.observe(orbitHost);
@@ -113,12 +117,21 @@ export function useOrbitAnimation({
 
       preservedElapsedSeconds = elapsedRef.current;
       preservedAt = timestamp;
-      frame = window.requestAnimationFrame(render);
+      if (!pausedRef.current && !reducedMotion && !entering && document.visibilityState !== "hidden") {
+        frame = window.requestAnimationFrame(render);
+      }
     };
 
     let frame = window.requestAnimationFrame(render);
+    const resumeVisible = () => {
+      window.cancelAnimationFrame(frame);
+      lastFrameRef.current = null;
+      if (document.visibilityState !== "hidden") frame = window.requestAnimationFrame(render);
+    };
+    document.addEventListener("visibilitychange", resumeVisible);
     return () => {
       window.cancelAnimationFrame(frame);
+      document.removeEventListener("visibilitychange", resumeVisible);
       resizeObserver?.disconnect();
       preservedElapsedSeconds = elapsedRef.current;
       preservedAt = performance.now();

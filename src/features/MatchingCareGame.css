@@ -1,0 +1,23 @@
+.matching-care-game.matching-care-game--guided { gap: 16px; }
+.matching-care-game--guided .matching-care-game__guided-board { display: grid; gap: 18px; }
+.matching-care-game--guided .matching-care-game__scenario { position: sticky; top: 8px; z-index: 2; background: #173a25; border-radius: 20px; padding: 8px 0; }
+.matching-care-game--guided .matching-care-game__scenario-label { display: flex; gap: 10px; align-items: center; font: 700 14px/1.4 var(--font-body); }
+.matching-care-game--guided .matching-care-game__scenario-label p { margin: 0; }
+.matching-care-game--guided .matching-care-game__scenario-label > span { color: var(--pink); }
+.matching-care-game--guided .matching-care-card--scenario { display: grid; min-height: 0; margin-top: 8px; padding: 18px; border: 2px solid var(--pink); border-radius: 22px 22px 22px 6px; background: linear-gradient(125deg,#ffdbca,#ffb5b5); color: #234721; gap: 10px; }
+.matching-care-game--guided .matching-care-card--scenario .matching-care-card__copy { font: 750 18px/1.45 var(--font-body); }
+.matching-care-game--guided .matching-care-game__actions > header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.matching-care-game--guided .matching-care-game__actions h3 { margin: 0; font: 750 18px/1.4 var(--font-body); }
+.matching-care-game--guided .matching-care-game__actions header p { margin: 2px 0 0; font-size: 14px; }
+.matching-care-game--guided .matching-care-game__action-list { display: grid; gap: 10px; }
+.matching-care-game--guided .matching-care-card--action { display: grid; gap: 8px; min-height: 76px; padding: 14px 16px; border-radius: 16px; text-align: left; background: linear-gradient(125deg,#e6efda,#c2ddbb); color: #234721; border: 2px solid transparent; }
+.matching-care-game--guided .matching-care-card--action .matching-care-card__copy { font: 650 16px/1.4 var(--font-body); }
+.matching-care-game--guided .matching-care-card.is-selected { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(247,109,49,.25); }
+.matching-care-game--guided .matching-care-card.is-matched { border-color: #83b382; background: #dcebd1; opacity: 1; }
+.matching-care-game--guided .matching-care-card.is-matched .matching-care-card__copy { font-size: 14px; }
+.matching-care-game--guided .matching-care-card__state { font-size: 14px; }
+.matching-care-game--guided .matching-care-game__feedback { border: 1px solid var(--pink); padding: 20px; border-radius: 20px; background: #173a25; color: #fffdf8; font: 500 16px/1.55 var(--font-body); }
+.matching-care-game--guided .matching-care-game__continue { min-height: 48px; width: 100%; padding: 12px; margin-top: 14px; border: 1px solid #ffb5b5; border-radius: 14px; background: #ffb5b5; color: #234721; font: 750 16px/1.4 var(--font-body); cursor: pointer; }
+.matching-care-game--guided :is(button, [tabindex]):focus-visible { outline: 3px solid var(--orange); outline-offset: 4px; }
+@media (min-width: 900px) { .matching-care-game--guided .matching-care-game__guided-board { grid-template-columns: minmax(0,1fr) minmax(0,1.4fr); align-items: start; } }
+@media (prefers-reduced-motion: reduce) { .matching-care-game--guided * { animation: none; transition: none; } }

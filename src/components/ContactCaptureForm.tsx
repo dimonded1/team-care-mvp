@@ -19,6 +19,7 @@ import {
   type WorkSphere,
 } from "../lib/contactCapture";
 import type { Animal } from "../types/app";
+import { recordJourneyDiagnostic } from "../lib/journeyDiagnostics";
 
 interface ContactCaptureFormProps {
   animal: Animal;
@@ -68,6 +69,7 @@ export function ContactCaptureForm({ animal, campaign }: ContactCaptureFormProps
     configControllerRef.current = controller;
     setConfigChecking(true);
     getContactCaptureMode(controller.signal).then((nextMode) => {
+      if (!controller.signal.aborted && nextMode === "unavailable") recordJourneyDiagnostic("contact.config-unavailable");
       if (!controller.signal.aborted) setMode(nextMode);
     }).finally(() => {
       if (!controller.signal.aborted) setConfigChecking(false);
@@ -117,6 +119,7 @@ export function ContactCaptureForm({ animal, campaign }: ContactCaptureFormProps
     event.preventDefault();
     if (!canSubmit || !form.workSphere || !form.preferredContact) return;
     if (!submitGate.current.tryStart()) return;
+    recordJourneyDiagnostic("contact.submit-start");
 
     setState("submitting");
     setError("");
@@ -144,8 +147,10 @@ export function ContactCaptureForm({ animal, campaign }: ContactCaptureFormProps
       }, requestId);
       requestTracker.current.reset();
       setState("success");
+      recordJourneyDiagnostic("contact.submit-success");
     } catch (submitError) {
       setState("error");
+      recordJourneyDiagnostic("contact.submit-error");
       setError(submitError instanceof Error ? submitError.message : "Не получилось отправить контакты.");
     } finally {
       submitGate.current.release();
@@ -189,7 +194,7 @@ export function ContactCaptureForm({ animal, campaign }: ContactCaptureFormProps
                 <button className="button button--secondary" type="button" onClick={checkAvailability} disabled={configChecking}>
                   {configChecking ? "Проверяем…" : "Проверить ещё раз"}
                 </button>
-                <a className="text-button" href="mailto:info@fond-nika.ru">Написать фонду</a>
+                <a className="text-button" href="mailto:opeka@fond-nika.ru">Написать фонду</a>
               </div>
             </div>
           </motion.div>

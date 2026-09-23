@@ -110,6 +110,17 @@ export function areMatchingPairCards(firstId: string, secondId: string): boolean
   return Boolean(first && second && first.kind !== second.kind && first.pairId === second.pairId);
 }
 
+/** One visible situation plus a chosen action, including legacy partial saves. */
+export function chooseMatchingAction(state: MatchingPairsState, situationId: string, actionId: string): MatchingPairsState {
+  if (state.phase === "checking" || state.feedback?.kind === "match") return state;
+  const situation = cardById.get(situationId);
+  const action = cardById.get(actionId);
+  if (situation?.kind !== "situation" || action?.kind !== "action"
+    || state.matchedPairIds.includes(situation.pairId)
+    || state.matchedPairIds.includes(action.pairId)) return state;
+  return selectMatchingPairCard({ ...state, openCardIds: [situationId] }, actionId);
+}
+
 export function selectMatchingPairCard(state: MatchingPairsState, cardId: string): MatchingPairsState {
   const card = cardById.get(cardId);
   if (!card || state.phase === "checking" || state.matchedPairIds.includes(card.pairId)) {

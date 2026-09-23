@@ -222,6 +222,9 @@ export function VisitCareGame({
             <div>
               <h2 ref={phaseHeadingRef} tabIndex={-1}>Визит стал частью орбиты</h2>
               <p>Вы прошли путь от входа до возвращения, сохранили безопасную дистанцию и передали наблюдения команде.</p>
+              <ol className="visit-game__takeaways">
+                {visitSituations.map((item) => <li key={item.id}><strong>{item.stepLabel}</strong><span>{item.success}</span></li>)}
+              </ol>
             </div>
           </motion.div>
         ) : (
@@ -270,7 +273,7 @@ export function VisitCareGame({
                   initial={{ opacity: 0, y: reduceMotion ? 0 : 6 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <strong>{selected.correct ? "Встреча становится спокойнее" : "Тут лучше чуть бережнее"}</strong>
+                  <strong>{selected.correct ? "Полезно запомнить" : "Попробуем бережнее"}</strong>
                   <span>{selected.correct ? situation.success : selected.feedback}</span>
                   <button
                     ref={feedbackActionRef}

@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { animals } from "../data/animals";
 import { getMissions } from "../data/missions";
+import { carePairs } from "../data/carePairs";
+import { healthZones } from "../data/healthSituations";
+import { visitSituations } from "../data/visitSituations";
 import {
   getActionLabel,
   getMissionStatus,
+  getReadyMissionIds,
   getOrbitStoryFragments,
   getRecommendedMissionId,
   isCareJourneyComplete,
@@ -18,16 +22,39 @@ describe("passport orbit model", () => {
     expect(getMissionStatus("health", ["health"], ["health"])).toBe("completed");
   });
 
+  it("distinguishes restored terminal progress from an explicitly saved station", () => {
+    expect(getReadyMissionIds({ home: { completedAt: 1234 } })).toEqual(["home"]);
+    expect(getReadyMissionIds({ home: { completedAt: NaN }, trust: {} })).toEqual([]);
+    expect(getReadyMissionIds({ home: { completedAt: -1 } })).toEqual([]);
+    expect(getReadyMissionIds({ home: { completedAt: 0 } })).toEqual([]);
+    expect(getMissionStatus("home", ["home"], [], ["home"])).toBe("ready");
+    expect(getMissionStatus("home", ["home"], ["home"], ["home"])).toBe("completed");
+    expect(getActionLabel("ready", 1)).toBe("Сохранить станцию");
+  });
+
   it("recommends the first unfinished planet without locking the others", () => {
     expect(getRecommendedMissionId(missions, [])).toBe("trust");
     expect(getRecommendedMissionId(missions, ["trust", "food"])).toBe("home");
     expect(getRecommendedMissionId(missions, missions.map((mission) => mission.id))).toBeNull();
   });
 
+  it("recognizes every terminal game without marking partial progress ready", () => {
+    expect(getReadyMissionIds({
+      trust: { matchedPairIds: carePairs.map((pair) => pair.id) },
+      food: { step: visitSituations.length },
+      health: { completedZoneIds: healthZones.map((zone) => zone.id) },
+    })).toEqual(["trust", "food", "health"]);
+    expect(getReadyMissionIds({
+      trust: { matchedPairIds: carePairs.slice(1).map((pair) => pair.id) },
+      food: { step: visitSituations.length - 1 },
+      health: { completedZoneIds: healthZones.slice(1).map((zone) => zone.id) },
+    })).toEqual([]);
+  });
+
   it("uses active labels without a locked state", () => {
     expect(getActionLabel("available", 3)).toBe("Начать · 3 мин");
     expect(getActionLabel("started", 3)).toBe("Продолжить");
-    expect(getActionLabel("completed", 3)).toBe("Пройдено · повторить");
+    expect(getActionLabel("completed", 3)).toBe("Посмотреть итог");
   });
 
   it("opens the guardianship explanation only after every real mission is complete", () => {

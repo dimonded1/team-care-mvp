@@ -26,9 +26,9 @@ const baseSession: StoredSession = {
 };
 
 describe("experience mode", () => {
-  it("enables the four-paws event only for its validated QR campaign", () => {
-    expect(resolveExperienceMode("?e=4-lapy")).toBe("four-paws-event");
-    expect(resolveExperienceMode("?utm_campaign=4-LAPY")).toBe("four-paws-event");
+  it("opens the standard game from both four-paws campaign links", () => {
+    expect(resolveExperienceMode("?e=4-lapy")).toBe("standard");
+    expect(resolveExperienceMode("?utm_campaign=4-LAPY")).toBe("standard");
     expect(resolveExperienceMode("?e=other")).toBe("standard");
     expect(resolveExperienceMode("")).toBe("standard");
   });
@@ -57,6 +57,21 @@ describe("experience mode", () => {
   it("resets only journey progress when switching experience modes", () => {
     expect(reconcileSessionExperience(baseSession, "four-paws-event", 11)).toMatchObject({
       experienceMode: "four-paws-event",
+      stage: "passport",
+      animalId: "bitrix-test-animal",
+      startedMissionIds: [],
+      completedMissionIds: [],
+      missionProgress: {},
+    });
+  });
+
+  it("restores an old event session into the standard game without treating offline stamps as completed games", () => {
+    expect(reconcileSessionExperience(
+      { ...baseSession, experienceMode: "four-paws-event" },
+      resolveExperienceMode("?e=4-lapy"),
+      11,
+    )).toMatchObject({
+      experienceMode: "standard",
       stage: "passport",
       animalId: "bitrix-test-animal",
       startedMissionIds: [],
@@ -97,6 +112,7 @@ describe("experience mode", () => {
 
   it("derives the form campaign from the current experience instead of stale storage", () => {
     expect(getContactCampaignForExperience("four-paws-event", "")).toBe("4-lapy");
+    expect(getContactCampaignForExperience("standard", "?e=4-lapy")).toBe("4-lapy");
     expect(getContactCampaignForExperience("standard", "")).toBeUndefined();
     expect(getContactCampaignForExperience("standard", "?utm_campaign=zabeg")).toBe("zabeg");
   });

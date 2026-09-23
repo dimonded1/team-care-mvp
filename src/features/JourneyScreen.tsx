@@ -299,6 +299,7 @@ export function JourneyScreen({
       </div>
 
       <div className="screen-actions sticky-actions">
+        {!isFourPawsEvent(experienceMode) && missionReady && !missionAlreadyCompleted ? <p className="station-save-hint" role="status">Игра пройдена. Результат не потеряется — подтвердите прохождение станции.</p> : null}
         <Button
           className={isOfflineStation ? "offline-station__continue" : "button--orange"}
           fullWidth
@@ -313,7 +314,7 @@ export function JourneyScreen({
               ? missionReady
                 ? "Завершить станцию"
                 : "Сначала выполните задание"
-              : "Завершить станцию"}
+              : isFourPawsEvent(experienceMode) ? "Завершить станцию" : "Сохранить станцию"}
         </Button>
       </div>
     </main>

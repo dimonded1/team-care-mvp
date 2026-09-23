@@ -8,7 +8,7 @@ const chromePath = process.env.CHROME_PATH
 const appUrl = process.env.SMOKE_URL ?? "http://127.0.0.1:8080/";
 const port = 9300 + (process.pid % 500);
 const userDataDir = join(tmpdir(), `nika-team-care-smoke-${process.pid}`);
-const artifactsDir = join(process.cwd(), "artifacts");
+const artifactsDir = process.env.SMOKE_ARTIFACTS_DIR ?? join(process.cwd(), "artifacts");
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 async function pollJson(url, timeoutMs = 12_000) {
@@ -1282,8 +1282,13 @@ async function main() {
     }
 
     await waitForText("Кажется, вам стоит познакомиться");
-    await sleep(320);
-    const revealSequence = await evaluate(`(() => {
+    // Check the settled, usable reveal, not one frame of its animation. CPU
+    // scheduling changes that frame on slower phones and headless runners.
+    const revealDeadline = Date.now() + 6_000;
+    let revealSequence;
+    do {
+      await sleep(100);
+      revealSequence = await evaluate(`(() => {
       const topline = document.querySelector('.reveal-topline');
       const visual = document.querySelector('.reveal-visual');
       const action = document.querySelector('.reveal-screen .screen-actions');
@@ -1292,16 +1297,18 @@ async function main() {
         visualOpacity: visual ? Number.parseFloat(getComputedStyle(visual).opacity) : null,
         actionOpacity: action ? Number.parseFloat(getComputedStyle(action).opacity) : null,
       };
-    })()`);
+      })()`);
+    } while (Object.values(revealSequence).some((opacity) => opacity === null || opacity < 0.98)
+      && Date.now() < revealDeadline);
     if (
       revealSequence.toplineOpacity === null
-      || revealSequence.toplineOpacity < 0.04
+      || revealSequence.toplineOpacity < 0.98
       || revealSequence.visualOpacity === null
-      || revealSequence.visualOpacity > 0.08
+      || revealSequence.visualOpacity < 0.98
       || revealSequence.actionOpacity === null
-      || revealSequence.actionOpacity > 0.04
+      || revealSequence.actionOpacity < 0.98
     ) {
-      throw new Error(`Match reveal is no longer staged: ${JSON.stringify(revealSequence)}`);
+      throw new Error(`Match reveal did not become visible: ${JSON.stringify(revealSequence)}`);
     }
     await sleep(2_800);
     const celebration = await evaluate(`(() => ({

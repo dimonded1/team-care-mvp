@@ -215,7 +215,7 @@ function HealthPetSilhouette({
               <span className="health-zone__marker" aria-hidden="true">
                 {complete || (active && answerState === "correct")
                   ? <CheckIcon />
-                  : "!"}
+                  : index + 1}
               </span>
               <span className="health-zone__label">{zone.shortLabel}</span>
             </motion.button>
@@ -526,6 +526,15 @@ export function HealthCareGame({
             answerState={answerState}
             onSelectZone={selectZone}
           />
+          <div className="health-game__zone-list" role="group" aria-label="Выберите зону наблюдения">
+            {healthZones.map((zone, index) => <button key={zone.id} type="button"
+              aria-pressed={activeZoneId === zone.id} disabled={completedZoneIds.includes(zone.id)}
+              onClick={() => selectZone(zone.id)}>
+              <span aria-hidden="true">{completedZoneIds.includes(zone.id) ? <CheckIcon /> : index + 1}</span>
+              {zone.shortLabel}
+              {completedZoneIds.includes(zone.id) ? <span className="visually-hidden"> — пройдено</span> : null}
+            </button>)}
+          </div>
         </div>
 
         {complete || activeSituation ? (

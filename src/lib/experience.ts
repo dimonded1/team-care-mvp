@@ -4,11 +4,10 @@ import { readCampaignTag } from "./contactCapture";
 export const FOUR_PAWS_CAMPAIGN = "4-lapy";
 
 export function resolveExperienceMode(
-  search = typeof window === "undefined" ? "" : window.location.search,
+  _search = typeof window === "undefined" ? "" : window.location.search,
 ): ExperienceMode {
-  return readCampaignTag(search) === FOUR_PAWS_CAMPAIGN
-    ? "four-paws-event"
-    : "standard";
+  // Campaign links still identify where a visitor came from, but no longer change the game.
+  return "standard";
 }
 
 export function isFourPawsEvent(mode: ExperienceMode): boolean {
