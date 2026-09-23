@@ -127,7 +127,7 @@ export default function App() {
       : null;
     const minimumBoot = new Promise((resolve) => window.setTimeout(resolve, 650));
     const logo = Promise.race([
-      preload(assetUrl("assets/brand/logo-nika-green.jpg")),
+      preload(assetUrl("assets/brand/logo-nika-green-2026.png")),
       new Promise((resolve) => window.setTimeout(resolve, 1_200)),
     ]);
     void preload(animals[0]?.photo ?? "");

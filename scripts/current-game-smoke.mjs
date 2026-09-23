@@ -204,7 +204,7 @@ async function main() {
       // Delay the lazy generator first: the logo can already be in the
       // renderer's image cache and therefore never reach Fetch interception.
       const isFinalCardLogo = (resourceType === "Image"
-        && /\/assets\/brand\/logo-nika-white\.png/.test(request.url))
+        && /\/assets\/brand\/logo-nika-white-2026\.png/.test(request.url))
         || (resourceType === "Script"
           && /\/(?:src\/lib\/card\.ts|assets\/card-[^/]+\.js)(?:\?|$)/.test(request.url));
       if (armSlowFinalCardLogo && !delayedFinalCardLogoOnce && isFinalCardLogo) {

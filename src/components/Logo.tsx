@@ -7,7 +7,7 @@ export function Logo({ light = false }: LogoProps) {
     <img
       className="brand-logo"
       src={assetUrl(
-        light ? "assets/brand/logo-nika-white.png" : "assets/brand/logo-nika-green.jpg",
+        light ? "assets/brand/logo-nika-white-2026.png" : "assets/brand/logo-nika-green-2026.png",
       )}
       alt="Благотворительный фонд помощи животным НИКА"
     />

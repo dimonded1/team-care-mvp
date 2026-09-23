@@ -465,7 +465,7 @@ export async function createShareCard(content: ResultCardContent, signal?: Abort
   const layout = getResultCardLayout();
   const [photo, logo] = await Promise.all([
     loadCardImage(content.photo, signal),
-    loadCardImage(assetUrl("assets/brand/logo-nika-white.png"), signal),
+    loadCardImage(assetUrl("assets/brand/logo-nika-white-2026.png"), signal),
     waitForCardResource(ensureCardFonts(), signal),
   ]);
   if (signal?.aborted) throw signal.reason ?? new Error("Создание карточки отменено");
