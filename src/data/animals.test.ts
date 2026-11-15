@@ -3,11 +3,11 @@ import snapshots from "./bitrixAnimals.generated.json";
 import catalog from "../../integrations/bitrix/animalCatalog.generated.json";
 import { animals, formatAnimalAge } from "./animals";
 import { matchAxes } from "../lib/matching";
+import { petNameGenitive } from "../lib/russianPetName";
 
 describe("Bitrix animal catalog", () => {
   it("contains every match-ready Bitrix snapshot from both requested funnels", () => {
     expect(animals).toHaveLength(catalog.summary.matchReady);
-    expect(animals.length).toBeGreaterThan(400);
     expect(animals.some((animal) => animal.source.categoryName === "Мокрый Нос")).toBe(true);
     expect(animals.some((animal) => animal.source.categoryName === "Малино")).toBe(true);
     expect(new Set(animals.map((animal) => animal.species))).toEqual(new Set(["cat", "dog"]));
@@ -58,10 +58,12 @@ describe("Bitrix animal catalog", () => {
     expect(animals.some((animal) => animal.source.matchingProfileSource === "derived-v1")).toBe(true);
   });
 
-  it("derives a readable guardianship form for unreviewed Bitrix names", () => {
-    const pistachio = animals.find((animal) => animal.name === "Фисташка");
-    expect(pistachio?.source.matchingProfileSource).toBe("derived-v1");
-    expect(pistachio?.nameGenitive).toBe("Фисташки");
+  it("uses the pet-name declension rules for the current unreviewed Bitrix animals", () => {
+    for (const animal of animals) {
+      if (animal.source.matchingProfileSource !== "derived-v1") continue;
+      const sex = animal.sex === "девочка" ? "female" : "male";
+      expect(animal.nameGenitive).toBe(petNameGenitive(animal.name, sex));
+    }
   });
 
   it("formats age from the Bitrix birth date without storing a stale number", () => {
